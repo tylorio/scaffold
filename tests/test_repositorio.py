@@ -71,6 +71,22 @@ def test_rechaza_urls_con_credenciales():
         validar_origen("https://usuario:token@github.com/x/y.git")
 
 
+@pytest.mark.parametrize("origen", [
+    "https://github.com/x/y.git?token=SECRETO",
+    "https://github.com/x/y.git?access_token=SECRETO&ref=main",
+    "https://github.com/x/y.git#SECRETO",
+    "https://:SECRETO@github.com/x/y.git",
+])
+def test_rechaza_urls_que_guardarian_secretos(origen):
+    with pytest.raises(OrigenInvalido):
+        validar_origen(origen)
+
+
+def test_url_mal_formada_da_error_propio():
+    with pytest.raises(OrigenInvalido):
+        validar_origen("https://[github.com/x/y.git")
+
+
 def test_rechaza_carpeta_inexistente(tmp_path):
     with pytest.raises(OrigenInvalido):
         validar_origen(str(tmp_path / "no_existe"))
@@ -120,6 +136,21 @@ def test_insercion_es_el_tamano_del_commit_de_cada_funcion(repo_git):
     with abrir_repositorio(str(repo_git)) as lector:
         assert lector.insercion_commit("pequeno.py", 1, 2) == 2
         assert lector.insercion_commit("grande.py", 1, 30) == 30
+
+
+@pytest.mark.parametrize("carpeta", [".venv", "venv/lib", "app/migrations", "build"])
+def test_insercion_no_cuenta_carpetas_excluidas(tmp_path, carpeta):
+    """Subir un entorno junto al código no debe hacerlo parecer un pegado grande."""
+    excluida = tmp_path / carpeta
+    excluida.mkdir(parents=True)
+    (excluida / "lib.py").write_text("x = 1\n" * 500, encoding="utf-8")
+    (tmp_path / "tarea.py").write_text("def a():\n    return 1\n", encoding="utf-8")
+    with Repo.init(tmp_path) as repo:
+        repo.index.add([f"{carpeta}/lib.py", "tarea.py"])
+        repo.index.commit("todo junto", author=AUTOR, committer=AUTOR)
+
+    with abrir_repositorio(str(tmp_path)) as lector:
+        assert lector.insercion_commit("tarea.py", 1, 2) == 2
 
 
 def test_flujo_sobre_repositorio_git(repo_git, modelo):

@@ -1,6 +1,7 @@
 """Flujo web completo con el cliente de pruebas de Django."""
 import csv
 import io
+from pathlib import Path
 
 import pytest
 from django.urls import reverse
@@ -135,6 +136,39 @@ def test_analizar_guarda_y_muestra_resultados(client, participante):
     assert analisis.conceptos.count() == 3
     assert analisis.fragmentos.get(nombre="recursiva").conceptos == [RECURSION]
     assert analisis.fragmentos.get(nombre="con_try").insercion_commit is not None
+
+
+def test_analizar_sin_funciones_avisa_y_no_guarda(client, tmp_path):
+    (tmp_path / "datos.py").write_text("x = 1\n", encoding="utf-8")
+    participante = Participante.objects.create(codigo="P02", repositorio=str(tmp_path))
+
+    respuesta = client.post(reverse("analisis:analizar", args=["P02"]), follow=True)
+    html = respuesta.content.decode()
+
+    assert "No se encontraron funciones Python" in html
+    assert "Análisis completado" not in html
+    assert participante.ultimo_analisis is None
+
+
+def test_analizar_sin_funciones_nombra_los_archivos_ilegibles(client, tmp_path):
+    (tmp_path / "roto.py").write_text("def f(:\n", encoding="utf-8")
+    Participante.objects.create(codigo="P02", repositorio=str(tmp_path))
+
+    respuesta = client.post(reverse("analisis:analizar", args=["P02"]), follow=True)
+
+    assert "roto.py" in respuesta.content.decode()
+    assert not Analisis.objects.exists()
+
+
+def test_analizar_sin_funciones_conserva_el_analisis_anterior(client, participante):
+    anterior = analisis_con(participante, [RECURSION])
+    participante.repositorio = str(participante.repositorio) + "_vacio"
+    Path(participante.repositorio).mkdir()
+    participante.save()
+
+    client.post(reverse("analisis:analizar", args=["P01"]))
+
+    assert participante.ultimo_analisis == anterior
 
 
 def test_analizar_guarda_los_parametros_usados(client, participante):

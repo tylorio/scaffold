@@ -13,7 +13,7 @@ import tokenize
 from collections import Counter
 from contextlib import contextmanager
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePath
 from typing import Iterator
 from urllib.parse import urlsplit
 
@@ -47,6 +47,10 @@ def es_url(origen: str) -> bool:
     return bool(_URL.match(origen) or _SCP.match(origen))
 
 
+def _en_carpeta_excluida(ruta: str) -> bool:
+    return not DIRECTORIOS_EXCLUIDOS.isdisjoint(PurePath(ruta).parts)
+
+
 def resolver_ruta(origen: str, base: Path | None = None) -> Path:
     ruta = Path(origen).expanduser()
     if not ruta.is_absolute():
@@ -54,16 +58,26 @@ def resolver_ruta(origen: str, base: Path | None = None) -> Path:
     return ruta.resolve()
 
 
+def _validar_url(origen: str) -> None:
+    """Rechaza lo que dejaría un secreto en la base de datos."""
+    try:
+        partes = urlsplit(origen)
+    except ValueError as error:
+        raise OrigenInvalido("La URL no tiene un formato válido.") from error
+    if "@" in partes.netloc or partes.query or partes.fragment:
+        raise OrigenInvalido(
+            "La URL no debe incluir usuario, token ni parámetros: quedarían "
+            "guardados en la base de datos."
+        )
+
+
 def validar_origen(origen: str, base: Path | None = None) -> None:
     origen = origen.strip()
     if not origen:
         raise OrigenInvalido("Indica una ruta local o una URL.")
     if es_url(origen):
-        if _URL.match(origen) and urlsplit(origen).username:
-            raise OrigenInvalido(
-                "La URL no debe incluir usuario ni token: quedarían guardados "
-                "en la base de datos."
-            )
+        if _URL.match(origen):
+            _validar_url(origen)
         return
     if not resolver_ruta(origen, base).is_dir():
         raise OrigenInvalido(f"No existe la carpeta: {origen}")
@@ -113,8 +127,7 @@ class RepositorioGit:
         for elemento in self._repo.head.commit.tree.traverse():
             if elemento.type != "blob" or not elemento.path.endswith(".py"):
                 continue
-            partes = elemento.path.split("/")
-            if elemento.mode == 0o120000 or DIRECTORIOS_EXCLUIDOS.intersection(partes):
+            if elemento.mode == 0o120000 or _en_carpeta_excluida(elemento.path):
                 continue
             yield ArchivoFuente(elemento.path, elemento.data_stream.read())
 
@@ -123,6 +136,8 @@ class RepositorioGit:
 
         Se mide por commit y no por archivo para que un pegado grande repartido
         en varios archivos se vea como lo que es, y para sobrevivir a renombres.
+        Las carpetas excluidas no cuentan: subir un entorno virtual junto al
+        código no es escribir miles de líneas.
         """
         if self._inserciones is None:
             self._inserciones = {}
@@ -133,7 +148,8 @@ class RepositorioGit:
                 self._inserciones[commit.hash] = sum(
                     archivo.added_lines
                     for archivo in commit.modified_files
-                    if (archivo.new_path or "").endswith(".py")
+                    if (ruta := archivo.new_path or "").endswith(".py")
+                    and not _en_carpeta_excluida(ruta)
                 )
         return self._inserciones
 

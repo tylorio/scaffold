@@ -5,7 +5,7 @@ from django.views.decorators.http import require_POST
 
 from .forms import ConfiguracionForm, ParticipanteForm
 from .models import Configuracion, Participante
-from .persistencia import ejecutar_analisis, exportar_csv
+from .persistencia import RepositorioSinFunciones, ejecutar_analisis, exportar_csv
 from .servicios.clasificador import ModeloNoDisponible
 from .servicios.conceptos import NOMBRES_CONCEPTOS
 from .servicios.repositorio import ErrorRepositorio, OrigenInvalido
@@ -28,7 +28,9 @@ def analizar(request, codigo):
     participante = get_object_or_404(Participante, codigo=codigo)
     try:
         analisis = ejecutar_analisis(participante)
-    except (OrigenInvalido, ErrorRepositorio, ModeloNoDisponible) as error:
+    except (
+        OrigenInvalido, ErrorRepositorio, ModeloNoDisponible, RepositorioSinFunciones,
+    ) as error:
         messages.error(request, str(error))
         return redirect("analisis:lista")
     messages.success(

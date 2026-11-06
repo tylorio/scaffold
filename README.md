@@ -141,6 +141,12 @@ tests/               Pruebas con pytest
 - **Control:** la página de refuerzo de un concepto no asignado responde 403.
 - **Cada análisis guarda** θ, λ, m y la versión del modelo. Volver a analizar crea
   un análisis nuevo y conserva los anteriores. La interfaz y el CSV usan el último.
+- **Sin funciones:** si el repositorio no tiene funciones Python se avisa y no se
+  guarda nada, para no ocultar un análisis válido anterior.
+- **Tamaño de inserción:** cuenta las líneas `.py` añadidas en el commit, sin las
+  carpetas excluidas (`.venv`, `build`, `migrations`...).
+- **URLs:** no se aceptan con usuario, token, parámetros ni fragmento, porque
+  quedarían guardados en la base de datos.
 
 ## Advertencias
 

@@ -10,6 +10,10 @@ from .servicios.flujo import ResultadoAnalisis, analizar_repositorio
 from .servicios.idc import Parametros
 
 
+class RepositorioSinFunciones(Exception):
+    """El repositorio se leyó bien, pero no tiene funciones Python que analizar."""
+
+
 def parametros_vigentes() -> Parametros:
     config = Configuracion.obtener()
     return Parametros(theta=config.theta, lambda_=config.lambda_valor, m=config.m)
@@ -71,6 +75,15 @@ def ejecutar_analisis(participante: Participante) -> Analisis:
     datos = analizar_repositorio(
         participante.repositorio, modelo, parametros, base=settings.BASE_DIR,
     )
+    # Un análisis vacío pasaría a ser el último y ocultaría uno válido anterior.
+    if not datos.fragmentos:
+        detalle = "No se encontraron funciones Python en el repositorio."
+        if datos.archivos_con_error:
+            detalle += (
+                " Archivos que no se pudieron leer: "
+                + ", ".join(datos.archivos_con_error) + "."
+            )
+        raise RepositorioSinFunciones(detalle + " No se guardó el análisis.")
     return _guardar(participante, datos, parametros, modelo)
 
 
