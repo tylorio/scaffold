@@ -52,8 +52,9 @@ _LITERALES = (ast.List, ast.Dict, ast.Set)
 def recorrer_cuerpo(funcion: ast.AST) -> Iterator[ast.AST]:
     """Recorre el cuerpo de una función sin entrar en anotaciones ni en ámbitos anidados.
 
-    Las funciones anidadas son fragmentos propios: lo que contienen se le
-    atribuye a ellas y no a la función que las envuelve.
+    Cada ámbito se evalúa con su propio contexto (por ejemplo, su nombre para la
+    recursión); `extraccion` suma luego los conceptos de los ámbitos anidados a
+    la función que los envuelve.
     """
     pendientes: list[ast.AST] = list(funcion.body)
     while pendientes:

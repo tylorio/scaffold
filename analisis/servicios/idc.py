@@ -1,6 +1,7 @@
 """Índice de Dependencia Conductual y selección de conceptos a reforzar."""
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from typing import Iterable
 
@@ -17,6 +18,7 @@ ETIQUETAS_ESTADO = {
 }
 
 MAXIMO_REFORZADOS = 2
+Z_95 = 1.959964
 
 
 @dataclass(frozen=True)
@@ -58,6 +60,23 @@ def calcular_idc(probabilidades: Iterable[float], theta: float) -> float | None:
     if not valores:
         return None
     return sum(p >= theta for p in valores) / len(valores)
+
+
+def intervalo_wilson(n_ia: int, n: int, z: float = Z_95) -> tuple[float, float] | None:
+    """Intervalo de confianza de Wilson para n_ia / n. None si no hay fragmentos.
+
+    Wilson se comporta bien con pocos fragmentos y con proporciones de 0 o 1,
+    justo donde el intervalo normal se degenera. Supone fragmentos independientes
+    y no incluye el error del clasificador: es un mínimo, no toda la incertidumbre.
+    """
+    if n == 0:
+        return None
+    p = n_ia / n
+    z2 = z * z
+    denominador = 1 + z2 / n
+    centro = (p + z2 / (2 * n)) / denominador
+    margen = z * math.sqrt(p * (1 - p) / n + z2 / (4 * n * n)) / denominador
+    return max(0.0, centro - margen), min(1.0, centro + margen)
 
 
 def evaluar_concepto(

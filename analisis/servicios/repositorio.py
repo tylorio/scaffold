@@ -25,7 +25,8 @@ DIRECTORIOS_EXCLUIDOS = frozenset({
     "node_modules", "build", "dist", ".tox", ".mypy_cache", ".pytest_cache",
     "migrations",
 })
-_URL = re.compile(r"^(https?|ssh|git|file)://", re.IGNORECASE)
+CARPETAS_DE_PRUEBAS = frozenset({"test", "tests", "pruebas"})
+_URL =re.compile(r"^(https?|ssh|git|file)://", re.IGNORECASE)
 _SCP = re.compile(r"^[\w.-]+@[\w.-]+:.+")
 
 
@@ -49,6 +50,17 @@ def es_url(origen: str) -> bool:
 
 def _en_carpeta_excluida(ruta: str) -> bool:
     return not DIRECTORIOS_EXCLUIDOS.isdisjoint(PurePath(ruta).parts)
+
+
+def es_archivo_de_pruebas(ruta: str) -> bool:
+    """Las pruebas no miden el concepto. Siguen contando en el tamaño de inserción."""
+    *carpetas, nombre = PurePath(ruta).parts
+    return (
+        not CARPETAS_DE_PRUEBAS.isdisjoint(carpetas)
+        or nombre.startswith("test_")
+        or nombre.endswith("_test.py")
+        or nombre == "conftest.py"
+    )
 
 
 def resolver_ruta(origen: str, base: Path | None = None) -> Path:
@@ -94,6 +106,7 @@ class CarpetaLocal:
 
     tiene_historial = False
     commit_head = ""
+    n_autores = None
 
     def __init__(self, ruta: Path):
         self.ruta = ruta
@@ -105,7 +118,8 @@ class CarpetaLocal:
                 if nombre.endswith(".py"):
                     ruta = Path(raiz) / nombre
                     relativa = ruta.relative_to(self.ruta).as_posix()
-                    yield ArchivoFuente(relativa, ruta.read_bytes())
+                    if not es_archivo_de_pruebas(relativa):
+                        yield ArchivoFuente(relativa, ruta.read_bytes())
 
     def insercion_commit(self, archivo: str, inicio: int, fin: int) -> int | None:
         return None
@@ -122,12 +136,26 @@ class RepositorioGit:
         self.commit_head = repo.head.commit.hexsha
         self._inserciones: dict[str, int] | None = None
         self._commits_de_archivo: dict[str, list[str]] = {}
+        self._autores: set[str] = set()  # solo en memoria: se guarda la cantidad
+
+    @property
+    def n_autores(self) -> int:
+        """Correos distintos en las líneas leídas. Depende de `insercion_commit`.
+
+        Sirve para detectar repositorios que no son individuales. Una persona con
+        dos correos cuenta como dos, así que es un aviso y no una prueba.
+        """
+        return len(self._autores)
 
     def archivos(self) -> Iterator[ArchivoFuente]:
         for elemento in self._repo.head.commit.tree.traverse():
             if elemento.type != "blob" or not elemento.path.endswith(".py"):
                 continue
-            if elemento.mode == 0o120000 or _en_carpeta_excluida(elemento.path):
+            if (
+                elemento.mode == 0o120000
+                or _en_carpeta_excluida(elemento.path)
+                or es_archivo_de_pruebas(elemento.path)
+            ):
                 continue
             yield ArchivoFuente(elemento.path, elemento.data_stream.read())
 
@@ -154,11 +182,18 @@ class RepositorioGit:
         return self._inserciones
 
     def _commits_por_linea(self, archivo: str) -> list[str]:
+        """Commit que escribió cada línea.
+
+        `-w` ignora los cambios de espacios, y `-M` y `-C` siguen al código movido,
+        para que reformatear o reorganizar no pase por escribirlo de nuevo.
+        """
         if archivo not in self._commits_de_archivo:
             commits: list[str] = []
             try:
-                for commit, lineas in self._repo.blame("HEAD", archivo) or []:
+                blame = self._repo.blame("HEAD", archivo, w=True, M=True, C=True)
+                for commit, lineas in blame or []:
                     commits.extend([commit.hexsha] * len(lineas))
+                    self._autores.add(commit.author.email.lower())
             except GitCommandError:
                 commits = []
             self._commits_de_archivo[archivo] = commits

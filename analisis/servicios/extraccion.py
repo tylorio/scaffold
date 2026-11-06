@@ -8,7 +8,7 @@ from typing import Iterator
 from radon.complexity import cc_visit_ast
 from radon.raw import analyze
 
-from .conceptos import FUNCIONES, detectar_conceptos
+from .conceptos import FUNCIONES, detectar_conceptos, recorrer_cuerpo
 
 
 class ErrorSintaxis(Exception):
@@ -25,6 +25,7 @@ class Fragmento:
     lineas: int
     complejidad: int
     conceptos: frozenset[str]
+    trivial: bool = False  # el flujo la omite: no aporta evidencia para el IDC
 
 
 def desindentar(lineas: list[str], columna: int) -> str:
@@ -53,10 +54,29 @@ def _recorrer_definiciones(
         if isinstance(hijo, ast.ClassDef):
             yield from _recorrer_definiciones(hijo, (*prefijo, hijo.name), hijo)
         elif isinstance(hijo, FUNCIONES):
+            # No se entra en ella: lo anidado ya forma parte de su código y
+            # contarlo aparte duplicaría esas líneas en el IDC.
             yield hijo, prefijo, clase
-            yield from _recorrer_definiciones(hijo, (*prefijo, hijo.name), None)
         else:
             yield from _recorrer_definiciones(hijo, prefijo, clase)
+
+
+def _conceptos_con_anidadas(
+    funcion: ast.AST, clase: ast.ClassDef | None
+) -> frozenset[str]:
+    """Conceptos de la función más los de las definiciones que contiene."""
+    conceptos = set(detectar_conceptos(funcion, clase))
+    for anidada, _, clase_anidada in _recorrer_definiciones(funcion, (), None):
+        conceptos |= _conceptos_con_anidadas(anidada, clase_anidada)
+    return frozenset(conceptos)
+
+
+def _es_trivial(funcion: ast.AST, conceptos: frozenset[str]) -> bool:
+    """Una sola sentencia sin conceptos, como un getter: no revela cómo se escribió."""
+    if conceptos:
+        return False
+    sentencias = sum(isinstance(n, ast.stmt) for n in recorrer_cuerpo(funcion))
+    return sentencias - (ast.get_docstring(funcion) is not None) <= 1
 
 
 def _complejidad(nodo: ast.AST) -> int:
@@ -72,7 +92,10 @@ def _contar_lineas(codigo: str) -> int:
 
 
 def extraer_funciones(fuente: str, archivo: str = "<memoria>") -> list[Fragmento]:
-    """Extrae cada función o método, anidados incluidos, en orden de aparición."""
+    """Extrae cada función o método en orden de aparición.
+
+    Una función anidada es parte de la que la envuelve, no un fragmento propio.
+    """
     try:
         arbol = ast.parse(fuente)
     except (SyntaxError, ValueError, RecursionError) as error:
@@ -83,6 +106,7 @@ def extraer_funciones(fuente: str, archivo: str = "<memoria>") -> list[Fragmento
     for nodo, prefijo, clase in _recorrer_definiciones(arbol, (), None):
         inicio = min([nodo.lineno, *(d.lineno for d in nodo.decorator_list)])
         codigo = desindentar(lineas[inicio - 1 : nodo.end_lineno], nodo.col_offset)
+        conceptos = _conceptos_con_anidadas(nodo, clase)
         fragmentos.append(
             Fragmento(
                 archivo=archivo,
@@ -92,7 +116,8 @@ def extraer_funciones(fuente: str, archivo: str = "<memoria>") -> list[Fragmento
                 linea_fin=nodo.end_lineno,
                 lineas=_contar_lineas(codigo),
                 complejidad=_complejidad(nodo),
-                conceptos=detectar_conceptos(nodo, clase),
+                conceptos=conceptos,
+                trivial=_es_trivial(nodo, conceptos),
             )
         )
     return sorted(fragmentos, key=lambda f: f.linea_inicio)

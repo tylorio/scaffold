@@ -26,13 +26,43 @@ def test_extrae_metodos_con_nombre_calificado_y_sin_sangria():
     assert fragmento.codigo.startswith("def f(self):")
 
 
-def test_extrae_async_anidadas_y_clases_anidadas():
+def test_extrae_async_y_clases_anidadas():
     fuente = (
         "async def a():\n    pass\n"
-        "def b():\n    def c():\n        pass\n"
         "class D:\n    class E:\n        def f(self):\n            pass\n"
     )
-    assert nombres(fuente) == ["a", "b", "b.c", "D.E.f"]
+    assert nombres(fuente) == ["a", "D.E.f"]
+
+
+def test_funcion_anidada_es_parte_de_la_externa_y_no_cuenta_doble():
+    fuente = (
+        "def externa(x):\n"
+        "    def interna(y):\n        return y + 1\n"
+        "    return interna(x)\n"
+    )
+    [fragmento] = extraer_funciones(fuente)
+    assert fragmento.nombre == "externa"
+    assert "def interna" in fragmento.codigo
+
+
+@pytest.mark.parametrize("fuente", [
+    "def f():\n    pass\n",
+    "def f(self):\n    return self.x\n",
+    'def f():\n    """Documentada."""\n    return 1\n',
+    "class A:\n    def __init__(self, x):\n        self.x = x\n",
+])
+def test_marca_como_trivial_una_sola_sentencia_sin_conceptos(fuente):
+    assert extraer_funciones(fuente)[0].trivial
+
+
+@pytest.mark.parametrize("fuente", [
+    "def f(n):\n    x = n + 1\n    return x\n",
+    "def f(n):\n    if n:\n        return 1\n",
+    "def f(n):\n    return f(n - 1)\n",  # una sola sentencia, pero con concepto
+    "def f(l):\n    return [x for x in l]\n",
+])
+def test_no_marca_como_trivial_lo_que_aporta_evidencia(fuente):
+    assert not extraer_funciones(fuente)[0].trivial
 
 
 def test_extrae_funciones_dentro_de_condicionales():

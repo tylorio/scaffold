@@ -8,7 +8,25 @@ from analisis.servicios.idc import (
     Parametros,
     calcular_idc,
     calcular_resultados,
+    intervalo_wilson,
 )
+
+
+def test_intervalo_wilson_valor_de_referencia():
+    assert intervalo_wilson(5, 10) == pytest.approx((0.2366, 0.7634), abs=1e-4)
+
+
+def test_intervalo_wilson_en_los_extremos_queda_entre_0_y_1():
+    inferior, superior = intervalo_wilson(3, 3)
+    assert inferior == pytest.approx(0.4385, abs=1e-4)
+    assert superior == 1.0
+    inferior, superior = intervalo_wilson(0, 4)
+    assert inferior == 0.0
+    assert superior == pytest.approx(0.4899, abs=1e-4)
+
+
+def test_intervalo_wilson_sin_datos():
+    assert intervalo_wilson(0, 0) is None
 
 
 def fragmentos_de(concepto, altos, bajos):

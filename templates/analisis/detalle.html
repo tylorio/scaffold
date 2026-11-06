@@ -15,6 +15,7 @@
     <div>
       <span class="etiqueta">IDC global</span>
       <span class="valor">{% if analisis.idc_global is not None %}{{ analisis.idc_global|floatformat:2 }}{% else %}—{% endif %}</span>
+      {% if analisis.intervalo %}<span class="etiqueta">IC 95 %: {{ analisis.intervalo.0|floatformat:2 }} – {{ analisis.intervalo.1|floatformat:2 }}</span>{% endif %}
     </div>
     <div>
       <span class="etiqueta">Fragmentos con P(IA) ≥ θ</span>
@@ -25,13 +26,21 @@
     Analizado el {{ analisis.fecha|date:"d/m/Y H:i" }} con
     θ = {{ analisis.theta }}, λ = {{ analisis.lambda_valor }}, m = {{ analisis.m }}.
     {% if analisis.tiene_historial %}Commit {{ analisis.commit_head|slice:":8" }}.{% else %}Sin historial Git: no se usó el tamaño de inserción.{% endif %}
+    {% if analisis.n_triviales %}Se omitieron {{ analisis.n_triviales }} funciones triviales.{% endif %}
   </p>
+  {% if analisis.n_autores and analisis.n_autores > 1 %}
+    <p class="mensaje mensaje-warning">
+      Este repositorio tiene {{ analisis.n_autores }} autores y el estudio supone
+      repositorios individuales. Revísalo: una misma persona con dos correos
+      también cuenta como dos.
+    </p>
+  {% endif %}
 
   <h2>IDC por concepto</h2>
   <div class="tabla-scroll">
     <table>
       <thead>
-        <tr><th>Concepto</th><th class="num">Fragmentos</th><th class="num">IDC</th><th>Estado</th><th>Refuerzo</th></tr>
+        <tr><th>Concepto</th><th class="num">Fragmentos</th><th class="num">IDC</th><th class="num">IC 95 %</th><th>Estado</th><th>Refuerzo</th></tr>
       </thead>
       <tbody>
         {% for c in conceptos %}
@@ -39,6 +48,7 @@
             <td>{{ c.get_concepto_display }}</td>
             <td class="num">{{ c.n_fragmentos }}</td>
             <td class="num">{% if c.idc is not None %}{{ c.idc|floatformat:2 }}{% else %}—{% endif %}</td>
+            <td class="num">{% if c.intervalo %}{{ c.intervalo.0|floatformat:2 }} – {{ c.intervalo.1|floatformat:2 }}{% else %}—{% endif %}</td>
             <td><span class="etiqueta-estado estado-{{ c.estado }}">{{ c.get_estado_display }}</span></td>
             <td>
               {% if c.reforzado %}

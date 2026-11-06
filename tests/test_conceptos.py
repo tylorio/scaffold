@@ -39,14 +39,13 @@ def test_metodo_homonimo_de_otro_objeto_no_es_recursion():
     assert RECURSION not in conceptos(fuente)
 
 
-def test_recursion_de_funcion_anidada_es_de_la_anidada():
+def test_recursion_de_funcion_anidada_se_suma_a_la_externa():
     fuente = (
         "def f(n):\n"
         "    def g(i):\n        return g(i - 1)\n"
         "    return g(n)\n"
     )
-    assert RECURSION not in conceptos(fuente, "f")
-    assert RECURSION in conceptos(fuente, "f.g")
+    assert RECURSION in conceptos(fuente, "f")
 
 
 # Estructuras de datos
@@ -121,14 +120,23 @@ def test_sin_excepciones():
     assert EXCEPCIONES not in conceptos("def f():\n    return 1\n")
 
 
-def test_try_de_funcion_anidada_es_de_la_anidada():
+def test_try_de_funcion_anidada_se_suma_a_la_externa():
     fuente = (
         "def f():\n"
         "    def g():\n        raise ValueError\n"
         "    return g\n"
     )
-    assert EXCEPCIONES not in conceptos(fuente, "f")
-    assert EXCEPCIONES in conceptos(fuente, "f.g")
+    assert EXCEPCIONES in conceptos(fuente, "f")
+
+
+def test_metodo_de_clase_local_se_suma_a_la_funcion_que_la_contiene():
+    fuente = (
+        "def f():\n"
+        "    class A:\n"
+        "        def g(self, n):\n            return self.g(n - 1)\n"
+        "    return A\n"
+    )
+    assert RECURSION in conceptos(fuente, "f")
 
 
 # Combinaciones

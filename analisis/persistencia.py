@@ -37,6 +37,8 @@ def _guardar(
             n_fragmentos=resultado.n_fragmentos,
             n_ia=resultado.n_ia,
             idc_global=resultado.idc_global,
+            n_autores=datos.n_autores,
+            n_triviales=datos.n_triviales,
         )
         ResultadoConcepto.objects.bulk_create(
             ResultadoConcepto(
@@ -77,7 +79,10 @@ def ejecutar_analisis(participante: Participante) -> Analisis:
     )
     # Un análisis vacío pasaría a ser el último y ocultaría uno válido anterior.
     if not datos.fragmentos:
-        detalle = "No se encontraron funciones Python en el repositorio."
+        detalle = (
+            "No se encontraron funciones Python para analizar en el repositorio "
+            "(se omiten los archivos de pruebas y las funciones triviales)."
+        )
         if datos.archivos_con_error:
             detalle += (
                 " Archivos que no se pudieron leer: "
@@ -95,6 +100,9 @@ def _registro(participante: Participante) -> RegistroParticipante:
         codigo=participante.codigo,
         fecha=analisis.fecha.isoformat(timespec="seconds"),
         n_fragmentos=analisis.n_fragmentos,
+        n_ia=analisis.n_ia,
+        n_autores=analisis.n_autores,
+        n_triviales=analisis.n_triviales,
         idc_global=analisis.idc_global,
         theta=analisis.theta,
         lambda_=analisis.lambda_valor,

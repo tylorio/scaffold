@@ -150,6 +150,52 @@ def test_analizar_sin_funciones_avisa_y_no_guarda(client, tmp_path):
     assert participante.ultimo_analisis is None
 
 
+def test_analizar_solo_funciones_triviales_no_guarda(client, tmp_path):
+    (tmp_path / "a.py").write_text("def f():\n    return 1\n", encoding="utf-8")
+    Participante.objects.create(codigo="P02", repositorio=str(tmp_path))
+
+    respuesta = client.post(reverse("analisis:analizar", args=["P02"]), follow=True)
+
+    assert "No se encontraron funciones Python" in respuesta.content.decode()
+    assert not Analisis.objects.exists()
+
+
+def test_detalle_muestra_intervalos_de_confianza(client, participante):
+    analisis_con(participante, {RECURSION})
+    html = client.get(reverse("analisis:detalle", args=["P01"])).content.decode()
+    assert "IC 95" in html
+    assert "0,44" in html  # 3 de 3 fragmentos en recursión
+
+
+def test_detalle_avisa_si_hay_varios_autores(client, participante):
+    analisis = analisis_con(participante, {RECURSION})
+    analisis.n_autores = 3
+    analisis.save()
+    html = client.get(reverse("analisis:detalle", args=["P01"])).content.decode()
+    assert "3 autores" in html
+
+
+def test_detalle_no_avisa_con_un_autor(client, participante):
+    analisis = analisis_con(participante, {RECURSION})
+    analisis.n_autores = 1
+    analisis.save()
+    html = client.get(reverse("analisis:detalle", args=["P01"])).content.decode()
+    assert "autores" not in html
+
+
+def test_analizar_guarda_autores_y_triviales(client, participante, repositorio):
+    (repositorio / "extra.py").write_text("def g():\n    return 1\n", encoding="utf-8")
+    with Repo(repositorio) as repo:
+        repo.index.add(["extra.py"])
+        autor = Actor("Persona Real", "persona@example.invalid")
+        repo.index.commit("extra", author=autor, committer=autor)
+
+    client.post(reverse("analisis:analizar", args=["P01"]))
+
+    analisis = participante.ultimo_analisis
+    assert (analisis.n_autores, analisis.n_triviales) == (1, 1)
+
+
 def test_analizar_sin_funciones_nombra_los_archivos_ilegibles(client, tmp_path):
     (tmp_path / "roto.py").write_text("def f(:\n", encoding="utf-8")
     Participante.objects.create(codigo="P02", repositorio=str(tmp_path))
@@ -241,6 +287,30 @@ def test_exporta_datos_por_participante(client, participante):
     assert fila["reforzado_estructuras_datos"] == "0"
     assert fila["conceptos_reforzados"] == "recursion;excepciones"
     assert fila["modelo_es_demo"] == "1"
+
+
+def test_exporta_intervalos_autores_y_triviales(client, participante):
+    analisis = analisis_con(participante, {RECURSION})
+    analisis.n_autores = 2
+    analisis.n_triviales = 4
+    analisis.save()
+    [fila] = filas_csv(client)
+    assert float(fila["idc_recursion_ic_inf"]) == pytest.approx(0.4385)
+    assert float(fila["idc_recursion_ic_sup"]) == 1.0
+    assert float(fila["idc_global_ic_inf"]) == pytest.approx(0.3542, abs=1e-4)
+    assert float(fila["idc_global_ic_sup"]) == pytest.approx(0.8794, abs=1e-4)
+    assert fila["n_autores"] == "2"
+    assert fila["n_triviales"] == "4"
+
+
+def test_exporta_sin_intervalo_si_no_hay_idc(client, participante):
+    analisis = analisis_con(participante, {RECURSION})
+    analisis.conceptos.filter(concepto=EXCEPCIONES).update(
+        idc=None, estado="datos_insuficientes",
+    )
+    [fila] = filas_csv(client)
+    assert fila["idc_excepciones_ic_inf"] == ""
+    assert fila["idc_excepciones_ic_sup"] == ""
 
 
 def test_exporta_solo_el_ultimo_analisis(client, participante):

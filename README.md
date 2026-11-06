@@ -49,14 +49,14 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
 
 1. En **Participantes**, registra el código `P01` con el repositorio `demo_repo`.
 2. Pulsa **Analizar repositorio**.
-3. En el detalle de `P01` verás 18 fragmentos, un IDC global de 0,39 y esta
-   asignación:
+3. En el detalle de `P01` verás 16 fragmentos (2 triviales omitidos), un IDC
+   global de 0,44 y esta asignación:
 
-   | Concepto | Fragmentos | IDC | Estado | Refuerzo |
-   |---|---:|---:|---|---|
-   | Recursión | 4 | 1,00 | Débil | Reforzado |
-   | Estructuras de datos | 8 | 0,50 | Débil | Reforzado |
-   | Manejo de excepciones | 4 | 0,00 | No débil | No reforzado (control) |
+   | Concepto | Fragmentos | IDC | IC 95 % | Estado | Refuerzo |
+   |---|---:|---:|---:|---|---|
+   | Recursión | 4 | 1,00 | 0,51 – 1,00 | Débil | Reforzado |
+   | Estructuras de datos | 8 | 0,50 | 0,22 – 0,78 | Débil | Reforzado |
+   | Manejo de excepciones | 4 | 0,00 | 0,00 – 0,49 | No débil | No reforzado (control) |
 
    Los valores exactos pueden variar un poco con otra versión de scikit-learn.
 4. Abre **Abrir refuerzo** en Recursión y pega esta solución en «Suma de dígitos»:
@@ -131,7 +131,18 @@ tests/               Pruebas con pytest
 
 ## Reglas implementadas
 
-- **IDC** = fragmentos con P(IA) ≥ θ ÷ fragmentos analizados.
+- **IDC** = fragmentos con P(IA) ≥ θ ÷ fragmentos analizados. Se muestra y se
+  exporta con su intervalo de confianza de Wilson al 95 %, que no incluye el
+  error del clasificador.
+- **Fragmento:** cada función o método. Una función anidada es parte de la que la
+  envuelve, y sus conceptos se suman a ella.
+- **Se omiten** los archivos de pruebas (`test_*.py`, `*_test.py`, `conftest.py` y
+  las carpetas `test`, `tests` y `pruebas`) y las funciones triviales: una sola
+  sentencia sin conceptos, como un getter. El análisis guarda cuántas triviales
+  omitió.
+- **Repositorios individuales:** el estudio los supone y el sistema no filtra por
+  autor. Si hay más de un correo de autor avisa en el detalle y lo exporta en
+  `n_autores`; los correos no se guardan.
 - **Concepto débil:** IDC ≥ λ y al menos m fragmentos. Con menos de m se marca
   «datos insuficientes» y no se calcula.
 - **Refuerzo:** como máximo los 2 conceptos débiles de mayor IDC; siempre queda
@@ -144,7 +155,9 @@ tests/               Pruebas con pytest
 - **Sin funciones:** si el repositorio no tiene funciones Python se avisa y no se
   guarda nada, para no ocultar un análisis válido anterior.
 - **Tamaño de inserción:** cuenta las líneas `.py` añadidas en el commit, sin las
-  carpetas excluidas (`.venv`, `build`, `migrations`...).
+  carpetas excluidas (`.venv`, `build`, `migrations`...). El commit de cada línea
+  sale de `git blame -w -M -C`, que ignora los cambios de espacios y sigue al
+  código movido.
 - **URLs:** no se aceptan con usuario, token, parámetros ni fragmento, porque
   quedarían guardados en la base de datos.
 
@@ -175,6 +188,8 @@ Por eso `db.sqlite3` y `datos/` están en `.gitignore`.
 - Las características son solo de estilo. Un estudiante ordenado puede parecer IA
   y un código de IA retocado puede parecer humano.
 - El tamaño de inserción castiga a quien trabaja mucho y sube todo en un commit.
+  Un formateador que cambia más que espacios, como comillas, sigue contando como
+  código nuevo: `-w` solo cubre los espacios.
 - Falta calibrar las probabilidades, y θ = 0,5 solo tiene sentido si lo están.
 
 **Detección de conceptos**
@@ -183,6 +198,9 @@ Por eso `db.sqlite3` y `datos/` están en `.gitignore`.
 - Solo se detecta recursión directa. No se detecta la mutua (`a` llama a `b` y
   `b` a `a`), ni `self.izquierda.insertar(x)` en un árbol.
 - `return a, b` y el desempaquetado no cuentan como uso de tuplas.
+- El código inicial que entrega el docente no se descuenta: si existe, cuenta como
+  del estudiante.
+- Un archivo de tarea llamado `test_algo.py` se omite por su nombre.
 
 **Sistema**
 - No hay usuarios ni permisos: cualquiera con acceso ve a todos los participantes.

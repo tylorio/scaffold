@@ -24,6 +24,8 @@ class ResultadoAnalisis:
     commit_head: str
     tiene_historial: bool
     archivos_con_error: list[str] = field(default_factory=list)
+    n_autores: int | None = None
+    n_triviales: int = 0
 
 
 def analizar_repositorio(
@@ -33,22 +35,24 @@ def analizar_repositorio(
     base: Path | None = None,
 ) -> ResultadoAnalisis:
     with abrir_repositorio(origen, base) as repositorio:
-        fragmentos: list[Fragmento] = []
+        extraidos: list[Fragmento] = []
         con_error: list[str] = []
         for archivo in repositorio.archivos():
             try:
-                fragmentos.extend(
+                extraidos.extend(
                     extraer_funciones(decodificar(archivo.contenido), archivo.ruta)
                 )
             except (ErrorSintaxis, UnicodeDecodeError, SyntaxError):
                 con_error.append(archivo.ruta)
 
+        fragmentos = [f for f in extraidos if not f.trivial]
         inserciones = [
             repositorio.insercion_commit(f.archivo, f.linea_inicio, f.linea_fin)
             for f in fragmentos
         ]
         commit_head = repositorio.commit_head
         tiene_historial = repositorio.tiene_historial
+        n_autores = repositorio.n_autores
 
     probabilidades = modelo.predecir([
         {"codigo": f.codigo, "insercion_commit": i}
@@ -67,4 +71,6 @@ def analizar_repositorio(
         commit_head=commit_head,
         tiene_historial=tiene_historial,
         archivos_con_error=con_error,
+        n_autores=n_autores,
+        n_triviales=len(extraidos) - len(fragmentos),
     )

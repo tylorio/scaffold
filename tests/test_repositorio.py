@@ -16,6 +16,7 @@ from analisis.servicios.repositorio import (
     RepositorioGit,
     abrir_repositorio,
     decodificar,
+    es_archivo_de_pruebas,
     es_url,
     validar_origen,
 )
@@ -36,11 +37,13 @@ def modelo():
 
 @pytest.fixture
 def repo_git(tmp_path):
-    """Repositorio con un commit de 2 líneas y otro de 30 líneas."""
+    """Repositorio con un commit de 3 líneas y otro de 30 líneas."""
     ruta = tmp_path / "repo"
     ruta.mkdir()
     with Repo.init(ruta) as repo:
-        (ruta / "pequeno.py").write_text("def a():\n    return 1\n", encoding="utf-8")
+        (ruta / "pequeno.py").write_text(
+            "def a():\n    x = 1\n    return x\n", encoding="utf-8"
+        )
         repo.index.add(["pequeno.py"])
         repo.index.commit("uno", author=AUTOR, committer=AUTOR)
 
@@ -134,7 +137,7 @@ def test_repositorio_sin_commits_se_trata_como_carpeta(tmp_path):
 
 def test_insercion_es_el_tamano_del_commit_de_cada_funcion(repo_git):
     with abrir_repositorio(str(repo_git)) as lector:
-        assert lector.insercion_commit("pequeno.py", 1, 2) == 2
+        assert lector.insercion_commit("pequeno.py", 1, 3) == 3
         assert lector.insercion_commit("grande.py", 1, 30) == 30
 
 
@@ -153,18 +156,130 @@ def test_insercion_no_cuenta_carpetas_excluidas(tmp_path, carpeta):
         assert lector.insercion_commit("tarea.py", 1, 2) == 2
 
 
+def confirmar(repo, ruta, texto, mensaje, autor=AUTOR):
+    destino = Path(repo.working_tree_dir) / ruta
+    destino.write_text(texto, encoding="utf-8")
+    repo.index.add([ruta])
+    repo.index.commit(mensaje, author=autor, committer=autor)
+
+
+def test_insercion_ignora_cambios_de_solo_espacios(tmp_path):
+    """Reindentar no es escribir el código de nuevo."""
+    otra = "def otra():\n" + "    y = 2\n" * 28 + "    return y\n"
+    with Repo.init(tmp_path) as repo:
+        confirmar(repo, "m.py", "def a():\n  x = 1\n  return x\n", "original")
+        confirmar(
+            repo, "m.py", "def a():\n    x = 1\n    return x\n\n" + otra, "reformatea"
+        )
+
+    with abrir_repositorio(str(tmp_path)) as lector:
+        assert lector.insercion_commit("m.py", 1, 3) == 3
+
+
+def test_insercion_sigue_al_codigo_movido_entre_archivos(tmp_path):
+    movida = (
+        "def calcular_promedio_ponderado(notas_del_curso, pesos_del_curso):\n"
+        "    acumulado_total = 0\n"
+        "    for nota_actual, peso_actual in zip(notas_del_curso, pesos_del_curso):\n"
+        "        acumulado_total += nota_actual * peso_actual\n"
+        "    return acumulado_total / sum(pesos_del_curso)\n"
+    )
+    resto = "def otra():\n" + "    y = 2\n" * 40 + "    return y\n"
+    with Repo.init(tmp_path) as repo:
+        confirmar(repo, "a.py", movida + "\nz = 1\n", "original")
+        destino = Path(repo.working_tree_dir) / "a.py"
+        destino.write_text("z = 1\n", encoding="utf-8")
+        repo.index.add(["a.py"])
+        confirmar(repo, "b.py", resto + "\n" + movida, "reorganiza")
+
+    inicio = len(resto.splitlines()) + 2
+    with abrir_repositorio(str(tmp_path)) as lector:
+        assert lector.insercion_commit("b.py", inicio, inicio + 4) == 7
+
+
+def test_cuenta_autores_sin_exponer_sus_datos(tmp_path, modelo):
+    otra_persona = Actor("Otra Persona", "OTRA@example.invalid")
+    cuerpo = "def {}():\n    x = 1\n    return x\n"
+    with Repo.init(tmp_path) as repo:
+        confirmar(repo, "a.py", cuerpo.format("a"), "uno")
+        confirmar(repo, "b.py", cuerpo.format("b"), "dos", otra_persona)
+
+    datos = analizar_repositorio(str(tmp_path), modelo)
+
+    assert datos.n_autores == 2
+    assert "OTRA@example" not in repr(datos)
+    assert "Otra Persona" not in repr(datos)
+
+
+def test_mismo_autor_con_mayusculas_distintas_cuenta_una_vez(tmp_path, modelo):
+    cuerpo = "def {}():\n    x = 1\n    return x\n"
+    with Repo.init(tmp_path) as repo:
+        confirmar(repo, "a.py", cuerpo.format("a"), "uno")
+        confirmar(
+            repo, "b.py", cuerpo.format("b"), "dos",
+            Actor("Persona Real", AUTOR.email.upper()),
+        )
+    assert analizar_repositorio(str(tmp_path), modelo).n_autores == 1
+
+
+def test_carpeta_sin_git_no_tiene_autores(tmp_path, modelo):
+    (tmp_path / "a.py").write_text(
+        "def f():\n    x = 1\n    return x\n", encoding="utf-8"
+    )
+    assert analizar_repositorio(str(tmp_path), modelo).n_autores is None
+
+
+@pytest.mark.parametrize("ruta", [
+    "test_a.py", "a_test.py", "conftest.py", "tests/a.py", "test/a.py",
+    "pruebas/a.py", "app/tests/unidad/a.py",
+])
+def test_reconoce_archivos_de_pruebas(ruta):
+    assert es_archivo_de_pruebas(ruta)
+
+
+@pytest.mark.parametrize("ruta", [
+    "a.py", "testing.py", "contest.py", "latest.py", "app/prueba.py", "test1.py",
+])
+def test_no_confunde_archivos_normales_con_pruebas(ruta):
+    assert not es_archivo_de_pruebas(ruta)
+
+
+@pytest.mark.parametrize("con_git", [False, True])
+def test_flujo_omite_pruebas_y_funciones_triviales(tmp_path, modelo, con_git):
+    real = "def real():\n    x = 1\n    return x\n"
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "app.py").write_text(
+        real + "\n\ndef trivial():\n    return 1\n", encoding="utf-8"
+    )
+    (tmp_path / "tests" / "test_app.py").write_text(
+        "def test_real():\n    x = 1\n    assert x\n", encoding="utf-8"
+    )
+    if con_git:
+        with Repo.init(tmp_path) as repo:
+            repo.index.add(["app.py", "tests/test_app.py"])
+            repo.index.commit("uno", author=AUTOR, committer=AUTOR)
+
+    datos = analizar_repositorio(str(tmp_path), modelo)
+
+    assert [c.fragmento.nombre for c in datos.fragmentos] == ["real"]
+    assert datos.resultado.n_fragmentos == 1
+    assert datos.n_triviales == 1
+
+
 def test_flujo_sobre_repositorio_git(repo_git, modelo):
     datos = analizar_repositorio(str(repo_git), modelo, Parametros())
     assert datos.tiene_historial
     assert len(datos.commit_head) == 40
     por_nombre = {c.fragmento.nombre: c for c in datos.fragmentos}
-    assert por_nombre["a"].insercion_commit == 2
+    assert por_nombre["a"].insercion_commit == 3
     assert por_nombre["b"].insercion_commit == 30
     assert all(0 <= c.p_ia <= 1 for c in datos.fragmentos)
 
 
 def test_flujo_omite_archivos_invalidos_y_los_reporta(tmp_path, modelo):
-    (tmp_path / "ok.py").write_text("def f():\n    return 1\n", encoding="utf-8")
+    (tmp_path / "ok.py").write_text(
+        "def f():\n    x = 1\n    return x\n", encoding="utf-8"
+    )
     (tmp_path / "roto.py").write_text("def f(:\n", encoding="utf-8")
     (tmp_path / "binario.py").write_bytes(b"\xff\xfe\x00\x00def")
 

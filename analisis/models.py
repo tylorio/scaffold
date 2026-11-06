@@ -2,7 +2,7 @@ from django.core.validators import MaxValueValidator, MinValueValidator, RegexVa
 from django.db import models
 
 from .servicios.conceptos import NOMBRES_CONCEPTOS
-from .servicios.idc import ETIQUETAS_ESTADO
+from .servicios.idc import ETIQUETAS_ESTADO, intervalo_wilson
 
 CODIGO_ANONIMO = RegexValidator(
     r"^[A-Z]{1,3}\d{2,4}$",
@@ -69,6 +69,8 @@ class Analisis(models.Model):
     n_fragmentos = models.PositiveIntegerField()
     n_ia = models.PositiveIntegerField()
     idc_global = models.FloatField(null=True)
+    n_autores = models.PositiveIntegerField(null=True)
+    n_triviales = models.PositiveIntegerField(default=0)
 
     class Meta:
         ordering = ["-fecha", "-id"]
@@ -76,6 +78,10 @@ class Analisis(models.Model):
 
     def __str__(self):
         return f"{self.participante} · {self.fecha:%Y-%m-%d %H:%M}"
+
+    @property
+    def intervalo(self):
+        return intervalo_wilson(self.n_ia, self.n_fragmentos)
 
 
 class ResultadoConcepto(models.Model):
@@ -99,6 +105,10 @@ class ResultadoConcepto(models.Model):
                 fields=["analisis", "concepto"], name="concepto_unico_por_analisis",
             ),
         ]
+
+    @property
+    def intervalo(self):
+        return None if self.idc is None else intervalo_wilson(self.n_ia, self.n_fragmentos)
 
 
 class Fragmento(models.Model):
