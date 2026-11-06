@@ -47,6 +47,10 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
 
 ## Probar el flujo con `demo_repo/`
 
+`demo_repo/` es pequeño: antes de empezar, pon m = 3 en **Configuración**. Con el
+valor por defecto (m = 5), recursión y excepciones quedarían como «datos
+insuficientes», porque solo tienen 4 fragmentos.
+
 1. En **Participantes**, registra el código `P01` con el repositorio `demo_repo`.
 2. Pulsa **Analizar repositorio**.
 3. En el detalle de `P01` verás 16 fragmentos (2 triviales omitidos), un IDC

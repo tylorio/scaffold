@@ -7,9 +7,31 @@ from analisis.servicios.idc import (
     NO_DEBIL,
     Parametros,
     calcular_idc,
-    calcular_resultados,
     intervalo_wilson,
 )
+from analisis.servicios.idc import calcular_resultados as calcular
+
+# Estas pruebas verifican las reglas, no el valor por defecto de m: sin fijarlo,
+# subir m haría que varias pasaran sin comprobar nada, porque nada se reforzaría.
+PARAMETROS = Parametros(m=3)
+
+
+def calcular_resultados(fragmentos, parametros=PARAMETROS):
+    return calcular(fragmentos, parametros)
+
+
+def test_m_por_defecto_es_5():
+    assert Parametros().m == 5
+
+
+def test_m_por_defecto_exige_evidencia_sobre_lambda():
+    """Con 3 de 3 el intervalo aún incluye λ = 0,5; con 4 de 4 ya no."""
+    assert intervalo_wilson(3, 3)[0] < Parametros().lambda_ < intervalo_wilson(4, 4)[0]
+
+
+def test_con_m_por_defecto_cuatro_fragmentos_son_insuficientes():
+    resultado = calcular(fragmentos_de(RECURSION, 4, 0))
+    assert por_concepto(resultado)[RECURSION].estado == DATOS_INSUFICIENTES
 
 
 def test_intervalo_wilson_valor_de_referencia():

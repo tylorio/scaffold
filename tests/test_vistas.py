@@ -10,6 +10,7 @@ from git import Actor, Repo
 from analisis.models import Analisis, Configuracion, Participante, ResultadoConcepto
 from analisis.servicios.conceptos import ESTRUCTURAS, EXCEPCIONES, RECURSION
 from analisis.servicios.entrenamiento import Muestra, entrenar_modelo, guardar_modelo
+from analisis.servicios.idc import Parametros
 from crear_corpus_demo import generar_corpus
 from refuerzo.models import IntentoEjercicio
 
@@ -78,6 +79,13 @@ def analisis_con(participante, reforzados):
             estado="debil" if reforzado else "no_debil", reforzado=reforzado,
         )
     return analisis
+
+
+def test_configuracion_y_servicio_usan_los_mismos_valores_por_defecto():
+    config, parametros = Configuracion(), Parametros()
+    assert (config.theta, config.lambda_valor, config.m) == (
+        parametros.theta, parametros.lambda_, parametros.m,
+    )
 
 
 # Participantes

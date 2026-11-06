@@ -25,7 +25,8 @@ Z_95 = 1.959964
 class Parametros:
     theta: float = 0.5
     lambda_: float = 0.5
-    m: int = 3
+    # Con menos de 4 fragmentos, ni un 100 % de IA supera λ = 0,5 con un IC del 95 %.
+    m: int = 5
 
 
 @dataclass(frozen=True)

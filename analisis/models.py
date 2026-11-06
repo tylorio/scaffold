@@ -22,7 +22,7 @@ class Configuracion(models.Model):
         validators=[MinValueValidator(0), MaxValueValidator(1)],
     )
     m = models.PositiveIntegerField(
-        "m (fragmentos mínimos)", default=3, validators=[MinValueValidator(1)],
+        "m (fragmentos mínimos)", default=5, validators=[MinValueValidator(1)],
     )
 
     class Meta:
