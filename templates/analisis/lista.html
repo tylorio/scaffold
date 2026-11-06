@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block titulo %}Participantes · Prototipo IDC{% endblock %}
+{% block contenido %}
+<h1>Participantes</h1>
+
+{% if participantes %}
+  <div class="tabla-scroll">
+    <table>
+      <thead>
+        <tr><th>Código</th><th>Último análisis</th><th class="num">Fragmentos</th><th class="num">IDC global</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for participante in participantes %}
+          {% with analisis=participante.ultimo_analisis %}
+            <tr>
+              <td><a href="{% url 'analisis:detalle' participante.codigo %}">{{ participante.codigo }}</a></td>
+              <td>{% if analisis %}{{ analisis.fecha|date:"d/m/Y H:i" }}{% else %}Sin analizar{% endif %}</td>
+              <td class="num">{% if analisis %}{{ analisis.n_fragmentos }}{% else %}—{% endif %}</td>
+              <td class="num">{% if analisis and analisis.idc_global is not None %}{{ analisis.idc_global|floatformat:2 }}{% else %}—{% endif %}</td>
+              <td class="acciones">
+                <form method="post" action="{% url 'analisis:analizar' participante.codigo %}">
+                  {% csrf_token %}
+                  <button type="submit">Analizar repositorio</button>
+                </form>
+              </td>
+            </tr>
+          {% endwith %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <p>Todavía no hay participantes. Registra el primero con el formulario de abajo.</p>
+{% endif %}
+
+<h2>Registrar participante</h2>
+<form method="post" class="formulario">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <p class="ayuda">
+    Usa solo códigos anónimos. La ruta o la URL tampoco debería llevar el nombre
+    real del estudiante.
+  </p>
+  <button type="submit">Registrar</button>
+</form>
+{% endblock %}

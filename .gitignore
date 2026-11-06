@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+# Contienen datos de participantes o se regeneran con los scripts
+db.sqlite3
+datos/

@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block titulo %}{{ recurso.nombre }} · {{ participante.codigo }}{% endblock %}
+{% block contenido %}
+<p><a href="{% url 'analisis:detalle' participante.codigo %}">← Volver a {{ participante.codigo }}</a></p>
+<h1>{{ recurso.nombre }}</h1>
+<p class="introduccion">{{ recurso.introduccion }}</p>
+
+<h2>Explicación</h2>
+{% for parrafo in recurso.explicacion %}<p>{{ parrafo }}</p>{% endfor %}
+
+<h2>Ejemplos resueltos</h2>
+{% for ejemplo in recurso.ejemplos %}
+  <article class="tarjeta">
+    <h3>{{ ejemplo.titulo }}</h3>
+    <p>{{ ejemplo.enunciado }}</p>
+    <pre><code>{{ ejemplo.codigo }}</code></pre>
+    <p class="ayuda">Salida:</p>
+    <pre class="salida"><code>{{ ejemplo.salida }}</code></pre>
+    <p>{{ ejemplo.explicacion }}</p>
+  </article>
+{% endfor %}
+
+<h2>Ejercicios</h2>
+{% for item in ejercicios %}
+  {% with ejercicio=item.datos intento=item.intento %}
+    <article class="tarjeta" id="{{ ejercicio.id }}">
+      <h3><span class="nivel">{{ ejercicio.nivel }}</span> {{ ejercicio.titulo }}</h3>
+      <p>{{ ejercicio.enunciado }}</p>
+      <form method="post" class="envio">
+        {% csrf_token %}
+        <input type="hidden" name="ejercicio" value="{{ ejercicio.id }}">
+        <label for="codigo-{{ ejercicio.id }}">Tu solución</label>
+        <textarea id="codigo-{{ ejercicio.id }}" name="codigo" rows="10" spellcheck="false">{% if intento %}{{ intento.codigo }}{% else %}{{ ejercicio.plantilla }}{% endif %}</textarea>
+        <button type="submit">Ejecutar pruebas</button>
+      </form>
+
+      {% if intento %}
+        <div class="resultado">
+          {% if intento.error %}
+            <p class="mensaje mensaje-error">{{ intento.error }}</p>
+          {% endif %}
+          <p><strong>{{ intento.pasados }} de {{ intento.total }} pruebas pasadas.</strong></p>
+          {% if not intento.usa_concepto %}
+            <p class="mensaje mensaje-warning">
+              No detectamos {{ recurso.nombre|lower }} en tu solución. Este ejercicio
+              es para practicar ese concepto: inténtalo de nuevo usándolo.
+            </p>
+          {% endif %}
+          {% if intento.casos %}
+            <div class="tabla-scroll">
+              <table>
+                <thead><tr><th>Entrada</th><th>Esperado</th><th>Obtenido</th><th></th></tr></thead>
+                <tbody>
+                  {% for caso in intento.casos %}
+                    <tr>
+                      <td><code>{{ caso.entrada }}</code></td>
+                      <td><code>{{ caso.esperado }}</code></td>
+                      <td><code>{{ caso.obtenido }}</code></td>
+                      <td class="{% if caso.paso %}ok{% else %}falla{% endif %}">{% if caso.paso %}Pasó{% else %}Falló{% endif %}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% endif %}
+        </div>
+      {% endif %}
+    </article>
+  {% endwith %}
+{% endfor %}
+{% endblock %}

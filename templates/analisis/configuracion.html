@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block titulo %}Configuración · Prototipo IDC{% endblock %}
+{% block contenido %}
+<h1>Configuración</h1>
+<form method="post" class="formulario">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">Guardar</button>
+</form>
+<p class="ayuda">
+  Los cambios valen para los próximos análisis. Cada análisis guarda los valores
+  con los que se hizo, y el CSV los incluye, así que un cambio no altera los
+  resultados anteriores.
+</p>
+<ul class="ayuda">
+  <li><strong>θ:</strong> un fragmento cuenta como IA si P(IA) ≥ θ.</li>
+  <li><strong>λ:</strong> un concepto es débil si su IDC ≥ λ.</li>
+  <li><strong>m:</strong> con menos de m fragmentos, el concepto queda como «datos insuficientes».</li>
+</ul>
+{% endblock %}

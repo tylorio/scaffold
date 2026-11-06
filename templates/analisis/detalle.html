@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block titulo %}{{ participante.codigo }} · Prototipo IDC{% endblock %}
+{% block contenido %}
+<h1>Participante {{ participante.codigo }}</h1>
+
+<form method="post" action="{% url 'analisis:analizar' participante.codigo %}">
+  {% csrf_token %}
+  <button type="submit">Analizar repositorio</button>
+</form>
+
+{% if not analisis %}
+  <p>Este participante todavía no tiene análisis.</p>
+{% else %}
+  <section class="indicadores">
+    <div>
+      <span class="etiqueta">IDC global</span>
+      <span class="valor">{% if analisis.idc_global is not None %}{{ analisis.idc_global|floatformat:2 }}{% else %}—{% endif %}</span>
+    </div>
+    <div>
+      <span class="etiqueta">Fragmentos con P(IA) ≥ θ</span>
+      <span class="valor">{{ analisis.n_ia }} de {{ analisis.n_fragmentos }}</span>
+    </div>
+  </section>
+  <p class="ayuda">
+    Analizado el {{ analisis.fecha|date:"d/m/Y H:i" }} con
+    θ = {{ analisis.theta }}, λ = {{ analisis.lambda_valor }}, m = {{ analisis.m }}.
+    {% if analisis.tiene_historial %}Commit {{ analisis.commit_head|slice:":8" }}.{% else %}Sin historial Git: no se usó el tamaño de inserción.{% endif %}
+  </p>
+
+  <h2>IDC por concepto</h2>
+  <div class="tabla-scroll">
+    <table>
+      <thead>
+        <tr><th>Concepto</th><th class="num">Fragmentos</th><th class="num">IDC</th><th>Estado</th><th>Refuerzo</th></tr>
+      </thead>
+      <tbody>
+        {% for c in conceptos %}
+          <tr>
+            <td>{{ c.get_concepto_display }}</td>
+            <td class="num">{{ c.n_fragmentos }}</td>
+            <td class="num">{% if c.idc is not None %}{{ c.idc|floatformat:2 }}{% else %}—{% endif %}</td>
+            <td><span class="etiqueta-estado estado-{{ c.estado }}">{{ c.get_estado_display }}</span></td>
+            <td>
+              {% if c.reforzado %}
+                <a href="{% url 'refuerzo:concepto' participante.codigo c.concepto %}">Abrir refuerzo</a>
+              {% else %}
+                No reforzado
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <ul class="resumen">
+    <li><strong>Conceptos débiles:</strong>
+      {% for c in debiles %}{{ c.get_concepto_display }}{% if not forloop.last %}, {% endif %}{% empty %}ninguno{% endfor %}</li>
+    <li><strong>Reforzados:</strong>
+      {% for c in reforzados %}{{ c.get_concepto_display }}{% if not forloop.last %}, {% endif %}{% empty %}ninguno{% endfor %}</li>
+    <li><strong>No reforzados:</strong>
+      {% for c in no_reforzados %}{{ c.get_concepto_display }}{% if not forloop.last %}, {% endif %}{% empty %}ninguno{% endfor %}</li>
+  </ul>
+
+  {% if analisis.archivos_con_error %}
+    <p class="mensaje mensaje-warning">Archivos omitidos: {{ analisis.archivos_con_error|join:", " }}</p>
+  {% endif %}
+
+  <h2>Fragmentos</h2>
+  <div class="tabla-scroll">
+    <table>
+      <thead>
+        <tr><th class="num">P(IA)</th><th>Función</th><th>Archivo</th><th class="num">Líneas</th><th class="num">Complejidad</th><th class="num">Inserción</th><th>Conceptos</th></tr>
+      </thead>
+      <tbody>
+        {% for f in fragmentos %}
+          <tr>
+            <td class="num{% if f.p_ia >= analisis.theta %} alto{% endif %}">{{ f.p_ia|floatformat:2 }}</td>
+            <td>
+              <details>
+                <summary><code>{{ f.nombre }}</code></summary>
+                <pre><code>{{ f.codigo }}</code></pre>
+              </details>
+            </td>
+            <td>{{ f.archivo }}:{{ f.linea_inicio }}</td>
+            <td class="num">{{ f.lineas }}</td>
+            <td class="num">{{ f.complejidad }}</td>
+            <td class="num">{% if f.insercion_commit is not None %}{{ f.insercion_commit }}{% else %}—{% endif %}</td>
+            <td>{{ f.nombres_conceptos|join:", "|default:"—" }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7">No se encontraron funciones.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,39 @@
+{% load static %}<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}Prototipo IDC{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/estilos.css' %}">
+</head>
+<body>
+  <header class="barra">
+    <a class="marca" href="{% url 'analisis:lista' %}">Prototipo IDC</a>
+    <nav>
+      <a href="{% url 'analisis:lista' %}">Participantes</a>
+      <a href="{% url 'analisis:configuracion' %}">Configuración</a>
+      <a href="{% url 'analisis:exportar' %}">Exportar CSV</a>
+    </nav>
+  </header>
+
+  {% if modelo is None %}
+    <p class="aviso aviso-error">
+      No hay modelo entrenado. Ejecuta <code>scripts/crear_corpus_demo.py</code>
+      y <code>scripts/entrenar_modelo.py</code> antes de analizar.
+    </p>
+  {% elif modelo.es_demo %}
+    <p class="aviso">
+      <strong>Modelo de demostración ({{ modelo.version }}).</strong>
+      Se entrenó con un corpus sintético: los valores de P(IA) y del IDC
+      solo prueban el flujo y no dicen nada real sobre un estudiante.
+    </p>
+  {% endif %}
+
+  <main>
+    {% for mensaje in messages %}
+      <p class="mensaje mensaje-{{ mensaje.tags }}">{{ mensaje }}</p>
+    {% endfor %}
+    {% block contenido %}{% endblock %}
+  </main>
+</body>
+</html>
