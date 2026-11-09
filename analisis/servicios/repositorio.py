@@ -124,6 +124,14 @@ class CarpetaLocal:
     def insercion_commit(self, archivo: str, inicio: int, fin: int) -> int | None:
         return None
 
+    def commits_desde(self, base: str) -> set[str]:
+        raise ErrorRepositorio(
+            "Sin historial Git no se puede aislar el código nuevo desde el análisis pre."
+        )
+
+    def commit_de(self, archivo: str, inicio: int, fin: int) -> str | None:
+        return None
+
 
 class RepositorioGit:
     """Analiza el contenido de HEAD, no los cambios sin confirmar."""
@@ -199,13 +207,25 @@ class RepositorioGit:
             self._commits_de_archivo[archivo] = commits
         return self._commits_de_archivo[archivo]
 
+    def commit_de(self, archivo: str, inicio: int, fin: int) -> str | None:
+        """Commit que aportó la mayoría de las líneas del fragmento."""
+        lineas = self._commits_por_linea(archivo)[inicio - 1 : fin]
+        return Counter(lineas).most_common(1)[0][0] if lineas else None
+
     def insercion_commit(self, archivo: str, inicio: int, fin: int) -> int | None:
         """Tamaño del commit que aportó la mayoría de las líneas del fragmento."""
-        lineas = self._commits_por_linea(archivo)[inicio - 1 : fin]
-        if not lineas:
-            return None
-        commit = Counter(lineas).most_common(1)[0][0]
-        return self._cargar_inserciones().get(commit)
+        commit = self.commit_de(archivo, inicio, fin)
+        return None if commit is None else self._cargar_inserciones().get(commit)
+
+    def commits_desde(self, base: str) -> set[str]:
+        """Commits posteriores a `base` que llegan a HEAD."""
+        try:
+            return set(self._repo.git.rev_list(f"{base}..HEAD").split())
+        except GitCommandError as error:
+            raise ErrorRepositorio(
+                "El commit del análisis pre ya no está en el repositorio: pudo "
+                "reescribirse el historial."
+            ) from error
 
 
 def _abrir_local(ruta: Path) -> tuple[CarpetaLocal | RepositorioGit, Repo | None]:

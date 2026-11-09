@@ -50,13 +50,23 @@ class Participante(models.Model):
     def ultimo_analisis(self):
         return self.analisis.first()
 
+    @property
+    def fase_siguiente(self):
+        """El primer análisis es el pre; una vez asignado, todos son post."""
+        return Analisis.POST if hasattr(self, "asignacion") else Analisis.PRE
+
 
 class Analisis(models.Model):
     """Una corrida. Guarda los parámetros usados para poder reproducirla."""
 
+    PRE = "pre"
+    POST = "post"
+    FASES = [(PRE, "Pre"), (POST, "Post")]
+
     participante = models.ForeignKey(
         Participante, on_delete=models.CASCADE, related_name="analisis",
     )
+    fase = models.CharField(max_length=4, choices=FASES, default=PRE)
     fecha = models.DateTimeField(auto_now_add=True)
     theta = models.FloatField()
     lambda_valor = models.FloatField()
@@ -82,6 +92,43 @@ class Analisis(models.Model):
     @property
     def intervalo(self):
         return intervalo_wilson(self.n_ia, self.n_fragmentos)
+
+
+class Asignacion(models.Model):
+    """Reparto entre refuerzo y control de un participante.
+
+    Se sortea en el análisis pre y no cambia después. Para repetir un
+    participante, por ejemplo tras cambiar de modelo, se borra desde el admin.
+    """
+
+    participante = models.OneToOneField(
+        Participante, on_delete=models.CASCADE, related_name="asignacion",
+    )
+    analisis_base = models.ForeignKey(
+        Analisis, on_delete=models.RESTRICT, related_name="+",
+    )
+    semilla = models.PositiveIntegerField()
+    debiles = models.JSONField(default=list)
+    reforzados = models.JSONField(default=list)
+    control = models.JSONField(default=list)
+    comparable = models.BooleanField(default=False)
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "asignación"
+        verbose_name_plural = "asignaciones"
+
+    def __str__(self):
+        return f"{self.participante}"
+
+    def condicion(self, concepto):
+        if concepto in self.reforzados:
+            return "reforzado"
+        return "control" if concepto in self.control else "sin_asignar"
+
+    @property
+    def nombres_control(self):
+        return [NOMBRES_CONCEPTOS[c] for c in self.control]
 
 
 class ResultadoConcepto(models.Model):

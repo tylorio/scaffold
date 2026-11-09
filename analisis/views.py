@@ -5,7 +5,12 @@ from django.views.decorators.http import require_POST
 
 from .forms import ConfiguracionForm, ParticipanteForm
 from .models import Configuracion, Participante
-from .persistencia import RepositorioSinFunciones, ejecutar_analisis, exportar_csv
+from .persistencia import (
+    RepositorioSinFunciones,
+    ejecutar_analisis,
+    exportar_csv,
+    exportar_csv_analisis,
+)
 from .servicios.clasificador import ModeloNoDisponible
 from .servicios.conceptos import NOMBRES_CONCEPTOS
 from .servicios.repositorio import ErrorRepositorio, OrigenInvalido
@@ -18,7 +23,10 @@ def lista_participantes(request):
         messages.success(request, f"Participante {participante.codigo} registrado.")
         return redirect("analisis:lista")
     return render(request, "analisis/lista.html", {
-        "participantes": Participante.objects.prefetch_related("analisis"),
+        "participantes": (
+            Participante.objects.select_related("asignacion")
+            .prefetch_related("analisis")
+        ),
         "form": form,
     })
 
@@ -34,7 +42,8 @@ def analizar(request, codigo):
         messages.error(request, str(error))
         return redirect("analisis:lista")
     messages.success(
-        request, f"Análisis completado: {analisis.n_fragmentos} fragmentos."
+        request,
+        f"Análisis {analisis.fase} completado: {analisis.n_fragmentos} fragmentos.",
     )
     if analisis.archivos_con_error:
         messages.warning(
@@ -48,7 +57,11 @@ def analizar(request, codigo):
 def detalle_participante(request, codigo):
     participante = get_object_or_404(Participante, codigo=codigo)
     analisis = participante.ultimo_analisis
-    contexto = {"participante": participante, "analisis": analisis}
+    contexto = {
+        "participante": participante,
+        "analisis": analisis,
+        "asignacion": getattr(participante, "asignacion", None),
+    }
     if analisis is not None:
         conceptos = list(analisis.conceptos.all())
         contexto.update({
@@ -76,7 +89,15 @@ def configuracion(request):
     })
 
 
-def exportar(request):
-    respuesta = HttpResponse(exportar_csv(), content_type="text/csv; charset=utf-8")
-    respuesta["Content-Disposition"] = 'attachment; filename="participantes_idc.csv"'
+def respuesta_csv(contenido, nombre):
+    respuesta = HttpResponse(contenido, content_type="text/csv; charset=utf-8")
+    respuesta["Content-Disposition"] = f'attachment; filename="{nombre}"'
     return respuesta
+
+
+def exportar(request):
+    return respuesta_csv(exportar_csv(), "participantes_idc.csv")
+
+
+def exportar_analisis(request):
+    return respuesta_csv(exportar_csv_analisis(), "analisis_idc.csv")

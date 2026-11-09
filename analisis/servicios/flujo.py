@@ -33,7 +33,13 @@ def analizar_repositorio(
     modelo: ModeloCargado,
     parametros: Parametros = Parametros(),
     base: Path | None = None,
+    desde_commit: str | None = None,
 ) -> ResultadoAnalisis:
+    """Analiza el repositorio; con `desde_commit`, solo lo escrito después de él.
+
+    Un análisis post sobre todo el repositorio repetiría el código del pre y el
+    IDC casi no podría cambiar.
+    """
     with abrir_repositorio(origen, base) as repositorio:
         extraidos: list[Fragmento] = []
         con_error: list[str] = []
@@ -44,6 +50,13 @@ def analizar_repositorio(
                 )
             except (ErrorSintaxis, UnicodeDecodeError, SyntaxError):
                 con_error.append(archivo.ruta)
+
+        if desde_commit:
+            nuevos = repositorio.commits_desde(desde_commit)
+            extraidos = [
+                f for f in extraidos
+                if repositorio.commit_de(f.archivo, f.linea_inicio, f.linea_fin) in nuevos
+            ]
 
         fragmentos = [f for f in extraidos if not f.trivial]
         inserciones = [

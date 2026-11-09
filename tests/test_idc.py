@@ -1,3 +1,5 @@
+from collections import Counter
+
 import pytest
 
 from analisis.servicios.conceptos import ESTRUCTURAS, EXCEPCIONES, RECURSION
@@ -8,6 +10,7 @@ from analisis.servicios.idc import (
     Parametros,
     calcular_idc,
     intervalo_wilson,
+    repartir_conceptos,
 )
 from analisis.servicios.idc import calcular_resultados as calcular
 
@@ -106,8 +109,7 @@ def test_fragmento_con_varios_conceptos_cuenta_en_cada_uno():
 def test_repositorio_vacio_no_falla():
     resultado = calcular_resultados([])
     assert resultado.idc_global is None
-    assert resultado.reforzados == []
-    assert len(resultado.no_reforzados) == 3
+    assert resultado.debiles == []
 
 
 # Conceptos débiles
@@ -149,81 +151,70 @@ def test_lambda_y_m_son_configurables():
     ].estado == DEBIL
 
 
-# Selección de conceptos a reforzar
+# Reparto de conceptos
 
-def test_tres_debiles_refuerza_los_dos_de_mayor_idc():
-    resultado = calcular_resultados(
-        fragmentos_de(RECURSION, 3, 1)      # 0.75
-        + fragmentos_de(ESTRUCTURAS, 4, 0)  # 1.00
-        + fragmentos_de(EXCEPCIONES, 2, 2)  # 0.50
+@pytest.mark.parametrize("debiles", [
+    [RECURSION, ESTRUCTURAS, EXCEPCIONES],
+    [EXCEPCIONES, RECURSION, ESTRUCTURAS],
+])
+def test_tres_debiles_refuerza_dos_y_deja_uno_de_control(debiles):
+    reparto = repartir_conceptos(debiles, semilla=1)
+    assert len(reparto.reforzados) == 2
+    assert len(reparto.control) == 1
+    assert set(reparto.reforzados) | set(reparto.control) == set(debiles)
+    assert reparto.comparable
+
+
+def test_dos_debiles_refuerza_uno_para_que_el_control_tambien_sea_debil():
+    reparto = repartir_conceptos([RECURSION, EXCEPCIONES], semilla=1)
+    assert len(reparto.reforzados) == 1
+    assert len(reparto.control) == 1
+    assert set(reparto.reforzados) | set(reparto.control) == {RECURSION, EXCEPCIONES}
+    assert reparto.comparable
+
+
+def test_un_debil_se_refuerza_pero_no_es_comparable():
+    reparto = repartir_conceptos([RECURSION], semilla=1)
+    assert reparto.reforzados == (RECURSION,)
+    assert reparto.control == ()
+    assert not reparto.comparable
+
+
+def test_ningun_debil_no_reparte_nada():
+    reparto = repartir_conceptos([], semilla=1)
+    assert (reparto.reforzados, reparto.control) == ((), ())
+    assert not reparto.comparable
+
+
+def test_la_misma_semilla_reproduce_el_reparto_sin_importar_el_orden():
+    debiles = [RECURSION, ESTRUCTURAS, EXCEPCIONES]
+    for semilla in range(30):
+        assert repartir_conceptos(debiles, semilla) == repartir_conceptos(
+            list(reversed(debiles)), semilla
+        )
+
+
+def test_el_control_sale_al_azar_y_cualquier_concepto_puede_serlo():
+    """Si dependiera del IDC, los reforzados mejorarían por regresión a la media."""
+    controles = {
+        repartir_conceptos([RECURSION, ESTRUCTURAS, EXCEPCIONES], semilla).control
+        for semilla in range(100)
+    }
+    assert controles == {(RECURSION,), (ESTRUCTURAS,), (EXCEPCIONES,)}
+
+
+def test_el_reparto_esta_equilibrado():
+    conteo = Counter(
+        repartir_conceptos([RECURSION, ESTRUCTURAS], semilla).control
+        for semilla in range(1000)
     )
-    assert all(c.estado == DEBIL for c in resultado.conceptos)
-    assert set(resultado.reforzados) == {ESTRUCTURAS, RECURSION}
-    assert resultado.no_reforzados == [EXCEPCIONES]
+    assert 400 < conteo[(RECURSION,)] < 600
 
 
-def test_tres_debiles_con_empate_total_deja_uno_sin_reforzar_y_es_reproducible():
-    fragmentos = (
+def test_resultado_lista_los_conceptos_debiles():
+    resultado = calcular_resultados(
         fragmentos_de(RECURSION, 3, 0)
-        + fragmentos_de(ESTRUCTURAS, 3, 0)
-        + fragmentos_de(EXCEPCIONES, 3, 0)
+        + fragmentos_de(ESTRUCTURAS, 0, 3)
+        + fragmentos_de(EXCEPCIONES, 2, 0)
     )
-    primera = calcular_resultados(fragmentos)
-    segunda = calcular_resultados(list(reversed(fragmentos)))
-    assert len(primera.reforzados) == 2
-    assert len(primera.no_reforzados) == 1
-    assert primera.reforzados == segunda.reforzados
-
-
-def test_empate_de_idc_prefiere_el_concepto_con_mas_fragmentos():
-    resultado = calcular_resultados(
-        fragmentos_de(RECURSION, 3, 0)
-        + fragmentos_de(ESTRUCTURAS, 6, 0)
-        + fragmentos_de(EXCEPCIONES, 5, 0)
-    )
-    assert resultado.no_reforzados == [RECURSION]
-
-
-def test_dos_debiles_se_refuerzan_ambos():
-    resultado = calcular_resultados(
-        fragmentos_de(RECURSION, 4, 0)
-        + fragmentos_de(ESTRUCTURAS, 3, 1)
-        + fragmentos_de(EXCEPCIONES, 0, 4)
-    )
-    assert set(resultado.reforzados) == {RECURSION, ESTRUCTURAS}
-    assert resultado.no_reforzados == [EXCEPCIONES]
-
-
-def test_un_debil_se_refuerza_solo_ese():
-    resultado = calcular_resultados(
-        fragmentos_de(RECURSION, 4, 0)
-        + fragmentos_de(ESTRUCTURAS, 0, 4)
-        + fragmentos_de(EXCEPCIONES, 0, 4)
-    )
-    assert resultado.reforzados == [RECURSION]
-
-
-def test_ningun_debil_no_refuerza_nada():
-    resultado = calcular_resultados(
-        fragmentos_de(RECURSION, 0, 4) + fragmentos_de(ESTRUCTURAS, 0, 4)
-    )
-    assert resultado.reforzados == []
-
-
-def test_datos_insuficientes_nunca_se_refuerza():
-    resultado = calcular_resultados(
-        fragmentos_de(RECURSION, 2, 0) + fragmentos_de(ESTRUCTURAS, 4, 0)
-    )
-    assert resultado.reforzados == [ESTRUCTURAS]
-
-
-@pytest.mark.parametrize("altos", [(4, 4, 4), (4, 3, 2), (3, 3, 3), (4, 0, 4)])
-def test_siempre_queda_al_menos_un_concepto_sin_reforzar(altos):
-    a, b, c = altos
-    resultado = calcular_resultados(
-        fragmentos_de(RECURSION, a, 4 - a if a < 4 else 0)
-        + fragmentos_de(ESTRUCTURAS, b, 4 - b if b < 4 else 0)
-        + fragmentos_de(EXCEPCIONES, c, 4 - c if c < 4 else 0)
-    )
-    assert len(resultado.reforzados) <= 2
-    assert len(resultado.no_reforzados) >= 1
+    assert resultado.debiles == [RECURSION]

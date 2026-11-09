@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import math
+import random
 from dataclasses import dataclass
 from typing import Iterable
 
@@ -36,7 +37,6 @@ class ResultadoConcepto:
     n_ia: int
     idc: float | None
     estado: str
-    reforzado: bool = False
 
 
 @dataclass(frozen=True)
@@ -47,12 +47,15 @@ class ResultadoIDC:
     conceptos: tuple[ResultadoConcepto, ...]
 
     @property
-    def reforzados(self) -> list[str]:
-        return [c.concepto for c in self.conceptos if c.reforzado]
+    def debiles(self) -> list[str]:
+        return [c.concepto for c in self.conceptos if c.estado == DEBIL]
 
-    @property
-    def no_reforzados(self) -> list[str]:
-        return [c.concepto for c in self.conceptos if not c.reforzado]
+
+@dataclass(frozen=True)
+class Reparto:
+    reforzados: tuple[str, ...]
+    control: tuple[str, ...]
+    comparable: bool  # hay reforzado y control, ambos débiles
 
 
 def calcular_idc(probabilidades: Iterable[float], theta: float) -> float | None:
@@ -94,19 +97,26 @@ def evaluar_concepto(
     return ResultadoConcepto(concepto, n_fragmentos, n_ia, idc, estado)
 
 
-def seleccionar_reforzados(resultados: Iterable[ResultadoConcepto]) -> list[str]:
-    """Elige hasta 2 conceptos débiles, siempre con al menos 1 sin reforzar.
+def repartir_conceptos(debiles: Iterable[str], semilla: int) -> Reparto:
+    """Reparte al azar los conceptos débiles entre refuerzo y control.
 
-    Los empates se rompen por más fragmentos y luego por el orden de CONCEPTOS,
-    para que la selección sea reproducible.
+    El control también tiene que ser débil y salir por sorteo: comparar contra un
+    concepto no débil mide conceptos distintos, y reforzar siempre los IDC más
+    altos haría que mejoraran solo por regresión a la media.
+
+    Con un único concepto débil se refuerza igual, por el bien del estudiante, pero
+    no hay con qué compararlo y queda fuera de la comparación principal.
     """
-    resultados = list(resultados)
-    debiles = [r for r in resultados if r.estado == DEBIL]
-    debiles.sort(
-        key=lambda r: (-r.idc, -r.n_fragmentos, CONCEPTOS.index(r.concepto))
+    candidatos = [c for c in CONCEPTOS if c in set(debiles)]
+    if len(candidatos) < 2:
+        return Reparto(tuple(candidatos), (), False)
+    cantidad = min(MAXIMO_REFORZADOS, len(candidatos) - 1)
+    elegidos = set(random.Random(semilla).sample(candidatos, cantidad))
+    return Reparto(
+        reforzados=tuple(c for c in candidatos if c in elegidos),
+        control=tuple(c for c in candidatos if c not in elegidos),
+        comparable=True,
     )
-    limite = min(MAXIMO_REFORZADOS, len(resultados) - 1)
-    return [r.concepto for r in debiles[:limite]]
 
 
 def calcular_resultados(
@@ -117,21 +127,13 @@ def calcular_resultados(
     fragmentos = [(p, set(conceptos)) for p, conceptos in fragmentos]
     probabilidades = [p for p, _ in fragmentos]
 
-    evaluados = [
+    conceptos = tuple(
         evaluar_concepto(
             concepto,
             [p for p, conceptos in fragmentos if concepto in conceptos],
             parametros,
         )
         for concepto in CONCEPTOS
-    ]
-    reforzados = seleccionar_reforzados(evaluados)
-    conceptos = tuple(
-        ResultadoConcepto(
-            r.concepto, r.n_fragmentos, r.n_ia, r.idc, r.estado,
-            reforzado=r.concepto in reforzados,
-        )
-        for r in evaluados
     )
     return ResultadoIDC(
         idc_global=calcular_idc(probabilidades, parametros.theta),

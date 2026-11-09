@@ -52,18 +52,23 @@ valor por defecto (m = 5), recursión y excepciones quedarían como «datos
 insuficientes», porque solo tienen 4 fragmentos.
 
 1. En **Participantes**, registra el código `P01` con el repositorio `demo_repo`.
-2. Pulsa **Analizar repositorio**.
+2. Pulsa **Analizar repositorio (pre)**. Este primer análisis sortea la asignación.
 3. En el detalle de `P01` verás 16 fragmentos (2 triviales omitidos), un IDC
-   global de 0,44 y esta asignación:
+   global de 0,44 y esta evaluación:
 
-   | Concepto | Fragmentos | IDC | IC 95 % | Estado | Refuerzo |
+   | Concepto | Fragmentos | IDC | IC 95 % | Estado | Asignación |
    |---|---:|---:|---:|---|---|
-   | Recursión | 4 | 1,00 | 0,51 – 1,00 | Débil | Reforzado |
-   | Estructuras de datos | 8 | 0,50 | 0,22 – 0,78 | Débil | Reforzado |
-   | Manejo de excepciones | 4 | 0,00 | 0,00 – 0,49 | No débil | No reforzado (control) |
+   | Recursión | 4 | 1,00 | 0,51 – 1,00 | Débil | Sorteo |
+   | Estructuras de datos | 8 | 0,50 | 0,22 – 0,78 | Débil | Sorteo |
+   | Manejo de excepciones | 4 | 0,00 | 0,00 – 0,49 | No débil | Sin asignar |
 
-   Los valores exactos pueden variar un poco con otra versión de scikit-learn.
-4. Abre **Abrir refuerzo** en Recursión y pega esta solución en «Suma de dígitos»:
+   Hay 2 conceptos débiles: uno sale reforzado y el otro queda de control, por
+   sorteo. Los valores exactos pueden variar un poco con otra versión de
+   scikit-learn.
+4. Pulsa **Abrir refuerzo** y pega la solución del concepto que te tocó. Debe
+   mostrar **4 de 4 pruebas pasadas**.
+
+   Recursión, en «Suma de dígitos»:
 
    ```python
    def suma_digitos(n):
@@ -72,12 +77,25 @@ insuficientes», porque solo tienen 4 fragmentos.
        return n % 10 + suma_digitos(n // 10)
    ```
 
-   Debe mostrar **4 de 4 pruebas pasadas**.
-5. Prueba el control: abre `/refuerzo/P01/excepciones/`. Debe responder
+   Estructuras de datos, en «Elementos únicos»:
+
+   ```python
+   def unicos(lista):
+       vistos = []
+       for x in lista:
+           if x not in vistos:
+               vistos.append(x)
+       return vistos
+   ```
+5. Prueba el control: abre `/refuerzo/P01/recursion/` o
+   `/refuerzo/P01/estructuras_datos/`, según cuál quedó de control. Debe responder
    «Refuerzo no disponible».
-6. Para ver el caso de 3 conceptos débiles, pon λ = 0 en **Configuración** y
-   vuelve a analizar: se refuerzan 2 y excepciones queda sin reforzar.
-7. Descarga los datos con **Exportar CSV**.
+6. Pulsa **Analizar repositorio (post)**. Debe avisar de que no hay funciones
+   nuevas: el post solo mide lo escrito después del pre.
+7. Para ver el caso de 3 conceptos débiles, pon λ = 0 en **Configuración** y
+   registra otro participante: se refuerzan 2 y el tercero queda de control. La
+   asignación de `P01` no cambia, porque está congelada.
+8. Descarga los datos con los enlaces **CSV** del menú.
 
 ## Pruebas
 
@@ -122,8 +140,9 @@ analisis/
     repositorio.py     Lectura con PyDriller y GitPython
     flujo.py           Orquestación del análisis
     exportacion.py     CSV
-  persistencia.py    Une los servicios con la base de datos
+  persistencia.py    Une los servicios con la base de datos, y hace el sorteo
 refuerzo/
+  persistencia.py    Exporta intentos y aperturas
   servicios/
     contenido.py       Plantillas: explicaciones, ejemplos y ejercicios
     ejecutor.py        Lanza el subproceso con tiempo límite
@@ -149,13 +168,24 @@ tests/               Pruebas con pytest
   `n_autores`; los correos no se guardan.
 - **Concepto débil:** IDC ≥ λ y al menos m fragmentos. Con menos de m se marca
   «datos insuficientes» y no se calcula.
-- **Refuerzo:** como máximo los 2 conceptos débiles de mayor IDC; siempre queda
-  al menos 1 sin reforzar.
-- **Empates:** gana el concepto con más fragmentos y, si persiste, el orden fijo
-  recursión, estructuras, excepciones.
-- **Control:** la página de refuerzo de un concepto no asignado responde 403.
+- **Asignación:** se sortea entre los conceptos débiles en el análisis pre y queda
+  congelada, con su semilla. Con 3 débiles se refuerzan 2 y 1 queda de control; con
+  2 débiles, 1 y 1. Con 1 débil se refuerza, pero el participante queda fuera de la
+  comparación principal (`comparable = 0`). Los conceptos no débiles quedan sin
+  asignar.
+- **Fases:** el primer análisis es `pre` y los siguientes son `post`. Un `post` solo
+  mide las funciones cuya mayoría de líneas se escribió después del commit del pre,
+  y necesita historial Git.
+- **Repetir un participante:** borra su asignación desde el admin. El siguiente
+  análisis vuelve a ser `pre`. Hazlo con todos si cambias del modelo demo al real.
+- **Control:** la página de refuerzo de un concepto no reforzado responde 403.
 - **Cada análisis guarda** θ, λ, m y la versión del modelo. Volver a analizar crea
-  un análisis nuevo y conserva los anteriores. La interfaz y el CSV usan el último.
+  un análisis nuevo y conserva los anteriores. La interfaz y el CSV de participantes
+  usan el último.
+- **Datos para el estudio:** el **CSV análisis** trae una fila por análisis y
+  concepto, con su fase y condición; es la tabla para comparar pre y post. El **CSV
+  intentos** trae cada envío numerado y el **CSV aperturas**, cada vez que se abrió
+  el material. No incluyen código, rutas, URLs ni hashes de commit.
 - **Sin funciones:** si el repositorio no tiene funciones Python se avisa y no se
   guarda nada, para no ocultar un análisis válido anterior.
 - **Tamaño de inserción:** cuenta las líneas `.py` añadidas en el commit, sin las
@@ -202,8 +232,8 @@ Por eso `db.sqlite3` y `datos/` están en `.gitignore`.
 - Solo se detecta recursión directa. No se detecta la mutua (`a` llama a `b` y
   `b` a `a`), ni `self.izquierda.insertar(x)` en un árbol.
 - `return a, b` y el desempaquetado no cuentan como uso de tuplas.
-- El código inicial que entrega el docente no se descuenta: si existe, cuenta como
-  del estudiante.
+- El estudio supone tareas que empiezan desde cero: un código inicial del docente
+  contaría como del estudiante.
 - Un archivo de tarea llamado `test_algo.py` se omite por su nombre.
 
 **Sistema**
@@ -212,6 +242,6 @@ Por eso `db.sqlite3` y `datos/` están en `.gitignore`.
   colgado no tiene tiempo límite.
 - Se analiza solo HEAD y se omiten carpetas como `venv`, `build` y `migrations`.
 - Una función con el mismo commit de otras recibe el mismo tamaño de inserción.
-- Los intentos quedan ligados a su análisis: tras volver a analizar, la página de
-  refuerzo aparece sin intentos previos, aunque siguen en la base de datos.
+- Reescribir el historial (`push --force`) borra el commit del pre y el análisis
+  post dará error.
 - Las pruebas corren en Windows. Se probó con Python 3.12 y 3.13, no con 3.11.

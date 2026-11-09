@@ -1,6 +1,19 @@
 from django.db import models
 
-from analisis.models import Analisis, ResultadoConcepto
+from analisis.models import Analisis, Participante, ResultadoConcepto
+
+
+class AperturaRefuerzo(models.Model):
+    """Cada vez que un participante abre el material: mide la exposición real."""
+
+    participante = models.ForeignKey(
+        Participante, on_delete=models.CASCADE, related_name="aperturas",
+    )
+    concepto = models.CharField(max_length=20, choices=ResultadoConcepto.CONCEPTOS)
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["fecha", "id"]
 
 
 class IntentoEjercicio(models.Model):

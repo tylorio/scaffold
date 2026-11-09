@@ -1,4 +1,9 @@
-"""Filas del CSV para el análisis estadístico. Solo contiene códigos anónimos."""
+"""CSV para el análisis estadístico.
+
+Solo llevan códigos anónimos. Tampoco incluyen el código de las soluciones, que
+puede traer nombres en comentarios, ni los hashes de commit, que en un repositorio
+público llevan directo a su autor.
+"""
 from __future__ import annotations
 
 import csv
@@ -9,10 +14,24 @@ from typing import Iterable
 from .conceptos import CONCEPTOS
 from .idc import intervalo_wilson
 
+COLUMNAS_ANALISIS = (
+    "codigo", "analisis", "fase", "fecha", "concepto", "condicion", "comparable",
+    "semilla", "n_fragmentos", "n_ia", "idc", "idc_ic_inf", "idc_ic_sup", "estado",
+    "n_autores", "theta", "lambda", "m", "modelo_version", "modelo_es_demo",
+)
+COLUMNAS_INTENTOS = (
+    "codigo", "concepto", "condicion", "ejercicio", "intento", "fecha", "pasados",
+    "total", "usa_concepto", "tuvo_error",
+)
+COLUMNAS_APERTURAS = ("codigo", "concepto", "condicion", "fecha")
+
 
 @dataclass(frozen=True)
 class RegistroParticipante:
     codigo: str
+    fase: str = ""
+    comparable: bool | None = None
+    control: tuple = ()
     fecha: str = ""
     n_fragmentos: int | None = None
     n_ia: int | None = None
@@ -29,8 +48,8 @@ class RegistroParticipante:
 
 def _columnas() -> list[str]:
     columnas = [
-        "codigo", "fecha_analisis", "n_fragmentos", "n_triviales", "n_autores",
-        "idc_global", "idc_global_ic_inf", "idc_global_ic_sup", "theta",
+        "codigo", "fase", "comparable", "fecha_analisis", "n_fragmentos",
+        "n_triviales", "n_autores", "idc_global", "idc_global_ic_inf", "idc_global_ic_sup", "theta",
         "lambda", "m", "modelo_version", "modelo_es_demo",
     ]
     for concepto in CONCEPTOS:
@@ -38,7 +57,7 @@ def _columnas() -> list[str]:
             f"idc_{concepto}", f"idc_{concepto}_ic_inf", f"idc_{concepto}_ic_sup",
             f"n_{concepto}", f"estado_{concepto}", f"reforzado_{concepto}",
         ]
-    return columnas + ["conceptos_reforzados"]
+    return columnas + ["conceptos_reforzados", "conceptos_control"]
 
 
 def _numero(valor: float | None) -> float | str:
@@ -59,6 +78,9 @@ def _intervalo(prefijo: str, idc: float | None, n_ia: int | None, n: int | None)
 def _fila(registro: RegistroParticipante) -> dict:
     fila = {
         "codigo": registro.codigo,
+        "fase": registro.fase,
+        "comparable": "" if registro.comparable is None else int(registro.comparable),
+        "conceptos_control": ";".join(registro.control),
         "fecha_analisis": registro.fecha,
         "n_fragmentos": _entero(registro.n_fragmentos),
         "n_triviales": _entero(registro.n_triviales),
@@ -90,9 +112,26 @@ def _fila(registro: RegistroParticipante) -> dict:
     return fila
 
 
-def generar_csv(registros: Iterable[RegistroParticipante]) -> str:
+def csv_de_filas(columnas: Iterable[str], filas: Iterable[dict]) -> str:
     salida = io.StringIO(newline="")
-    escritor = csv.DictWriter(salida, fieldnames=_columnas(), restval="")
+    escritor = csv.DictWriter(salida, fieldnames=list(columnas), restval="")
     escritor.writeheader()
-    escritor.writerows(_fila(r) for r in registros)
+    escritor.writerows(filas)
     return salida.getvalue()
+
+
+def generar_csv(registros: Iterable[RegistroParticipante]) -> str:
+    """Una fila por participante, con su último análisis."""
+    return csv_de_filas(_columnas(), (_fila(r) for r in registros))
+
+
+def generar_csv_analisis(filas: Iterable[dict]) -> str:
+    """Una fila por análisis y concepto: es la tabla para comparar pre y post."""
+    return csv_de_filas(COLUMNAS_ANALISIS, (
+        {
+            **fila,
+            "idc": _numero(fila["idc"]),
+            **_intervalo("idc", fila["idc"], fila["n_ia"], fila["n_fragmentos"]),
+        }
+        for fila in filas
+    ))

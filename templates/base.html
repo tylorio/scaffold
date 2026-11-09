@@ -12,7 +12,10 @@
     <nav>
       <a href="{% url 'analisis:lista' %}">Participantes</a>
       <a href="{% url 'analisis:configuracion' %}">Configuración</a>
-      <a href="{% url 'analisis:exportar' %}">Exportar CSV</a>
+      <a href="{% url 'analisis:exportar' %}">CSV participantes</a>
+      <a href="{% url 'analisis:exportar_analisis' %}">CSV análisis</a>
+      <a href="{% url 'refuerzo:exportar_intentos' %}">CSV intentos</a>
+      <a href="{% url 'refuerzo:exportar_aperturas' %}">CSV aperturas</a>
     </nav>
   </header>
 

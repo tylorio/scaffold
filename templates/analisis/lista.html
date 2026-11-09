@@ -20,7 +20,7 @@
               <td class="acciones">
                 <form method="post" action="{% url 'analisis:analizar' participante.codigo %}">
                   {% csrf_token %}
-                  <button type="submit">Analizar repositorio</button>
+                  <button type="submit">Analizar repositorio ({{ participante.fase_siguiente }})</button>
                 </form>
               </td>
             </tr>

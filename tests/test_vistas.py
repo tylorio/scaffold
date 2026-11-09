@@ -4,15 +4,28 @@ import io
 from pathlib import Path
 
 import pytest
+from django.db.models import RestrictedError
 from django.urls import reverse
 from git import Actor, Repo
 
-from analisis.models import Analisis, Configuracion, Participante, ResultadoConcepto
-from analisis.servicios.conceptos import ESTRUCTURAS, EXCEPCIONES, RECURSION
+from analisis.models import (
+    Analisis,
+    Asignacion,
+    Configuracion,
+    Participante,
+    ResultadoConcepto,
+)
+from analisis.servicios.conceptos import (
+    ESTRUCTURAS,
+    EXCEPCIONES,
+    NOMBRES_CONCEPTOS,
+    RECURSION,
+)
 from analisis.servicios.entrenamiento import Muestra, entrenar_modelo, guardar_modelo
-from analisis.servicios.idc import Parametros
+from analisis.servicios.idc import Parametros, repartir_conceptos
 from crear_corpus_demo import generar_corpus
-from refuerzo.models import IntentoEjercicio
+from refuerzo.models import AperturaRefuerzo, IntentoEjercicio
+from refuerzo.servicios.contenido import PLANTILLAS
 
 pytestmark = pytest.mark.django_db
 
@@ -154,7 +167,7 @@ def test_analizar_sin_funciones_avisa_y_no_guarda(client, tmp_path):
     html = respuesta.content.decode()
 
     assert "No se encontraron funciones Python" in html
-    assert "Análisis completado" not in html
+    assert "completado" not in html
     assert participante.ultimo_analisis is None
 
 
@@ -276,12 +289,269 @@ def test_rechaza_configuracion_fuera_de_rango(client):
     assert Configuracion.obtener().theta == 0.5
 
 
+# Asignación y fases
+
+@pytest.fixture
+def todo_debil():
+    """θ = 0 hace que todo cuente como IA, y m = 1 evalúa los tres conceptos."""
+    config = Configuracion.obtener()
+    config.theta, config.m = 0, 1
+    config.save()
+
+
+def agregar_funcion(repositorio, nombre="tarea_nueva"):
+    ruta = repositorio / f"{nombre}.py"
+    ruta.write_text(f"def {nombre}(l):\n    l.append(1)\n", encoding="utf-8")
+    with Repo(repositorio) as repo:
+        repo.index.add([ruta.name])
+        autor = Actor("Persona Real", "persona@example.invalid")
+        repo.index.commit(nombre, author=autor, committer=autor)
+
+
+def analizar(client, codigo="P01"):
+    return client.post(reverse("analisis:analizar", args=[codigo]), follow=True)
+
+
+def asignacion_de(codigo="P01"):
+    return Asignacion.objects.get(participante__codigo=codigo)
+
+
+def test_primer_analisis_es_pre_y_crea_la_asignacion(client, participante, todo_debil):
+    assert participante.fase_siguiente == "pre"
+    analizar(client)
+
+    analisis = participante.ultimo_analisis
+    asignacion = asignacion_de()
+    assert analisis.fase == "pre"
+    assert asignacion.analisis_base == analisis
+    assert len(asignacion.reforzados) == 2
+    assert len(asignacion.control) == 1
+    assert asignacion.comparable
+    assert asignacion.debiles == [RECURSION, ESTRUCTURAS, EXCEPCIONES]
+    guardados = {c.concepto for c in analisis.conceptos.all() if c.reforzado}
+    assert guardados == set(asignacion.reforzados)
+
+
+def test_la_semilla_guardada_reproduce_la_asignacion(client, participante, todo_debil):
+    analizar(client)
+    asignacion = asignacion_de()
+    reparto = repartir_conceptos(asignacion.debiles, asignacion.semilla)
+    assert list(reparto.reforzados) == asignacion.reforzados
+    assert list(reparto.control) == asignacion.control
+
+
+def test_post_conserva_la_asignacion_aunque_cambien_los_debiles(
+    client, participante, repositorio, todo_debil
+):
+    analizar(client)
+    asignacion = asignacion_de()
+    agregar_funcion(repositorio)
+    config = Configuracion.obtener()
+    config.theta = 1  # ya nada cuenta como IA: ningún concepto sería débil
+    config.save()
+
+    analizar(client)
+
+    analisis = participante.ultimo_analisis
+    assert analisis.fase == "post"
+    assert Asignacion.objects.count() == 1
+    assert asignacion_de().semilla == asignacion.semilla
+    assert {c.concepto for c in analisis.conceptos.all() if c.reforzado} == set(
+        asignacion.reforzados
+    )
+    assert not analisis.conceptos.filter(estado="debil").exists()
+
+
+def test_post_mide_solo_el_codigo_nuevo(client, participante, repositorio, todo_debil):
+    analizar(client)
+    agregar_funcion(repositorio)
+    analizar(client)
+    analisis = participante.ultimo_analisis
+    assert [f.nombre for f in analisis.fragmentos.all()] == ["tarea_nueva"]
+
+
+def test_post_sin_codigo_nuevo_avisa_y_no_guarda(client, participante, todo_debil):
+    analizar(client)
+    html = analizar(client).content.decode()
+    assert "No hay funciones nuevas" in html
+    assert Analisis.objects.count() == 1
+
+
+def test_post_sin_historial_avisa_y_no_guarda(client, tmp_path, todo_debil):
+    (tmp_path / "a.py").write_text("def f(l):\n    l.append(1)\n", encoding="utf-8")
+    Participante.objects.create(codigo="P02", repositorio=str(tmp_path))
+    analizar(client, "P02")
+    html = analizar(client, "P02").content.decode()
+    assert "sin historial Git" in html
+    assert Analisis.objects.count() == 1
+
+
+def test_borrar_la_asignacion_permite_volver_a_empezar(client, participante, todo_debil):
+    analizar(client)
+    asignacion_de().delete()
+    analizar(client)
+    assert participante.ultimo_analisis.fase == "pre"
+    assert Asignacion.objects.count() == 1
+
+
+def test_no_se_puede_borrar_el_analisis_base(client, participante, todo_debil):
+    analizar(client)
+    with pytest.raises(RestrictedError):
+        participante.ultimo_analisis.delete()
+
+
+def test_borrar_el_participante_borra_todo(client, participante, todo_debil):
+    analizar(client)
+    participante.delete()
+    assert not Analisis.objects.exists()
+    assert not Asignacion.objects.exists()
+
+
+def test_un_solo_debil_se_marca_como_no_comparable(client, tmp_path):
+    (tmp_path / "a.py").write_text("def f(l):\n    l.append(1)\n", encoding="utf-8")
+    with Repo.init(tmp_path) as repo:
+        repo.index.add(["a.py"])
+        autor = Actor("Persona Real", "persona@example.invalid")
+        repo.index.commit("uno", author=autor, committer=autor)
+    config = Configuracion.obtener()
+    config.theta, config.m = 0, 1
+    config.save()
+    Participante.objects.create(codigo="P02", repositorio=str(tmp_path))
+
+    html = analizar(client, "P02").content.decode()
+
+    asignacion = asignacion_de("P02")
+    assert asignacion.reforzados == [ESTRUCTURAS]
+    assert not asignacion.comparable
+    assert "fuera de la comparación principal" in html
+
+
+def test_detalle_muestra_fase_y_control(client, participante, todo_debil):
+    analizar(client)
+    control = NOMBRES_CONCEPTOS[asignacion_de().control[0]]
+    html = client.get(reverse("analisis:detalle", args=["P01"])).content.decode()
+    assert "Fase: pre" in html
+    assert f"<strong>Control:</strong>\n      {control}" in html
+    assert "Analizar repositorio (post)" in html
+
+
+def test_el_concepto_de_control_queda_bloqueado(client, participante, todo_debil):
+    analizar(client)
+    url = reverse("refuerzo:concepto", args=["P01", asignacion_de().control[0]])
+    assert client.get(url).status_code == 403
+
+
+def test_los_intentos_siguen_visibles_tras_el_post(
+    client, participante, repositorio, todo_debil, settings
+):
+    settings.TIEMPO_LIMITE_EJERCICIO = 20
+    analizar(client)
+    concepto = asignacion_de().reforzados[0]
+    ejercicio = PLANTILLAS[concepto].ejercicios[0]
+    url = reverse("refuerzo:concepto", args=["P01", concepto])
+    client.post(url, {"ejercicio": ejercicio.id, "codigo": "marca_de_mi_intento = 1"})
+    agregar_funcion(repositorio)
+    analizar(client)
+
+    assert "marca_de_mi_intento" in client.get(url).content.decode()
+
+
+def test_abrir_el_material_registra_una_apertura(client, participante):
+    analisis_con(participante, {RECURSION})
+    url = reverse("refuerzo:concepto", args=["P01", RECURSION])
+    client.get(url)
+    apertura = AperturaRefuerzo.objects.get()
+    assert (apertura.participante, apertura.concepto) == (participante, RECURSION)
+
+
+def test_volver_tras_enviar_no_cuenta_como_apertura(client, participante, settings):
+    settings.TIEMPO_LIMITE_EJERCICIO = 20
+    analisis_con(participante, {RECURSION})
+    url = reverse("refuerzo:concepto", args=["P01", RECURSION])
+    client.post(url, {"ejercicio": "rec-facil", "codigo": "x = 1"}, follow=True)
+    assert not AperturaRefuerzo.objects.exists()
+
+
+def test_el_control_bloqueado_no_registra_apertura(client, participante):
+    analisis_con(participante, {RECURSION})
+    client.get(reverse("refuerzo:concepto", args=["P01", EXCEPCIONES]))
+    assert not AperturaRefuerzo.objects.exists()
+
+
 # Exportación
 
-def filas_csv(client):
-    respuesta = client.get(reverse("analisis:exportar"))
+def filas_de(client, url):
+    respuesta = client.get(url)
     assert respuesta["Content-Type"].startswith("text/csv")
     return list(csv.DictReader(io.StringIO(respuesta.content.decode())))
+
+
+def filas_csv(client):
+    return filas_de(client, reverse("analisis:exportar"))
+
+
+def test_exporta_cada_analisis_por_concepto_y_condicion(
+    client, participante, repositorio, todo_debil
+):
+    analizar(client)
+    agregar_funcion(repositorio)
+    analizar(client)
+    asignacion = asignacion_de()
+
+    filas = filas_de(client, reverse("analisis:exportar_analisis"))
+
+    assert len(filas) == 6
+    assert [f["fase"] for f in filas] == ["pre"] * 3 + ["post"] * 3
+    condicion = {(f["fase"], f["concepto"]): f["condicion"] for f in filas}
+    assert condicion["pre", asignacion.control[0]] == "control"
+    assert condicion["post", asignacion.reforzados[0]] == "reforzado"
+    assert all(f["comparable"] == "1" for f in filas)
+    assert {f["semilla"] for f in filas} == {str(asignacion.semilla)}
+    assert filas[0]["idc"] != ""
+    assert filas[0]["idc_ic_inf"] != ""
+
+
+def test_exporta_intentos_numerados_con_su_condicion(client, participante, settings):
+    settings.TIEMPO_LIMITE_EJERCICIO = 20
+    analisis_con(participante, {RECURSION})
+    url = reverse("refuerzo:concepto", args=["P01", RECURSION])
+    for _ in range(2):
+        client.post(url, {"ejercicio": "rec-facil", "codigo": "secreto_del_codigo = 1"})
+
+    respuesta = client.get(reverse("refuerzo:exportar_intentos"))
+    filas = list(csv.DictReader(io.StringIO(respuesta.content.decode())))
+
+    assert [f["intento"] for f in filas] == ["1", "2"]
+    assert filas[0]["codigo"] == "P01"
+    assert filas[0]["ejercicio"] == "rec-facil"
+    assert filas[0]["total"] == "4"
+    assert "secreto_del_codigo" not in respuesta.content.decode()
+
+
+def test_exporta_aperturas(client, participante):
+    analisis_con(participante, {RECURSION})
+    client.get(reverse("refuerzo:concepto", args=["P01", RECURSION]))
+    [fila] = filas_de(client, reverse("refuerzo:exportar_aperturas"))
+    assert (fila["codigo"], fila["concepto"]) == ("P01", RECURSION)
+
+
+def test_los_csv_no_incluyen_datos_que_identifiquen(
+    client, participante, repositorio, todo_debil
+):
+    analizar(client)
+    commit = participante.ultimo_analisis.commit_head
+    for nombre in ("analisis:exportar", "analisis:exportar_analisis"):
+        contenido = client.get(reverse(nombre)).content.decode()
+        assert commit not in contenido  # un commit público lleva al repositorio
+        assert str(repositorio) not in contenido
+
+
+def test_csv_por_participante_incluye_fase_y_control(client, participante, todo_debil):
+    analizar(client)
+    [fila] = filas_csv(client)
+    assert fila["fase"] == "pre"
+    assert fila["comparable"] == "1"
+    assert fila["conceptos_control"] == asignacion_de().control[0]
 
 
 def test_exporta_datos_por_participante(client, participante):

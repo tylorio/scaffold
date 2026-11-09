@@ -266,6 +266,58 @@ def test_flujo_omite_pruebas_y_funciones_triviales(tmp_path, modelo, con_git):
     assert datos.n_triviales == 1
 
 
+def test_post_analiza_solo_el_codigo_posterior_al_pre(repo_git, modelo):
+    pre = analizar_repositorio(str(repo_git), modelo).commit_head
+    with Repo(repo_git) as repo:
+        confirmar(repo, "nuevo.py", "def c():\n    x = 2\n    return x\n", "tres")
+
+    datos = analizar_repositorio(str(repo_git), modelo, desde_commit=pre)
+
+    assert [c.fragmento.nombre for c in datos.fragmentos] == ["c"]
+
+
+def test_post_incluye_funciones_reescritas_y_no_las_retocadas(repo_git, modelo):
+    pre = analizar_repositorio(str(repo_git), modelo).commit_head
+    with Repo(repo_git) as repo:
+        confirmar(
+            repo, "pequeno.py",
+            "def a():\n    y = 5\n    z = y + 1\n    w = z * 2\n    return w\n",
+            "reescribe a",
+        )
+        cuerpo = "def b():\n" + "    x = 1\n" * 27 + "    x = 2\n    return x\n"
+        confirmar(repo, "grande.py", cuerpo, "retoca una línea de b")
+
+    datos = analizar_repositorio(str(repo_git), modelo, desde_commit=pre)
+
+    assert [c.fragmento.nombre for c in datos.fragmentos] == ["a"]
+
+
+def test_post_sin_codigo_nuevo_no_tiene_fragmentos(repo_git, modelo):
+    pre = analizar_repositorio(str(repo_git), modelo).commit_head
+    datos = analizar_repositorio(str(repo_git), modelo, desde_commit=pre)
+    assert datos.fragmentos == []
+
+
+def test_post_no_cuenta_triviales_del_pre(tmp_path, modelo):
+    with Repo.init(tmp_path) as repo:
+        confirmar(repo, "a.py", "def a():\n    return 1\n\n\ndef b():\n    x = 1\n    return x\n", "uno")
+        pre = repo.head.commit.hexsha
+        confirmar(repo, "c.py", "def c():\n    y = 1\n    return y\n", "dos")
+
+    assert analizar_repositorio(str(tmp_path), modelo, desde_commit=pre).n_triviales == 0
+
+
+def test_post_con_commit_inexistente_da_error_propio(repo_git, modelo):
+    with pytest.raises(ErrorRepositorio):
+        analizar_repositorio(str(repo_git), modelo, desde_commit="0" * 40)
+
+
+def test_post_sobre_carpeta_sin_git_da_error_propio(tmp_path, modelo):
+    (tmp_path / "a.py").write_text("def f():\n    x = 1\n    return x\n", encoding="utf-8")
+    with pytest.raises(ErrorRepositorio):
+        analizar_repositorio(str(tmp_path), modelo, desde_commit="0" * 40)
+
+
 def test_flujo_sobre_repositorio_git(repo_git, modelo):
     datos = analizar_repositorio(str(repo_git), modelo, Parametros())
     assert datos.tiene_historial

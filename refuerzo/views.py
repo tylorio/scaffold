@@ -5,16 +5,20 @@ from django.urls import reverse
 
 from analisis.models import Participante
 from analisis.servicios.conceptos import NOMBRES_CONCEPTOS
+from analisis.views import respuesta_csv
 
-from .models import IntentoEjercicio
+from .models import AperturaRefuerzo, IntentoEjercicio
+from .persistencia import exportar_csv_aperturas, exportar_csv_intentos
 from .servicios.contenido import generar_recurso
 from .servicios.ejecutor import ejecutar_solucion, usa_concepto
 
 MAXIMO_CARACTERES = 20_000
 
 
-def _ejercicios_con_intento(recurso, analisis):
-    intentos = analisis.intentos.filter(concepto=recurso.concepto)
+def _ejercicios_con_intento(recurso, participante):
+    intentos = IntentoEjercicio.objects.filter(
+        analisis__participante=participante, concepto=recurso.concepto,
+    )
     ultimos = {}
     for intento in intentos:  # vienen del más nuevo al más antiguo
         ultimos.setdefault(intento.ejercicio, intento)
@@ -67,10 +71,22 @@ def ver_concepto(request, codigo, concepto):
             usa_concepto=usa_concepto(codigo_solucion, concepto),
         )
         url = reverse("refuerzo:concepto", args=[codigo, concepto])
-        return redirect(f"{url}#{ejercicio.id}")
+        return redirect(f"{url}?resultado=1#{ejercicio.id}")
+
+    # Al volver de enviar una solución la página se recarga, pero no es una apertura.
+    if "resultado" not in request.GET:
+        AperturaRefuerzo.objects.create(participante=participante, concepto=concepto)
 
     return render(request, "refuerzo/concepto.html", {
         "participante": participante,
         "recurso": recurso,
-        "ejercicios": _ejercicios_con_intento(recurso, analisis),
+        "ejercicios": _ejercicios_con_intento(recurso, participante),
     })
+
+
+def exportar_intentos(request):
+    return respuesta_csv(exportar_csv_intentos(), "intentos_idc.csv")
+
+
+def exportar_aperturas(request):
+    return respuesta_csv(exportar_csv_aperturas(), "aperturas_idc.csv")
