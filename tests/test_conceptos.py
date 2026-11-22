@@ -45,6 +45,42 @@ def test_recursion_sobre_atributo():
     assert RECURSION in conceptos(fuente)
 
 
+def test_delegar_en_otro_objeto_con_el_mismo_nombre_no_es_recursion():
+    """P8: el patrón servicio → repositorio no es recursión."""
+    fuente = (
+        "class Servicio:\n"
+        "    def guardar(self, x):\n"
+        "        return self.repositorio.guardar(x)\n"
+    )
+    assert RECURSION not in conceptos(fuente)
+
+
+def test_metodo_homonimo_de_un_atributo_que_no_es_nodo_no_es_recursion():
+    fuente = "class A:\n    def f(self):\n        return self.b.f()\n"
+    assert RECURSION not in conceptos(fuente)
+
+
+def test_recursion_al_recorrer_los_hijos():
+    fuente = (
+        "class Nodo:\n"
+        "    def recorrer(self):\n"
+        "        for h in self.hijos:\n"
+        "            h.recorrer()\n"
+    )
+    assert RECURSION in conceptos(fuente)
+
+
+def test_recursion_sobre_un_atributo_de_la_misma_clase():
+    fuente = (
+        "class Celda:\n"
+        "    def agregar(self, valor):\n"
+        "        if self.resto is None:\n"
+        "            self.resto = Celda()\n"
+        "        self.resto.agregar(valor)\n"
+    )
+    assert RECURSION in conceptos(fuente)
+
+
 def test_recursion_mutua_marca_las_dos_funciones():
     fuente = (
         "def es_par(n):\n    return True if n == 0 else es_impar(n - 1)\n\n"
@@ -156,10 +192,65 @@ def test_metodo_de_clase_contenedora_aunque_tenga_una_linea():
     assert not fragmento(fuente, "Pila.vacia").trivial
 
 
-@pytest.mark.parametrize("atributo", ["siguiente", "izquierda", "derecha", "next"])
+@pytest.mark.parametrize("metodo", ["apilar", "desencolar", "peek", "frente", "__contains__"])
+def test_clase_contenedora_con_nombres_en_espanol_o_ingles(metodo):
+    """P7: la lista cerrada es bilingüe para no sesgar según el idioma del estudiante."""
+    fuente = (
+        "class Estructura:\n"
+        f"    def {metodo}(self, *a):\n        return None\n"
+        "    def vacia(self):\n        return not self.items\n"
+    )
+    assert ESTRUCTURAS in conceptos(fuente, "Estructura.vacia")
+
+
+def test_un_metodo_cualquiera_no_hace_contenedora_a_la_clase():
+    fuente = (
+        "class Servicio:\n"
+        "    def guardar(self):\n        return None\n"
+        "    def vacia(self):\n        return not self.items\n"
+    )
+    assert ESTRUCTURAS not in conceptos(fuente, "Servicio.vacia")
+
+
+@pytest.mark.parametrize("atributo", [
+    "siguiente", "izquierda", "derecha", "next", "hijo", "padre", "parent", "children",
+])
 def test_nodos_enlazados(atributo):
     cuerpo = f"actual = y\nwhile actual:\n    actual = actual.{atributo}"
     assert ESTRUCTURAS in conceptos(en_funcion(cuerpo))
+
+
+def test_nodo_de_un_arbol_comparado_con_none():
+    fuente = (
+        "def altura(nodo):\n"
+        "    if nodo is None:\n        return 0\n"
+        "    return 1 + max(altura(nodo.izquierda), altura(nodo.derecha))\n"
+    )
+    assert conceptos(fuente) == {RECURSION, ESTRUCTURAS}
+
+
+def test_enlace_declarado_en_la_clase():
+    fuente = (
+        "class Nodo:\n"
+        "    def __init__(self, valor):\n"
+        "        self.valor = valor\n"
+        "        self.siguiente = None\n"
+        "    def ultimo(self):\n"
+        "        return self.siguiente\n"
+    )
+    assert ESTRUCTURAS in conceptos(fuente, "Nodo.ultimo")
+
+
+@pytest.mark.parametrize("fuente", [
+    "def carpeta(ruta):\n    return ruta.parent\n",  # pathlib
+    "def borde(rect):\n    return rect.left + rect.right\n",  # pygame
+    "class Jugador:\n    def mover(self):\n        return self.rect.left + 1\n",
+    "class Ventana:\n"  # tkinter
+    "    def __init__(self, parent):\n        self.parent = parent\n"
+    "    def cerrar(self):\n        return self.parent\n",
+])
+def test_nombres_de_nodo_fuera_de_un_contexto_de_nodos_no_cuentan(fuente):
+    assert all(ESTRUCTURAS not in f.conceptos for f in extraer_funciones(fuente))
 
 
 @pytest.mark.parametrize("cuerpo", [

@@ -1,6 +1,7 @@
 """Flujo web completo con el cliente de pruebas de Django."""
 import csv
 import io
+import math
 from pathlib import Path
 
 import pytest
@@ -247,11 +248,16 @@ def test_analizar_guarda_versiones_e_indice_por_historial(client, participante):
     client.post(reverse("analisis:analizar", args=["P01"]))
     analisis = participante.ultimo_analisis
     assert (analisis.version_reglas, analisis.version_rasgos) == ("conceptos-v1", "rasgos-v2")
-    # Las 3 funciones entraron en un único commit de 13 líneas, por debajo del umbral.
-    assert (analisis.indice_historial, analisis.n_con_historial) == (0.0, 3)
-    assert analisis.version_historial == "historial-v1"
+    # Las 3 funciones (9 líneas) entraron en un único commit chico, bajo los tres umbrales.
+    insercion = analisis.fragmentos.first().insercion_commit
+    assert insercion < 15
+    assert (analisis.indice_historial, analisis.indice_historial_15) == (0.0, 0.0)
+    assert analisis.media_log_insercion == pytest.approx(math.log1p(insercion))
+    assert (analisis.n_lineas_con_historial, analisis.n_con_historial) == (9, 3)
+    assert (analisis.umbral_historial, analisis.version_historial) == (30, "historial-v1")
     [fila] = filas_csv(client)
-    assert fila["indice_historial"] == "0.0"
+    assert (fila["indice_historial"], fila["indice_historial_60"]) == ("0.0", "0.0")
+    assert fila["media_log_insercion"] != ""
     assert fila["version_reglas"] == "conceptos-v1"
 
 

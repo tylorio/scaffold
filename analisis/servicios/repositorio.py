@@ -130,6 +130,9 @@ class CarpetaLocal:
     def correo_autor(self, archivo: str, inicio: int, fin: int) -> str | None:
         return None
 
+    def inserciones_por_linea(self, archivo: str, inicio: int, fin: int) -> list[int]:
+        return []
+
 
 class RepositorioGit:
     """Analiza el contenido de HEAD, no los cambios sin confirmar."""
@@ -222,6 +225,15 @@ class RepositorioGit:
         """Tamaño del commit que aportó la mayoría de las líneas del fragmento."""
         commit = self.commit_de(archivo, inicio, fin)
         return None if commit is None else self._cargar_inserciones().get(commit)
+
+    def inserciones_por_linea(self, archivo: str, inicio: int, fin: int) -> list[int]:
+        """Tamaño del commit que escribió cada línea del fragmento (índice por historial)."""
+        inserciones = self._cargar_inserciones()
+        return [
+            inserciones[commit]
+            for commit in self._commits_por_linea(archivo)[inicio - 1 : fin]
+            if commit in inserciones
+        ]
 
 
 def _abrir_local(ruta: Path) -> tuple[CarpetaLocal | RepositorioGit, Repo | None]:

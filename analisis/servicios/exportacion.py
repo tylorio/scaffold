@@ -41,6 +41,9 @@ class RegistroParticipante:
     n_triviales: int | None = None
     idc_global: float | None = None
     indice_historial: float | None = None
+    indice_historial_15: float | None = None
+    indice_historial_60: float | None = None
+    media_log_insercion: float | None = None
     version_reglas: str = ""
     theta: float | None = None
     lambda_: float | None = None
@@ -54,7 +57,8 @@ def _columnas() -> list[str]:
     columnas = [
         "codigo", "caso", "orden", "modo", "fecha_analisis", "n_fragmentos",
         "n_triviales", "n_autores", "idc_global", "idc_global_ic_inf", "idc_global_ic_sup",
-        "indice_historial", "theta", "lambda", "m", "modelo_version", "modelo_es_demo",
+        "indice_historial", "indice_historial_15", "indice_historial_60",
+        "media_log_insercion", "theta", "lambda", "m", "modelo_version", "modelo_es_demo",
         "version_reglas",
     ]
     for concepto in CONCEPTOS:
@@ -96,6 +100,9 @@ def _fila(registro: RegistroParticipante) -> dict:
             "idc_global", registro.idc_global, registro.n_ia, registro.n_fragmentos
         ),
         "indice_historial": _numero(registro.indice_historial),
+        "indice_historial_15": _numero(registro.indice_historial_15),
+        "indice_historial_60": _numero(registro.indice_historial_60),
+        "media_log_insercion": _numero(registro.media_log_insercion),
         "version_reglas": registro.version_reglas,
         "theta": _numero(registro.theta),
         "lambda": _numero(registro.lambda_),

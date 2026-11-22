@@ -10,7 +10,7 @@ from analisis.servicios.repositorio import decodificar
 
 from .models import PuntajeItem
 from .servicios.banco import Banco
-from .servicios.corrector import ILEGIBLE, corregir_item
+from .servicios.corrector import ILEGIBLE, corregir_item, resultado_ausente
 
 MOMENTOS = ("pre", "post")
 
@@ -66,15 +66,21 @@ def corregir_momento(
     for asignacion in asignaciones:
         participante = asignacion.participante
         carpeta = soluciones / participante.codigo
-        if not carpeta.is_dir():
+        ausente = not carpeta.is_dir()
+        if ausente:
             correccion.avisos.append(
-                f"{participante.codigo}: sin carpeta de soluciones; no se registró nada."
+                f"{participante.codigo}: sin carpeta de soluciones; queda como ausente "
+                "(dato faltante, no cero)."
             )
-            continue
         forma = forma_de(asignacion, momento)
         banco = bancos[forma]
         for item in banco.items:
-            resultado = corregir_item(_leer(carpeta / f"{item.item}.py"), item, tiempo_limite)
+            if ausente:
+                resultado = resultado_ausente(item)
+            else:
+                resultado = corregir_item(
+                    _leer(carpeta / f"{item.item}.py"), item, tiempo_limite,
+                )
             valores = {
                 "forma": forma, "concepto": item.concepto, "banco_version": banco.version,
                 "estado": resultado.estado, "casos_pasados": resultado.casos_pasados,

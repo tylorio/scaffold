@@ -13,8 +13,9 @@ from .banco import Banco, BancoInvalido, ItemPrueba
 from .calidad import metricas_calidad
 
 OK = "ok"
-SIN_RESPUESTA = "sin_respuesta"  # no entregó archivo para el ítem: cuenta como 0 %
+SIN_RESPUESTA = "sin_respuesta"  # entregó la sesión pero no este ítem: cuenta como 0 %
 ILEGIBLE = "ilegible"  # no es Python válido: 0 % y sin métricas de calidad
+AUSENTE = "ausente"  # no rindió la sesión: dato faltante, nunca cero (P5)
 
 
 @dataclass(frozen=True)
@@ -22,9 +23,9 @@ class ResultadoItem:
     item: str
     concepto: str
     estado: str
-    casos_pasados: int
+    casos_pasados: int | None
     casos_total: int
-    t_pct: float
+    t_pct: float | None
     cc_sol: float | None
     lin_sol: int | None
     n_funciones: int | None
@@ -55,6 +56,15 @@ def corregir_item(
         n_funciones=metricas.n_funciones if metricas else None,
         cc_ref=referencia.cc,
         lin_ref=referencia.lineas,
+    )
+
+
+def resultado_ausente(item: ItemPrueba) -> ResultadoItem:
+    referencia = metricas_calidad(item.referencia)
+    return ResultadoItem(
+        item=item.item, concepto=item.concepto, estado=AUSENTE, casos_pasados=None,
+        casos_total=len(item.casos), t_pct=None, cc_sol=None, lin_sol=None,
+        n_funciones=None, cc_ref=referencia.cc, lin_ref=referencia.lineas,
     )
 
 

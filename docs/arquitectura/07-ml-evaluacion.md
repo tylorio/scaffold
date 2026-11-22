@@ -147,7 +147,11 @@ Cada rasgo tiene una hipótesis de por qué separa las clases. Los que no la ten
 
 Nota de validez: los rasgos de historial son los únicos que miden **proceso** y no **superficie**, y los que menos dependen del estilo del asistente del momento (plan 5: "los asistentes cambian de estilo entre versiones"). Con D9 dejan de compensar dentro del clasificador el sesgo por calidad (RV-02). Por eso el reporte de falsos positivos por tercil de calidad (§5, §6.1) es obligatorio, no opcional.
 
-Definición operativa del índice [PENDIENTE: fijarla antes del diagnóstico]. Propuesta: la proporción de fragmentos del participante cuyo commit de inserción añadió ≥ N líneas, con N fijado con el corpus de la sesión de etiquetado (la mediana de inserción en las tareas con IA). Se versiona como `historial-v1`.
+Definición operativa del índice, fijada por el asesor (P10, `docs/decisiones/decisiones-asesor-2026-11-22.md`) y versionada como `historial-v1`. Se reportan dos medidas continuas:
+- la **proporción de líneas propias** del participante que entraron en commits de **30 o más líneas**, calculada línea por línea con `git blame`, con sensibilidad a 15 y 60;
+- la **media de log(1 + tamaño de inserción)** de sus fragmentos, que no usa umbral.
+
+El umbral de 30 se fija *a priori* y así se declara en la tesis. **No** se calibra con la sesión de etiquetado: allí se pidió un commit por tarea, así que el tamaño de inserción es artificial por diseño.
 
 ### 2.5 Selección de rasgos
 

@@ -80,6 +80,11 @@ def analizar_repositorio(
             repositorio.insercion_commit(f.archivo, f.linea_inicio, f.linea_fin)
             for f in fragmentos
         ]
+        inserciones_lineas = [
+            tamano
+            for f in fragmentos
+            for tamano in repositorio.inserciones_por_linea(f.archivo, f.linea_inicio, f.linea_fin)
+        ]
         commit_head = repositorio.commit_head
         tiene_historial = repositorio.tiene_historial
         n_autores = repositorio.n_autores
@@ -109,5 +114,5 @@ def analizar_repositorio(
             if f.indexaciones_indeterminadas and ESTRUCTURAS not in f.conceptos
         ),
         n_fragmentos_otros_autores=n_otros_autores,
-        indice_historial=indice_por_historial(inserciones),
+        indice_historial=indice_por_historial(inserciones, inserciones_lineas),
     )

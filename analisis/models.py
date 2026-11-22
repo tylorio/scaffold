@@ -101,9 +101,13 @@ class Analisis(models.Model):
     n_indexacion_indeterminada = models.PositiveIntegerField(default=0)  # R4
     version_reglas = models.CharField(max_length=30, blank=True)
     version_rasgos = models.CharField(max_length=30, blank=True)
-    # Índice de delegación por historial (D9): fuera del clasificador, exploratorio para HE1.
-    indice_historial = models.FloatField(null=True)
-    n_con_historial = models.PositiveIntegerField(default=0)
+    # Índice de delegación por historial (D9, P10): fuera del clasificador, exploratorio para HE1.
+    indice_historial = models.FloatField(null=True)  # proporción de líneas, umbral a priori
+    indice_historial_15 = models.FloatField(null=True)  # sensibilidad
+    indice_historial_60 = models.FloatField(null=True)  # sensibilidad
+    media_log_insercion = models.FloatField(null=True)  # medida continua, sin umbral
+    n_lineas_con_historial = models.PositiveIntegerField(default=0)
+    n_con_historial = models.PositiveIntegerField(default=0)  # fragmentos
     umbral_historial = models.PositiveIntegerField(null=True)
     version_historial = models.CharField(max_length=30, blank=True)
 

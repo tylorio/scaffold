@@ -32,10 +32,15 @@ REGLAS_AMPLIA_VERSION = "conceptos-v1-amplia"
 FUNCIONES = (ast.FunctionDef, ast.AsyncFunctionDef)
 _AMBITOS = FUNCIONES + (ast.ClassDef,)
 
-METODOS_CLASE_CONTENEDORA = frozenset({"push", "pop", "__len__", "__iter__"})
+# Lista cerrada y bilingüe (P7): pila, cola y protocolo de contenedor.
+METODOS_CLASE_CONTENEDORA = frozenset({
+    "push", "pop", "peek", "apilar", "desapilar", "cima", "tope",
+    "enqueue", "dequeue", "encolar", "desencolar", "frente",
+    "__len__", "__iter__", "__getitem__", "__contains__",
+})
 ATRIBUTOS_DE_NODO = frozenset({
-    "siguiente", "anterior", "izquierda", "derecha", "izquierdo", "derecho",
-    "next", "prev", "left", "right",
+    "siguiente", "anterior", "izquierda", "izquierdo", "derecha", "derecho",
+    "next", "prev", "left", "right", "hijo", "hijos", "children", "padre", "parent",
 })
 COLECCIONES = frozenset({"deque", "Counter", "defaultdict"})
 ORDENACION_Y_BUSQUEDA = frozenset({
@@ -117,15 +122,118 @@ def recorrer_cuerpo(funcion: ast.AST) -> Iterator[ast.AST]:
                 pendientes.extend(v for v in valor if isinstance(v, ast.AST))
 
 
+# Nodos enlazados
+
+def _es_none(nodo: ast.AST) -> bool:
+    return isinstance(nodo, ast.Constant) and nodo.value is None
+
+
+def _base_de_enlace(nodo: ast.AST) -> str | None:
+    """`x` si el nodo es `x.<atributo de nodo>`."""
+    if (
+        isinstance(nodo, ast.Attribute)
+        and nodo.attr in ATRIBUTOS_DE_NODO
+        and isinstance(nodo.value, ast.Name)
+    ):
+        return nodo.value.id
+    return None
+
+
+def enlaces_de_la_clase(clase: ast.ClassDef | None) -> frozenset[str]:
+    """Atributos que la clase usa como enlaces de nodo.
+
+    Son los que se asignan a una instancia de la misma clase
+    (`self.izquierda = Nodo(...)`, P8) y los de la lista de nodos que se inicializan
+    como un nodo vacío (`self.siguiente = None`, `self.hijos = []`).
+    """
+    if clase is None:
+        return frozenset()
+    enlaces = set()
+    for nodo in ast.walk(clase):
+        if isinstance(nodo, ast.Assign):
+            objetivos, valor = nodo.targets, nodo.value
+        elif isinstance(nodo, ast.AnnAssign) and nodo.value is not None:
+            objetivos, valor = [nodo.target], nodo.value
+        else:
+            continue
+        misma_clase = (
+            isinstance(valor, ast.Call)
+            and isinstance(valor.func, ast.Name)
+            and valor.func.id == clase.name
+        )
+        vacio = _es_none(valor) or (isinstance(valor, ast.List) and not valor.elts)
+        for objetivo in objetivos:
+            if (
+                isinstance(objetivo, ast.Attribute)
+                and isinstance(objetivo.value, ast.Name)
+                and objetivo.value.id == "self"
+                and (misma_clase or (vacio and objetivo.attr in ATRIBUTOS_DE_NODO))
+            ):
+                enlaces.add(objetivo.attr)
+    return frozenset(enlaces)
+
+
+def _variables_de_nodo(funcion: ast.AST) -> set[str]:
+    """Nombres que la función trata como nodos.
+
+    Se comparan con None (`if nodo is None`), recorren enlaces
+    (`actual = actual.siguiente`) o cortan un enlace (`x.siguiente = None`).
+    """
+    variables = set()
+    for nodo in recorrer_cuerpo(funcion):
+        if isinstance(nodo, ast.Compare):
+            lados = [nodo.left, *nodo.comparators]
+            if any(_es_none(lado) for lado in lados):
+                for lado in lados:
+                    if isinstance(lado, ast.Name):
+                        variables.add(lado.id)
+                    elif base := _base_de_enlace(lado):
+                        variables.add(base)
+        elif isinstance(nodo, ast.Assign):
+            for objetivo in nodo.targets:
+                if isinstance(objetivo, ast.Name) and _base_de_enlace(nodo.value) == objetivo.id:
+                    variables.add(objetivo.id)
+                elif (base := _base_de_enlace(objetivo)) and _es_none(nodo.value):
+                    variables.add(base)
+    return variables
+
+
+def _es_acceso_a_nodo(
+    nodo: ast.AST, enlaces: frozenset[str], variables: set[str]
+) -> bool:
+    """Un atributo de nodo cuenta solo en un contexto de nodos (P7).
+
+    `ruta.parent` (pathlib), `self.rect.left` (pygame) o `self.parent = ventana`
+    (tkinter) usan los mismos nombres sin ser nodos enlazados.
+    """
+    if not isinstance(nodo, ast.Attribute):
+        return False
+    base = nodo.value
+    if isinstance(base, ast.Name) and base.id == "self":
+        return nodo.attr in enlaces
+    return nodo.attr in ATRIBUTOS_DE_NODO and isinstance(base, ast.Name) and base.id in variables
+
+
 # Recursión
 
 def es_recursiva(funcion: ast.AST, clase: ast.ClassDef | None = None) -> bool:
-    """True si la función se llama a sí misma, directamente o sobre un atributo.
+    """True si la función se llama a sí misma, directamente o sobre un nodo.
 
-    En un método cuentan `self.f()`, `cls.f()`, `Clase.f()` y la recursión sobre
-    un atributo, como `self.izquierda.f()` en un árbol. Un `f()` suelto dentro de
-    un método llama a otra función, no al método.
+    En un método cuentan `self.f()`, `cls.f()`, `Clase.f()` y la recursión sobre un
+    atributo de nodo (P8): `self.izquierda.f()`, o `h.f()` al recorrer
+    `for h in self.hijos`. Delegar en otro objeto con el mismo nombre de método
+    (`self.repositorio.guardar()` dentro de `guardar`) no es recursión. Un `f()`
+    suelto dentro de un método llama a otra función, no al método.
     """
+    enlaces = ATRIBUTOS_DE_NODO | enlaces_de_la_clase(clase)
+    hijos = {
+        nodo.target.id
+        for nodo in recorrer_cuerpo(funcion)
+        if isinstance(nodo, (ast.For, ast.AsyncFor, ast.comprehension))
+        and isinstance(nodo.target, ast.Name)
+        and isinstance(nodo.iter, ast.Attribute)
+        and nodo.iter.attr in enlaces
+    }
     for nodo in recorrer_cuerpo(funcion):
         if not isinstance(nodo, ast.Call):
             continue
@@ -135,9 +243,11 @@ def es_recursiva(funcion: ast.AST, clase: ast.ClassDef | None = None) -> bool:
                 return True
         elif isinstance(objetivo, ast.Attribute) and objetivo.attr == funcion.name:
             receptor = objetivo.value
-            if isinstance(receptor, ast.Attribute):
+            if isinstance(receptor, ast.Attribute) and receptor.attr in enlaces:
                 return True
-            if isinstance(receptor, ast.Name) and receptor.id in {"self", "cls", clase.name}:
+            if isinstance(receptor, ast.Name) and (
+                receptor.id in {"self", "cls", clase.name} or receptor.id in hijos
+            ):
                 return True
     return False
 
@@ -257,12 +367,14 @@ def _llamada_es_estructura(nodo: ast.Call, tipos: dict[str, str]) -> bool:
     )
 
 
-def _cuenta_como_estructura(nodo: ast.AST, tipos: dict[str, str]) -> bool:
+def _cuenta_como_estructura(
+    nodo: ast.AST, tipos: dict[str, str], enlaces: frozenset[str], variables: set[str],
+) -> bool:
     if isinstance(nodo, (ast.DictComp, ast.SetComp)):
         return True
     if _anida_colecciones(nodo):
         return True
-    if isinstance(nodo, ast.Attribute) and nodo.attr in ATRIBUTOS_DE_NODO:
+    if _es_acceso_a_nodo(nodo, enlaces, variables):
         return True
     if isinstance(nodo, ast.Subscript):
         base = nodo.value
@@ -324,11 +436,13 @@ def analizar_conceptos(
 ) -> DeteccionConceptos:
     """Conceptos del ámbito de la función, sin sus definiciones anidadas."""
     tipos = inferir_tipos(funcion)
+    enlaces = enlaces_de_la_clase(clase)
+    variables = _variables_de_nodo(funcion)
     estructura = es_clase_contenedora(clase)
     amplia = False
     indeterminadas = 0
     for nodo in recorrer_cuerpo(funcion):
-        estructura = estructura or _cuenta_como_estructura(nodo, tipos)
+        estructura = estructura or _cuenta_como_estructura(nodo, tipos, enlaces, variables)
         amplia = amplia or isinstance(nodo, ast.ListComp) or _es_append(nodo)
         indeterminadas += _es_indexacion_indeterminada(nodo, tipos)
 

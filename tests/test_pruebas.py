@@ -15,6 +15,7 @@ from pruebas.models import PuntajeItem
 from pruebas.servicios.banco import BancoInvalido, cargar_bancos
 from pruebas.servicios.calidad import metricas_calidad
 from pruebas.servicios.corrector import (
+    AUSENTE,
     ILEGIBLE,
     OK,
     SIN_RESPUESTA,
@@ -225,13 +226,27 @@ def test_avisa_de_quien_no_entrego_y_de_carpetas_desconocidas(muestra_congelada,
 
     salida = corregir("pre", tmp_path / "sol", tmp_path / "p.csv")
 
-    assert "P02: sin carpeta de soluciones" in salida
+    assert "P02: sin carpeta de soluciones; queda como ausente" in salida
     assert "P99: no es un participante" in salida
     estados = dict(
         PuntajeItem.objects.filter(participante__codigo="P01").values_list("item", "estado")
     )
     assert estados == {"T1": OK, "T2": SIN_RESPUESTA, "T3": SIN_RESPUESTA}
-    assert not PuntajeItem.objects.filter(participante__codigo="P02").exists()
+    assert PuntajeItem.objects.get(participante__codigo="P01", item="T2").t_pct == 0.0
+
+
+def test_el_ausente_es_dato_faltante_y_no_cero(muestra_congelada, bancos, tmp_path):
+    """P5: sin carpeta no es 0 %: queda vacío para no confundirlo con un mal resultado."""
+    entregar(tmp_path / "sol", "P01", bancos, muestra_congelada["P01"].orden[0])
+    corregir("pre", tmp_path / "sol", tmp_path / "p.csv")
+
+    ausentes = PuntajeItem.objects.filter(participante__codigo="P02")
+    assert {p.estado for p in ausentes} == {AUSENTE}
+    assert {(p.t_pct, p.casos_pasados) for p in ausentes} == {(None, None)}
+    assert all(p.cc_ref > 0 for p in ausentes)
+    filas = [f for f in leer_csv(tmp_path / "p.csv") if f["participante"] == "P02"]
+    assert len(filas) == 3
+    assert {(f["estado"], f["T_pct"], f["casos_pasados"]) for f in filas} == {("ausente", "", "")}
 
 
 def test_una_solucion_ilegible_se_registra_y_se_avisa(muestra_congelada, bancos, tmp_path):

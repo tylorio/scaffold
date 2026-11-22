@@ -30,7 +30,7 @@
     Analizado el {{ analisis.fecha|date:"d/m/Y H:i" }} con
     θ = {{ analisis.theta }}, λ = {{ analisis.lambda_valor }}, m = {{ analisis.m }}.
     {% if analisis.tiene_historial %}Commit {{ analisis.commit_head|slice:":8" }}.{% else %}Sin historial Git.{% endif %}
-    {% if analisis.indice_historial is not None %}Índice por historial (exploratorio): {{ analisis.indice_historial|floatformat:2 }}, sobre {{ analisis.n_con_historial }} funciones, con inserciones de {{ analisis.umbral_historial }} líneas o más.{% endif %}
+    {% if analisis.indice_historial is not None %}Índice por historial (exploratorio): {{ analisis.indice_historial|floatformat:2 }} de las {{ analisis.n_lineas_con_historial }} líneas propias entraron en commits de {{ analisis.umbral_historial }} líneas o más (con 15: {{ analisis.indice_historial_15|floatformat:2 }}; con 60: {{ analisis.indice_historial_60|floatformat:2 }}). Media de log(1 + inserción): {{ analisis.media_log_insercion|floatformat:2 }}, sobre {{ analisis.n_con_historial }} funciones.{% endif %}
     {% if analisis.n_triviales %}Se omitieron {{ analisis.n_triviales }} funciones triviales.{% endif %}
     {% if analisis.n_fragmentos_otros_autores %}Se descartaron {{ analisis.n_fragmentos_otros_autores }} funciones de otros autores.{% endif %}
     {% if analisis.n_indexacion_indeterminada %}{{ analisis.n_indexacion_indeterminada }} funciones indexan algo de tipo desconocido y no cuentan como estructuras de datos.{% endif %}

@@ -143,7 +143,8 @@ python manage.py corregir_prueba --momento pre --soluciones soluciones_pre --sal
   - `lin_sol` y `lin_ref`: líneas de código fuente, sin blancos ni comentarios.
 - Un ítem sin archivo queda `sin_respuesta` (0 %). Un archivo que no es Python
   válido queda `ilegible` (0 %, sin métricas) y el comando termina con código 9.
-  Un participante sin carpeta no se registra.
+  Un participante sin carpeta queda `ausente`: sus ítems se registran **vacíos**, como
+  dato faltante y nunca como 0 % (P5), para el diagrama de flujo de participantes.
 - El CSV **no lleva datos de la asignación** (reforzado, caso, orden, semilla), para
   que quien califique Q1–Q3 no la conozca (D3). La fórmula del puntaje (D1) se
   aplica después, en el análisis estadístico.
@@ -266,10 +267,15 @@ tests/               Pruebas con pytest
   carpetas excluidas (`.venv`, `build`, `migrations`...). El commit de cada línea
   sale de `git blame -w -M -C`, que ignora los cambios de espacios y sigue al
   código movido. No entra al clasificador (D9).
-- **Índice por historial:** proporción de las funciones con historial cuyo commit
-  añadió 30 líneas o más (`historial-v1`). Es una medida exploratoria para HE1,
-  independiente del clasificador. El umbral es provisional: se fija con el corpus
-  de la sesión de etiquetado antes del diagnóstico.
+- **Índice por historial** (`historial-v1`, P10): medida exploratoria para HE1,
+  independiente del clasificador. Reporta dos medidas:
+  - la proporción de las líneas propias que entraron en commits de 30 líneas o más,
+    calculada línea por línea con `git blame`, y repetida con 15 y 60 como
+    sensibilidad;
+  - la media de log(1 + tamaño de inserción) de las funciones, sin umbral.
+
+  El umbral de 30 se fijó *a priori*. No se calibra con la sesión de etiquetado,
+  donde se pidió un commit por tarea.
 - **URLs:** no se aceptan con usuario, token, parámetros ni fragmento, porque
   quedarían guardados en la base de datos.
 
@@ -316,11 +322,24 @@ Por eso `db.sqlite3` y `datos/` están en `.gitignore`.
   función deja claro que el objeto es una lista o un diccionario. Si no se puede
   saber (por ejemplo, un parámetro), la indexación se cuenta como indeterminada y
   no asigna el concepto.
-- La recursión mutua se detecta dentro del mismo archivo. La recursión sobre un
-  atributo (`self.izquierda.insertar(x)`) también marca como recursión una
-  delegación con el mismo nombre (`self.repo.guardar()` dentro de `guardar`).
-- Las clases contenedoras se reconocen por `push`, `pop`, `__len__` o `__iter__`;
-  nombres en español como `apilar` no cuentan.
+- La recursión mutua se detecta dentro del mismo archivo.
+- La recursión sobre un atributo exige un atributo de nodo (P8). Ese atributo es uno
+  de la lista (`izquierda`, `siguiente`, `hijos`, `left`, `children`…) o uno al que
+  la clase asigna una instancia de sí misma. Por eso `self.repositorio.guardar()`
+  dentro de `guardar` no cuenta, y `self.parent.guardar()` sí, por el nombre.
+- Las clases contenedoras se reconocen por una lista cerrada y bilingüe (P7): `push`,
+  `pop`, `peek`, `apilar`, `desapilar`, `cima`, `tope`, `enqueue`, `dequeue`,
+  `encolar`, `desencolar`, `frente`, `__len__`, `__iter__`, `__getitem__` y
+  `__contains__`.
+- Un atributo de nodo cuenta como estructura de datos solo en un **contexto de
+  nodos**:
+  - en `self.<enlace>`, si la clase lo inicializa como `None`, `[]` o una instancia
+    de sí misma;
+  - en un recorrido como `actual = actual.siguiente`;
+  - en una variable que se compara con `None`.
+
+  Así no cuentan `ruta.parent` (pathlib), `rect.left` (pygame) ni
+  `self.parent = ventana` (tkinter).
 - El estudio supone tareas que empiezan desde cero: un código inicial del docente
   contaría como del estudiante.
 - Un archivo de tarea llamado `test_algo.py` se omite por su nombre.
