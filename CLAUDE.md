@@ -45,6 +45,8 @@ Nota: la versión original de este archivo proponía FastAPI + Pydantic + SQLAlc
 7. Cifrado en reposo del volumen o de la base, gestionado por la plataforma, más respaldo cifrado; no cifrado por campo.
 8. Despliegue por script reproducible; CI automatizado solo para las pruebas.
 9. Propuestas PR-01 (IDC con intervalo) y PR-04 (aviso de varios autores) aceptadas como RF-34 y RF-35; PR-02 cubierta por RNF-08; PR-05 (calibración) condicionada a SP-03.
+10. (2026-11-10) El código de IA editado a mano (`ia_editado`) se **excluye del entrenamiento** del clasificador y se evalúa aparte con dos lecturas (07 §1.1, §5).
+11. (2026-11-10) Se incluye un "índice de delegación por historial" (solo rasgos de proceso) como variable exploratoria para HE1, en modo GO y en plan B (07 §8).
 
 ## Estado del repositorio (léelo antes de cualquier fase)
 - Existe un **prototipo funcional en Django** construido antes de adoptar este protocolo (commits del 2026-11-05). Cubre parte del módulo 1 y del módulo 2; el detalle está en `docs/arquitectura/00-estado-actual.md`.
