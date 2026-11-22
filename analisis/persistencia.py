@@ -12,6 +12,7 @@ from .models import (
     Participante,
     ResultadoConcepto,
 )
+from .servicios.autoria import FiltroAutor
 from .servicios.clasificador import cargar_modelo
 from .servicios.conceptos import CONCEPTOS
 from .servicios.exportacion import (
@@ -26,6 +27,10 @@ from .servicios.repositorio import ErrorRepositorio
 
 class RepositorioSinFunciones(Exception):
     """El repositorio se leyó bien, pero no tiene funciones Python que analizar."""
+
+
+class SinCorreosDeclarados(Exception):
+    """Sin correos de commit no se puede aplicar el filtro por autor (D19)."""
 
 
 def parametros_vigentes() -> Parametros:
@@ -69,6 +74,8 @@ def _guardar(
             idc_global=resultado.idc_global,
             n_autores=datos.n_autores,
             n_triviales=datos.n_triviales,
+            n_fragmentos_otros_autores=datos.n_fragmentos_otros_autores,
+            n_indexacion_indeterminada=datos.n_indexacion_indeterminada,
         )
         if asignacion is None:
             asignacion = _sortear(participante, analisis, resultado.debiles)
@@ -111,6 +118,11 @@ def _motivo_sin_fragmentos(datos: ResultadoAnalisis, es_post: bool) -> str:
             "No se encontraron funciones Python para analizar en el repositorio "
             "(se omiten los archivos de pruebas y las funciones triviales)."
         )
+    if datos.n_fragmentos_otros_autores:
+        detalle += (
+            f" Se descartaron {datos.n_fragmentos_otros_autores} funciones de otros "
+            "autores: revisa los correos de commit declarados."
+        )
     if datos.archivos_con_error:
         detalle += (
             " Archivos que no se pudieron leer: "
@@ -121,6 +133,12 @@ def _motivo_sin_fragmentos(datos: ResultadoAnalisis, es_post: bool) -> str:
 
 def ejecutar_analisis(participante: Participante) -> Analisis:
     """Hace el análisis pre, con su sorteo, o un post sobre el código nuevo."""
+    if not participante.hashes_correos:
+        raise SinCorreosDeclarados(
+            f"{participante.codigo} no tiene correos de commit declarados: sin ellos no "
+            "se puede separar su código del de otros autores (D19)."
+        )
+    filtro = FiltroAutor(frozenset(participante.hashes_correos), settings.SAL_CORREOS)
     asignacion = (
         Asignacion.objects.select_related("analisis_base")
         .filter(participante=participante).first()
@@ -137,7 +155,7 @@ def ejecutar_analisis(participante: Participante) -> Analisis:
     modelo = cargar_modelo(settings.RUTA_MODELO)
     datos = analizar_repositorio(
         participante.repositorio, modelo, parametros, base=settings.BASE_DIR,
-        desde_commit=desde_commit,
+        desde_commit=desde_commit, filtro=filtro,
     )
     # Un análisis vacío pasaría a ser el último y ocultaría uno válido anterior.
     if not datos.fragmentos:

@@ -41,6 +41,14 @@ if not SECRET_KEY:
 
 DEBUG = os.environ.get("DJANGO_DEBUG", "").lower() in {"1", "true", "si", "sí"}
 
+# Sal del HMAC de los correos de commit (D19). Si se pierde, no se puede repetir
+# el filtro por autor: se respalda junto con la clave del almacén local.
+SAL_CORREOS = os.environ.get("IDC_SAL_CORREOS", "")
+if not SAL_CORREOS:
+    raise ImproperlyConfigured(
+        "Falta IDC_SAL_CORREOS: defínela en el entorno o en .env (ver .env.ejemplo)."
+    )
+
 ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 
 

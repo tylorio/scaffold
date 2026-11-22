@@ -23,17 +23,22 @@ python -m venv .venv
 # 2. Instalar dependencias
 pip install -r requirements.txt
 
-# 3. Crear la base de datos
+# 3. Configurar los secretos locales: copia .env.ejemplo como .env y rellena
+#    DJANGO_SECRET_KEY e IDC_SAL_CORREOS con los comandos que indica el archivo.
+#    .env no se versiona.
+copy .env.ejemplo .env
+
+# 4. Crear la base de datos
 python manage.py migrate
 
-# 4. Crear el corpus demo y entrenar el modelo
+# 5. Crear el corpus demo y entrenar el modelo
 python scripts\crear_corpus_demo.py
 python scripts\entrenar_modelo.py
 
-# 5. Darle historial Git a demo_repo/
+# 6. Darle historial Git a demo_repo/
 python scripts\preparar_demo_repo.py
 
-# 6. Levantar el servidor
+# 7. Levantar el servidor
 python manage.py runserver
 ```
 
@@ -47,11 +52,14 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
 
 ## Probar el flujo con `demo_repo/`
 
-`demo_repo/` es pequeño: antes de empezar, pon m = 3 en **Configuración**. Con el
-valor por defecto (m = 5), recursión y excepciones quedarían como «datos
-insuficientes», porque solo tienen 4 fragmentos.
+`demo_repo/` es pequeño: antes de empezar, pon m = 3 y λ = 0,4 en **Configuración**.
+Con el valor por defecto (m = 5), recursión y excepciones quedarían como «datos
+insuficientes», porque solo tienen 4 fragmentos. Con λ = 0,5, estructuras de datos
+no llegaría a débil y no habría concepto de control que mostrar.
 
-1. En **Participantes**, registra el código `P01` con el repositorio `demo_repo`.
+1. En **Participantes**, registra el código `P01` con el repositorio `demo_repo` y el
+   correo de commit `demo@example.invalid`. Es el autor que usa
+   `preparar_demo_repo.py`; con otro correo no se analizaría ninguna función (D19).
 2. Pulsa **Analizar repositorio (pre)**. Este primer análisis sortea la asignación.
 3. En el detalle de `P01` verás 16 fragmentos (2 triviales omitidos), un IDC
    global de 0,44 y esta evaluación:
@@ -59,7 +67,7 @@ insuficientes», porque solo tienen 4 fragmentos.
    | Concepto | Fragmentos | IDC | IC 95 % | Estado | Asignación |
    |---|---:|---:|---:|---|---|
    | Recursión | 4 | 1,00 | 0,51 – 1,00 | Débil | Sorteo |
-   | Estructuras de datos | 8 | 0,50 | 0,22 – 0,78 | Débil | Sorteo |
+   | Estructuras de datos | 7 | 0,43 | 0,16 – 0,75 | Débil | Sorteo |
    | Manejo de excepciones | 4 | 0,00 | 0,00 – 0,49 | No débil | Sin asignar |
 
    Hay 2 conceptos débiles: uno sale reforzado y el otro queda de control, por
@@ -81,11 +89,13 @@ insuficientes», porque solo tienen 4 fragmentos.
 
    ```python
    def unicos(lista):
-       vistos = []
+       vistos = set()
+       resultado = []
        for x in lista:
            if x not in vistos:
-               vistos.append(x)
-       return vistos
+               vistos.add(x)
+               resultado.append(x)
+       return resultado
    ```
 5. Prueba el control: abre `/refuerzo/P01/recursion/` o
    `/refuerzo/P01/estructuras_datos/`, según cuál quedó de control. Debe responder

@@ -4,11 +4,12 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from .autoria import FiltroAutor
 from .clasificador import ModeloCargado
 from .conceptos import ESTRUCTURAS
 from .extraccion import ErrorSintaxis, Fragmento, extraer_funciones
 from .idc import Parametros, ResultadoIDC, calcular_resultados
-from .repositorio import abrir_repositorio, decodificar
+from .repositorio import ErrorRepositorio, abrir_repositorio, decodificar
 
 
 @dataclass(frozen=True)
@@ -30,6 +31,7 @@ class ResultadoAnalisis:
     resultado_amplio: ResultadoIDC | None = None  # conceptos-v1-amplia, para sensibilidad
     # Fragmentos sin estructuras de datos que tienen alguna indexación de tipo desconocido (R4).
     n_indexacion_indeterminada: int = 0
+    n_fragmentos_otros_autores: int = 0  # descartados por el filtro por autor (D19)
 
 
 def analizar_repositorio(
@@ -38,11 +40,13 @@ def analizar_repositorio(
     parametros: Parametros = Parametros(),
     base: Path | None = None,
     desde_commit: str | None = None,
+    filtro: FiltroAutor | None = None,
 ) -> ResultadoAnalisis:
     """Analiza el repositorio; con `desde_commit`, solo lo escrito después de él.
 
-    Un análisis post sobre todo el repositorio repetiría el código del pre y el
-    IDC casi no podría cambiar.
+    Con `filtro`, solo entran las funciones cuyo commit mayoritario es de un correo
+    declarado por el participante (D19). Sin historial Git no hay autoría que
+    comprobar, así que el análisis se rechaza.
     """
     with abrir_repositorio(origen, base) as repositorio:
         extraidos: list[Fragmento] = []
@@ -61,6 +65,21 @@ def analizar_repositorio(
                 f for f in extraidos
                 if repositorio.commit_de(f.archivo, f.linea_inicio, f.linea_fin) in nuevos
             ]
+
+        n_otros_autores = 0
+        if filtro is not None and extraidos:
+            if not repositorio.tiene_historial:
+                raise ErrorRepositorio(
+                    "No se puede comprobar de quién es cada función sin historial Git (D19)."
+                )
+            propios = [
+                f for f in extraidos
+                if filtro.es_propio(
+                    repositorio.correo_autor(f.archivo, f.linea_inicio, f.linea_fin)
+                )
+            ]
+            n_otros_autores = len(extraidos) - len(propios)
+            extraidos = propios
 
         fragmentos = [f for f in extraidos if not f.trivial]
         inserciones = [
@@ -98,4 +117,5 @@ def analizar_repositorio(
             1 for f in fragmentos
             if f.indexaciones_indeterminadas and ESTRUCTURAS not in f.conceptos
         ),
+        n_fragmentos_otros_autores=n_otros_autores,
     )

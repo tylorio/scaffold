@@ -4,6 +4,7 @@ import io
 from pathlib import Path
 
 import pytest
+from django.conf import settings as ajustes
 from django.db.models import RestrictedError
 from django.urls import reverse
 from git import Actor, Repo
@@ -15,6 +16,7 @@ from analisis.models import (
     Participante,
     ResultadoConcepto,
 )
+from analisis.servicios.autoria import hash_correo, hashes_de_correos
 from analisis.servicios.conceptos import (
     ESTRUCTURAS,
     EXCEPCIONES,
@@ -72,9 +74,27 @@ def repositorio(tmp_path):
     return tmp_path
 
 
+CORREO = "persona@example.invalid"
+OTRA_PERSONA = Actor("Otra Persona", "otra@example.invalid")
+
+
+def crear_participante(codigo, repositorio, correos=(CORREO,)):
+    return Participante.objects.create(
+        codigo=codigo, repositorio=repositorio,
+        hashes_correos=hashes_de_correos(correos, ajustes.SAL_CORREOS),
+    )
+
+
+def commitear(carpeta, archivo, contenido, autor=Actor("Persona Real", CORREO)):
+    (carpeta / archivo).write_text(contenido, encoding="utf-8")
+    with Repo.init(carpeta) as repo:
+        repo.index.add([archivo])
+        repo.index.commit(archivo, author=autor, committer=autor)
+
+
 @pytest.fixture
 def participante(repositorio):
-    return Participante.objects.create(codigo="P01", repositorio=str(repositorio))
+    return crear_participante(codigo="P01", repositorio=str(repositorio))
 
 
 def analisis_con(participante, reforzados):
@@ -106,9 +126,23 @@ def test_configuracion_y_servicio_usan_los_mismos_valores_por_defecto():
 def test_registra_participante(client, repositorio):
     respuesta = client.post(reverse("analisis:lista"), {
         "codigo": "P02", "repositorio": str(repositorio),
+        "correos": "Persona@Example.invalid, segundo@example.invalid",
     })
     assert respuesta.status_code == 302
-    assert Participante.objects.filter(codigo="P02").exists()
+    participante = Participante.objects.get(codigo="P02")
+    assert participante.hashes_correos == hashes_de_correos(
+        [CORREO, "segundo@example.invalid"], ajustes.SAL_CORREOS
+    )
+    assert "example" not in repr(Participante.objects.filter(pk=participante.pk).values())
+
+
+@pytest.mark.parametrize("correos", ["", "no-es-un-correo"])
+def test_rechaza_participante_sin_correos_validos(client, repositorio, correos):
+    respuesta = client.post(reverse("analisis:lista"), {
+        "codigo": "P02", "repositorio": str(repositorio), "correos": correos,
+    })
+    assert respuesta.status_code == 200
+    assert not Participante.objects.exists()
 
 
 @pytest.mark.parametrize("codigo", ["Juan Perez", "juanperez", "P1"])
@@ -161,7 +195,7 @@ def test_analizar_guarda_y_muestra_resultados(client, participante):
 
 def test_analizar_sin_funciones_avisa_y_no_guarda(client, tmp_path):
     (tmp_path / "datos.py").write_text("x = 1\n", encoding="utf-8")
-    participante = Participante.objects.create(codigo="P02", repositorio=str(tmp_path))
+    participante = crear_participante(codigo="P02", repositorio=str(tmp_path))
 
     respuesta = client.post(reverse("analisis:analizar", args=["P02"]), follow=True)
     html = respuesta.content.decode()
@@ -172,8 +206,8 @@ def test_analizar_sin_funciones_avisa_y_no_guarda(client, tmp_path):
 
 
 def test_analizar_solo_funciones_triviales_no_guarda(client, tmp_path):
-    (tmp_path / "a.py").write_text("def f():\n    return 1\n", encoding="utf-8")
-    Participante.objects.create(codigo="P02", repositorio=str(tmp_path))
+    commitear(tmp_path, "a.py", "def f():\n    return 1\n")
+    crear_participante(codigo="P02", repositorio=str(tmp_path))
 
     respuesta = client.post(reverse("analisis:analizar", args=["P02"]), follow=True)
 
@@ -219,7 +253,7 @@ def test_analizar_guarda_autores_y_triviales(client, participante, repositorio):
 
 def test_analizar_sin_funciones_nombra_los_archivos_ilegibles(client, tmp_path):
     (tmp_path / "roto.py").write_text("def f(:\n", encoding="utf-8")
-    Participante.objects.create(codigo="P02", repositorio=str(tmp_path))
+    crear_participante(codigo="P02", repositorio=str(tmp_path))
 
     respuesta = client.post(reverse("analisis:analizar", args=["P02"]), follow=True)
 
@@ -253,7 +287,7 @@ def test_analizar_requiere_post(client, participante):
 
 
 def test_repositorio_desaparecido_muestra_error(client):
-    Participante.objects.create(codigo="P09", repositorio=r"Z:\no\existe")
+    crear_participante(codigo="P09", repositorio=r"Z:\no\existe")
     respuesta = client.post(reverse("analisis:analizar", args=["P09"]), follow=True)
     assert "No existe la carpeta" in respuesta.content.decode()
 
@@ -377,13 +411,64 @@ def test_post_sin_codigo_nuevo_avisa_y_no_guarda(client, participante, todo_debi
     assert Analisis.objects.count() == 1
 
 
-def test_post_sin_historial_avisa_y_no_guarda(client, tmp_path, todo_debil):
+def test_sin_historial_no_se_puede_comprobar_la_autoria(client, tmp_path, todo_debil):
     (tmp_path / "a.py").write_text("def f(l):\n    l.sort()\n", encoding="utf-8")
-    Participante.objects.create(codigo="P02", repositorio=str(tmp_path))
-    analizar(client, "P02")
+    crear_participante(codigo="P02", repositorio=str(tmp_path))
     html = analizar(client, "P02").content.decode()
     assert "sin historial Git" in html
-    assert Analisis.objects.count() == 1
+    assert not Analisis.objects.exists()
+
+
+# Filtro por autor (D19)
+
+def test_solo_se_analizan_las_funciones_del_participante(client, participante, repositorio):
+    commitear(
+        repositorio, "del_companero.py",
+        "def ajena(l):\n    l.sort()\n\n\ndef otra_ajena(n):\n    return otra_ajena(n - 1)\n",
+        autor=OTRA_PERSONA,
+    )
+    analizar(client)
+    analisis = participante.ultimo_analisis
+    assert set(analisis.fragmentos.values_list("nombre", flat=True)) == {
+        "recursiva", "con_lista", "con_try",
+    }
+    assert analisis.n_fragmentos_otros_autores == 2
+    assert analisis.n_autores == 2
+
+
+def test_no_se_guardan_correos_de_terceros_ni_sus_hashes(
+    client, participante, repositorio
+):
+    commitear(repositorio, "del_companero.py", "def ajena(l):\n    l.sort()\n",
+              autor=OTRA_PERSONA)
+    analizar(client)
+    huella_ajena = hash_correo(OTRA_PERSONA.email, ajustes.SAL_CORREOS)
+    guardado = repr(list(Participante.objects.values())) + repr(
+        list(Analisis.objects.values())
+    ) + repr(list(participante.ultimo_analisis.fragmentos.values()))
+    exportado = "".join(
+        client.get(reverse(nombre)).content.decode()
+        for nombre in ("analisis:exportar", "analisis:exportar_analisis")
+    )
+    for texto in (guardado, exportado):
+        assert "otra@example" not in texto
+        assert "Otra Persona" not in texto
+        assert huella_ajena not in texto
+
+
+def test_participante_sin_correos_declarados_no_se_analiza(client, repositorio):
+    Participante.objects.create(codigo="P05", repositorio=str(repositorio))
+    html = analizar(client, "P05").content.decode()
+    assert "no tiene correos de commit declarados" in html
+    assert not Analisis.objects.exists()
+
+
+def test_si_ningun_correo_coincide_avisa_cuantas_se_descartaron(client, repositorio):
+    crear_participante(codigo="P06", repositorio=str(repositorio),
+                       correos=("nadie@example.invalid",))
+    html = analizar(client, "P06").content.decode()
+    assert "Se descartaron 3 funciones de otros autores" in html
+    assert not Analisis.objects.exists()
 
 
 def test_borrar_la_asignacion_permite_volver_a_empezar(client, participante, todo_debil):
@@ -416,7 +501,7 @@ def test_un_solo_debil_se_marca_como_no_comparable(client, tmp_path):
     config = Configuracion.obtener()
     config.theta, config.m = 0, 1
     config.save()
-    Participante.objects.create(codigo="P02", repositorio=str(tmp_path))
+    crear_participante(codigo="P02", repositorio=str(tmp_path))
 
     html = analizar(client, "P02").content.decode()
 

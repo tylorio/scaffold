@@ -38,6 +38,8 @@ class Participante(models.Model):
         "código anónimo", max_length=8, unique=True, validators=[CODIGO_ANONIMO],
     )
     repositorio = models.CharField("ruta local o URL del repositorio", max_length=500)
+    # HMAC con sal de los correos de commit que declaró el participante (D19). Nunca en claro.
+    hashes_correos = models.JSONField(default=list)
     creado = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -81,6 +83,8 @@ class Analisis(models.Model):
     idc_global = models.FloatField(null=True)
     n_autores = models.PositiveIntegerField(null=True)
     n_triviales = models.PositiveIntegerField(default=0)
+    n_fragmentos_otros_autores = models.PositiveIntegerField(default=0)  # D19
+    n_indexacion_indeterminada = models.PositiveIntegerField(default=0)  # R4
 
     class Meta:
         ordering = ["-fecha", "-id"]

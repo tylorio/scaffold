@@ -7,6 +7,7 @@ from .forms import ConfiguracionForm, ParticipanteForm
 from .models import Configuracion, Participante
 from .persistencia import (
     RepositorioSinFunciones,
+    SinCorreosDeclarados,
     ejecutar_analisis,
     exportar_csv,
     exportar_csv_analisis,
@@ -38,6 +39,7 @@ def analizar(request, codigo):
         analisis = ejecutar_analisis(participante)
     except (
         OrigenInvalido, ErrorRepositorio, ModeloNoDisponible, RepositorioSinFunciones,
+        SinCorreosDeclarados,
     ) as error:
         messages.error(request, str(error))
         return redirect("analisis:lista")

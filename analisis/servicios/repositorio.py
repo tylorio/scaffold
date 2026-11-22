@@ -132,6 +132,9 @@ class CarpetaLocal:
     def commit_de(self, archivo: str, inicio: int, fin: int) -> str | None:
         return None
 
+    def correo_autor(self, archivo: str, inicio: int, fin: int) -> str | None:
+        return None
+
 
 class RepositorioGit:
     """Analiza el contenido de HEAD, no los cambios sin confirmar."""
@@ -145,6 +148,7 @@ class RepositorioGit:
         self._inserciones: dict[str, int] | None = None
         self._commits_de_archivo: dict[str, list[str]] = {}
         self._autores: set[str] = set()  # solo en memoria: se guarda la cantidad
+        self._correo_de_commit: dict[str, str] = {}  # solo en memoria, para D19
 
     @property
     def n_autores(self) -> int:
@@ -201,7 +205,9 @@ class RepositorioGit:
                 blame = self._repo.blame("HEAD", archivo, w=True, M=True, C=True)
                 for commit, lineas in blame or []:
                     commits.extend([commit.hexsha] * len(lineas))
-                    self._autores.add(commit.author.email.lower())
+                    correo = commit.author.email.lower()
+                    self._autores.add(correo)
+                    self._correo_de_commit[commit.hexsha] = correo
             except GitCommandError:
                 commits = []
             self._commits_de_archivo[archivo] = commits
@@ -211,6 +217,11 @@ class RepositorioGit:
         """Commit que aportó la mayoría de las líneas del fragmento."""
         lineas = self._commits_por_linea(archivo)[inicio - 1 : fin]
         return Counter(lineas).most_common(1)[0][0] if lineas else None
+
+    def correo_autor(self, archivo: str, inicio: int, fin: int) -> str | None:
+        """Correo del autor del commit mayoritario. Solo para compararlo en memoria."""
+        commit = self.commit_de(archivo, inicio, fin)
+        return None if commit is None else self._correo_de_commit.get(commit)
 
     def insercion_commit(self, archivo: str, inicio: int, fin: int) -> int | None:
         """Tamaño del commit que aportó la mayoría de las líneas del fragmento."""

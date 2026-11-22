@@ -7,6 +7,7 @@ RAIZ = Path(__file__).resolve().parent.parent
 
 CODIGO = """
 import sys
+import analisis.servicios.autoria
 import analisis.servicios.conceptos
 import analisis.servicios.extraccion
 import analisis.servicios.caracteristicas

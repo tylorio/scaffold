@@ -1,11 +1,24 @@
+import re
+
 from django import forms
 from django.conf import settings
+from django.core.validators import validate_email
 
 from .models import Configuracion, Participante
+from .servicios.autoria import hashes_de_correos
 from .servicios.repositorio import OrigenInvalido, validar_origen
 
 
 class ParticipanteForm(forms.ModelForm):
+    correos = forms.CharField(
+        label="Correos de commit",
+        help_text=(
+            "Los que el participante usa en sus commits, separados por comas. Solo se "
+            "analizan sus funciones, y del correo solo se guarda una huella (HMAC)."
+        ),
+        widget=forms.TextInput(attrs={"placeholder": "correo@ejemplo.com"}),
+    )
+
     class Meta:
         model = Participante
         fields = ["codigo", "repositorio"]
@@ -23,6 +36,20 @@ class ParticipanteForm(forms.ModelForm):
         except OrigenInvalido as error:
             raise forms.ValidationError(str(error)) from error
         return origen
+
+    def clean_correos(self):
+        correos = [c for c in re.split(r"[\s,;]+", self.cleaned_data["correos"]) if c]
+        for correo in correos:
+            validate_email(correo)
+        if not correos:
+            raise forms.ValidationError("Indica al menos un correo.")
+        return correos
+
+    def save(self, commit=True):
+        self.instance.hashes_correos = hashes_de_correos(
+            self.cleaned_data["correos"], settings.SAL_CORREOS
+        )
+        return super().save(commit)
 
 
 class ConfiguracionForm(forms.ModelForm):
