@@ -6,9 +6,14 @@ from django.views.decorators.http import require_POST
 from .forms import ConfiguracionForm, ParticipanteForm
 from .models import Configuracion, Participante
 from .persistencia import (
+    AsignacionCongelada,
+    NoSePuedeCongelar,
     RepositorioSinFunciones,
     SinCorreosDeclarados,
+    congelacion,
+    congelar_asignacion,
     ejecutar_analisis,
+    estado_congelacion,
     exportar_csv,
     exportar_csv_analisis,
 )
@@ -29,23 +34,26 @@ def lista_participantes(request):
             .prefetch_related("analisis")
         ),
         "form": form,
+        "estado": estado_congelacion(),
     })
 
 
 @require_POST
 def analizar(request, codigo):
     participante = get_object_or_404(Participante, codigo=codigo)
+    reemplaza = participante.ultimo_analisis is not None
     try:
         analisis = ejecutar_analisis(participante)
     except (
         OrigenInvalido, ErrorRepositorio, ModeloNoDisponible, RepositorioSinFunciones,
-        SinCorreosDeclarados,
+        SinCorreosDeclarados, AsignacionCongelada,
     ) as error:
         messages.error(request, str(error))
         return redirect("analisis:lista")
     messages.success(
         request,
-        f"Análisis {analisis.fase} completado: {analisis.n_fragmentos} fragmentos.",
+        f"Diagnóstico completado: {analisis.n_fragmentos} fragmentos."
+        + (" Reemplaza al análisis anterior." if reemplaza else ""),
     )
     if analisis.archivos_con_error:
         messages.warning(
@@ -63,14 +71,13 @@ def detalle_participante(request, codigo):
         "participante": participante,
         "analisis": analisis,
         "asignacion": getattr(participante, "asignacion", None),
+        "congelada": congelacion() is not None,
     }
     if analisis is not None:
         conceptos = list(analisis.conceptos.all())
         contexto.update({
             "conceptos": conceptos,
             "debiles": [c for c in conceptos if c.estado == "debil"],
-            "reforzados": [c for c in conceptos if c.reforzado],
-            "no_reforzados": [c for c in conceptos if not c.reforzado],
             "fragmentos": analisis.fragmentos.all(),
         })
     return render(request, "analisis/detalle.html", contexto)
@@ -78,7 +85,9 @@ def detalle_participante(request, codigo):
 
 def configuracion(request):
     config = Configuracion.obtener()
-    form = ConfiguracionForm(request.POST or None, instance=config)
+    form = ConfiguracionForm(
+        request.POST or None, instance=config, congelada=congelacion() is not None,
+    )
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(
@@ -89,6 +98,23 @@ def configuracion(request):
         "form": form,
         "conceptos": NOMBRES_CONCEPTOS.values(),
     })
+
+
+def congelar(request):
+    """Muestra qué va a pasar y, al confirmar, congela la asignación de todos (D3)."""
+    if request.method == "POST":
+        try:
+            hecha = congelar_asignacion()
+        except (NoSePuedeCongelar, AsignacionCongelada) as error:
+            messages.error(request, str(error))
+            return redirect("analisis:congelar")
+        messages.success(
+            request,
+            f"Asignación congelada el {hecha.fecha:%d/%m/%Y %H:%M}, en modo {hecha.modo}. "
+            "Ya no se puede reanalizar a nadie.",
+        )
+        return redirect("analisis:lista")
+    return render(request, "analisis/congelar.html", {"estado": estado_congelacion()})
 
 
 def respuesta_csv(contenido, nombre):

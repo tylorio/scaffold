@@ -13,6 +13,7 @@ from analisis.models import (
     Analisis,
     Asignacion,
     Configuracion,
+    Congelacion,
     Participante,
     ResultadoConcepto,
 )
@@ -24,10 +25,14 @@ from analisis.servicios.conceptos import (
     RECURSION,
 )
 from analisis.servicios.entrenamiento import Muestra, entrenar_modelo, guardar_modelo
-from analisis.servicios.idc import Parametros, repartir_conceptos
+from analisis.servicios.idc import (
+    Parametros,
+    derivar_semilla,
+    repartir_conceptos,
+    sortear_orden,
+)
 from crear_corpus_demo import generar_corpus
 from refuerzo.models import AperturaRefuerzo, IntentoEjercicio
-from refuerzo.servicios.contenido import PLANTILLAS
 
 pytestmark = pytest.mark.django_db
 
@@ -335,7 +340,7 @@ def test_rechaza_configuracion_fuera_de_rango(client):
     assert Configuracion.obtener().theta == 0.5
 
 
-# Asignación y fases
+# Diagnóstico y congelación de la asignación (D2, D3, R2, R3, R5)
 
 @pytest.fixture
 def todo_debil():
@@ -345,82 +350,156 @@ def todo_debil():
     config.save()
 
 
-def agregar_funcion(repositorio, nombre="tarea_nueva"):
-    ruta = repositorio / f"{nombre}.py"
-    ruta.write_text(f"def {nombre}(l):\n    l.sort()\n", encoding="utf-8")
-    with Repo(repositorio) as repo:
-        repo.index.add([ruta.name])
-        autor = Actor("Persona Real", "persona@example.invalid")
-        repo.index.commit(nombre, author=autor, committer=autor)
-
-
 def analizar(client, codigo="P01"):
     return client.post(reverse("analisis:analizar", args=[codigo]), follow=True)
+
+
+def fijar_modo(modo="confirmatorio"):
+    config = Configuracion.obtener()
+    config.modo = modo
+    config.save()
+
+
+def congelar(client, modo="confirmatorio"):
+    fijar_modo(modo)
+    return client.post(reverse("analisis:congelar"), follow=True)
 
 
 def asignacion_de(codigo="P01"):
     return Asignacion.objects.get(participante__codigo=codigo)
 
 
-def test_primer_analisis_es_pre_y_crea_la_asignacion(client, participante, todo_debil):
-    assert participante.fase_siguiente == "pre"
+def test_analizar_no_sortea(client, participante, todo_debil):
     analizar(client)
-
-    analisis = participante.ultimo_analisis
-    asignacion = asignacion_de()
-    assert analisis.fase == "pre"
-    assert asignacion.analisis_base == analisis
-    assert len(asignacion.reforzados) == 2
-    assert len(asignacion.control) == 1
-    assert asignacion.comparable
-    assert asignacion.debiles == [RECURSION, ESTRUCTURAS, EXCEPCIONES]
-    guardados = {c.concepto for c in analisis.conceptos.all() if c.reforzado}
-    assert guardados == set(asignacion.reforzados)
+    assert not Asignacion.objects.exists()
+    assert not participante.ultimo_analisis.conceptos.filter(reforzado=True).exists()
+    url = reverse("refuerzo:concepto", args=["P01", RECURSION])
+    assert client.get(url).status_code == 403  # sin congelar no hay material
 
 
-def test_la_semilla_guardada_reproduce_la_asignacion(client, participante, todo_debil):
+def test_volver_a_analizar_reemplaza_el_diagnostico(client, participante, todo_debil):
     analizar(client)
-    asignacion = asignacion_de()
-    reparto = repartir_conceptos(asignacion.debiles, asignacion.semilla)
-    assert list(reparto.reforzados) == asignacion.reforzados
-    assert list(reparto.control) == asignacion.control
-
-
-def test_post_conserva_la_asignacion_aunque_cambien_los_debiles(
-    client, participante, repositorio, todo_debil
-):
-    analizar(client)
-    asignacion = asignacion_de()
-    agregar_funcion(repositorio)
-    config = Configuracion.obtener()
-    config.theta = 1  # ya nada cuenta como IA: ningún concepto sería débil
-    config.save()
-
-    analizar(client)
-
-    analisis = participante.ultimo_analisis
-    assert analisis.fase == "post"
-    assert Asignacion.objects.count() == 1
-    assert asignacion_de().semilla == asignacion.semilla
-    assert {c.concepto for c in analisis.conceptos.all() if c.reforzado} == set(
-        asignacion.reforzados
-    )
-    assert not analisis.conceptos.filter(estado="debil").exists()
-
-
-def test_post_mide_solo_el_codigo_nuevo(client, participante, repositorio, todo_debil):
-    analizar(client)
-    agregar_funcion(repositorio)
-    analizar(client)
-    analisis = participante.ultimo_analisis
-    assert [f.nombre for f in analisis.fragmentos.all()] == ["tarea_nueva"]
-
-
-def test_post_sin_codigo_nuevo_avisa_y_no_guarda(client, participante, todo_debil):
-    analizar(client)
+    anterior = participante.ultimo_analisis.pk
     html = analizar(client).content.decode()
-    assert "No hay funciones nuevas" in html
     assert Analisis.objects.count() == 1
+    assert participante.ultimo_analisis.pk != anterior
+    assert "Reemplaza al análisis anterior" in html
+
+
+def test_no_se_puede_congelar_sin_modo(client, participante, todo_debil):
+    analizar(client)
+    html = client.get(reverse("analisis:congelar")).content.decode()
+    assert "Fija el modo" in html
+    client.post(reverse("analisis:congelar"))
+    assert not Congelacion.objects.exists()
+
+
+def test_no_se_puede_congelar_si_falta_un_diagnostico(client, participante, repositorio):
+    crear_participante(codigo="P02", repositorio=str(repositorio))
+    analizar(client)
+    html = congelar(client).content.decode()
+    assert "Sin diagnóstico: P02" in html
+    assert not Congelacion.objects.exists()
+
+
+def test_la_pagina_de_congelar_muestra_que_va_a_pasar(client, participante, todo_debil):
+    analizar(client)
+    fijar_modo()
+    html = client.get(reverse("analisis:congelar")).content.decode()
+    assert "una sola vez" in html
+    assert "Caso A, entre los débiles:\n            1 participante." in html
+    assert not Congelacion.objects.exists()  # mirar no congela
+
+
+def test_congelar_sortea_conceptos_y_orden_de_todos(client, participante, repositorio, todo_debil):
+    crear_participante(codigo="P02", repositorio=str(repositorio))
+    analizar(client)
+    analizar(client, "P02")
+
+    congelar(client)
+
+    [hecha] = Congelacion.objects.all()
+    assert (hecha.modo, hecha.tamano_bloque) == ("confirmatorio", 4)
+    asignaciones = list(Asignacion.objects.order_by("participante__codigo"))
+    assert [a.caso for a in asignaciones] == ["A", "A"]
+    assert sorted(a.orden for a in asignaciones) == ["AB", "BA"]
+    for a in asignaciones:
+        assert (len(a.reforzados), len(a.control)) == (2, 1)
+        guardados = {c.concepto for c in a.analisis_base.conceptos.all() if c.reforzado}
+        assert guardados == set(a.reforzados)
+
+
+def test_la_semilla_base_reproduce_la_asignacion(client, participante, todo_debil):
+    from analisis.persistencia import _resultado_idc
+    analizar(client)
+    congelar(client)
+    base, asignacion = Congelacion.objects.get().semilla_base, asignacion_de()
+    reparto = repartir_conceptos(
+        _resultado_idc(asignacion.analisis_base),
+        derivar_semilla(base, "conceptos", "P01"), asignacion.modo,
+    )
+    assert (list(reparto.reforzados), list(reparto.control)) == (
+        asignacion.reforzados, asignacion.control,
+    )
+    assert asignacion.semilla == reparto.semilla
+    assert sortear_orden(["P01"], base)["P01"] == asignacion.orden
+
+
+def test_modo_exploratorio_omite_el_caso_a(client, participante, todo_debil):
+    analizar(client)
+    congelar(client, "exploratorio")
+    assert (asignacion_de().caso, asignacion_de().modo) == ("B", "exploratorio")
+
+
+def test_despues_de_congelar_no_se_puede_reanalizar(client, participante, todo_debil):
+    analizar(client)
+    congelar(client)
+    html = analizar(client).content.decode()
+    assert "ya está congelada" in html
+    assert Analisis.objects.count() == 1
+    assert "Volver a analizar" not in client.get(reverse("analisis:lista")).content.decode()
+
+
+def test_no_se_congela_dos_veces(client, participante, todo_debil):
+    analizar(client)
+    congelar(client)
+    congelar(client)
+    assert Congelacion.objects.count() == 1
+    assert Asignacion.objects.count() == 1
+
+
+def test_el_modo_no_cambia_despues_de_congelar(client, participante, todo_debil):
+    analizar(client)
+    congelar(client)
+    client.post(reverse("analisis:configuracion"), {
+        "theta": 0, "lambda_valor": 0.5, "m": 1, "modo": "exploratorio",
+    })
+    assert Configuracion.obtener().modo == "confirmatorio"
+
+
+def test_lo_que_va_despues_de_congelar_lo_exige(client, participante, todo_debil):
+    from analisis.persistencia import NoSePuedeCongelar, exigir_asignacion_congelada
+    analizar(client)
+    with pytest.raises(NoSePuedeCongelar):
+        exigir_asignacion_congelada()
+    congelar(client)
+    assert exigir_asignacion_congelada() == Congelacion.objects.get()
+
+
+def test_comando_congelar_asignacion(participante, client, todo_debil):
+    from django.core.management import CommandError, call_command
+    analizar(client)
+    with pytest.raises(CommandError) as falta_modo:
+        call_command("congelar_asignacion")
+    assert falta_modo.value.returncode == 10
+    fijar_modo()
+    salida = io.StringIO()
+    call_command("congelar_asignacion", "--semilla-base", "123", stdout=salida)
+    assert Congelacion.objects.get().semilla_base == 123
+    assert "P01  caso A" in salida.getvalue()
+    with pytest.raises(CommandError) as repetida:
+        call_command("congelar_asignacion")
+    assert repetida.value.returncode == 11
 
 
 def test_sin_historial_no_se_puede_comprobar_la_autoria(client, tmp_path, todo_debil):
@@ -483,74 +562,56 @@ def test_si_ningun_correo_coincide_avisa_cuantas_se_descartaron(client, reposito
     assert not Analisis.objects.exists()
 
 
-def test_borrar_la_asignacion_permite_volver_a_empezar(client, participante, todo_debil):
-    analizar(client)
-    asignacion_de().delete()
-    analizar(client)
-    assert participante.ultimo_analisis.fase == "pre"
-    assert Asignacion.objects.count() == 1
-
-
 def test_no_se_puede_borrar_el_analisis_base(client, participante, todo_debil):
     analizar(client)
+    congelar(client)
     with pytest.raises(RestrictedError):
         participante.ultimo_analisis.delete()
 
 
 def test_borrar_el_participante_borra_todo(client, participante, todo_debil):
     analizar(client)
+    congelar(client)
     participante.delete()
     assert not Analisis.objects.exists()
     assert not Asignacion.objects.exists()
 
 
-def test_un_solo_debil_se_marca_como_no_comparable(client, tmp_path):
-    (tmp_path / "a.py").write_text("def f(l):\n    l.sort()\n", encoding="utf-8")
-    with Repo.init(tmp_path) as repo:
-        repo.index.add(["a.py"])
-        autor = Actor("Persona Real", "persona@example.invalid")
-        repo.index.commit("uno", author=autor, committer=autor)
+def test_con_un_solo_concepto_calculable_se_sortea_entre_los_tres(client, tmp_path):
+    commitear(tmp_path, "a.py", "def f(l):\n    l.sort()\n")
     config = Configuracion.obtener()
     config.theta, config.m = 0, 1
     config.save()
     crear_participante(codigo="P02", repositorio=str(tmp_path))
+    analizar(client, "P02")
 
-    html = analizar(client, "P02").content.decode()
+    congelar(client)
 
     asignacion = asignacion_de("P02")
-    assert asignacion.reforzados == [ESTRUCTURAS]
-    assert not asignacion.comparable
-    assert "fuera de la comparación principal" in html
+    assert asignacion.caso == "C"
+    assert set(asignacion.reforzados) | set(asignacion.control) == {
+        RECURSION, ESTRUCTURAS, EXCEPCIONES,
+    }
 
 
-def test_detalle_muestra_fase_y_control(client, participante, todo_debil):
+def test_detalle_muestra_caso_orden_y_control(client, participante, todo_debil):
     analizar(client)
-    control = NOMBRES_CONCEPTOS[asignacion_de().control[0]]
+    assert "pendiente" in client.get(reverse("analisis:detalle", args=["P01"])).content.decode()
+    congelar(client)
+    asignacion = asignacion_de()
+    control = NOMBRES_CONCEPTOS[asignacion.control[0]]
     html = client.get(reverse("analisis:detalle", args=["P01"])).content.decode()
-    assert "Fase: pre" in html
-    assert f"<strong>Control:</strong>\n      {control}" in html
-    assert "Analizar repositorio (post)" in html
+    assert "A: entre los débiles" in html
+    assert f"<strong>Control:</strong>\n        {control}" in html
+    assert asignacion.get_orden_display() in html
+    assert "ya no se puede repetir" in html
 
 
 def test_el_concepto_de_control_queda_bloqueado(client, participante, todo_debil):
     analizar(client)
+    congelar(client)
     url = reverse("refuerzo:concepto", args=["P01", asignacion_de().control[0]])
     assert client.get(url).status_code == 403
-
-
-def test_los_intentos_siguen_visibles_tras_el_post(
-    client, participante, repositorio, todo_debil, settings
-):
-    settings.TIEMPO_LIMITE_EJERCICIO = 20
-    analizar(client)
-    concepto = asignacion_de().reforzados[0]
-    ejercicio = PLANTILLAS[concepto].ejercicios[0]
-    url = reverse("refuerzo:concepto", args=["P01", concepto])
-    client.post(url, {"ejercicio": ejercicio.id, "codigo": "marca_de_mi_intento = 1"})
-    agregar_funcion(repositorio)
-    analizar(client)
-
-    assert "marca_de_mi_intento" in client.get(url).content.decode()
 
 
 def test_abrir_el_material_registra_una_apertura(client, participante):
@@ -587,25 +648,29 @@ def filas_csv(client):
     return filas_de(client, reverse("analisis:exportar"))
 
 
-def test_exporta_cada_analisis_por_concepto_y_condicion(
-    client, participante, repositorio, todo_debil
-):
+def test_exporta_cada_concepto_con_su_condicion(client, participante, todo_debil):
     analizar(client)
-    agregar_funcion(repositorio)
-    analizar(client)
+    congelar(client)
     asignacion = asignacion_de()
 
     filas = filas_de(client, reverse("analisis:exportar_analisis"))
 
-    assert len(filas) == 6
-    assert [f["fase"] for f in filas] == ["pre"] * 3 + ["post"] * 3
-    condicion = {(f["fase"], f["concepto"]): f["condicion"] for f in filas}
-    assert condicion["pre", asignacion.control[0]] == "control"
-    assert condicion["post", asignacion.reforzados[0]] == "reforzado"
-    assert all(f["comparable"] == "1" for f in filas)
+    assert len(filas) == 3
+    condicion = {f["concepto"]: f["condicion"] for f in filas}
+    assert condicion[asignacion.control[0]] == "control"
+    assert condicion[asignacion.reforzados[0]] == "reforzado"
+    assert {(f["caso"], f["orden"], f["modo"]) for f in filas} == {
+        ("A", asignacion.orden, "confirmatorio"),
+    }
     assert {f["semilla"] for f in filas} == {str(asignacion.semilla)}
     assert filas[0]["idc"] != ""
     assert filas[0]["idc_ic_inf"] != ""
+
+
+def test_antes_de_congelar_el_csv_no_tiene_condicion(client, participante, todo_debil):
+    analizar(client)
+    filas = filas_de(client, reverse("analisis:exportar_analisis"))
+    assert {(f["condicion"], f["caso"]) for f in filas} == {("", "")}
 
 
 def test_exporta_intentos_numerados_con_su_condicion(client, participante, settings):
@@ -643,12 +708,13 @@ def test_los_csv_no_incluyen_datos_que_identifiquen(
         assert str(repositorio) not in contenido
 
 
-def test_csv_por_participante_incluye_fase_y_control(client, participante, todo_debil):
+def test_csv_por_participante_incluye_caso_orden_y_control(client, participante, todo_debil):
     analizar(client)
+    congelar(client)
     [fila] = filas_csv(client)
-    assert fila["fase"] == "pre"
-    assert fila["comparable"] == "1"
-    assert fila["conceptos_control"] == asignacion_de().control[0]
+    asignacion = asignacion_de()
+    assert (fila["caso"], fila["orden"], fila["modo"]) == ("A", asignacion.orden, "confirmatorio")
+    assert fila["conceptos_control"] == asignacion.control[0]
 
 
 def test_exporta_datos_por_participante(client, participante):

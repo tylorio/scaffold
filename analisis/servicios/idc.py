@@ -1,10 +1,11 @@
 """Índice de Dependencia Conductual y selección de conceptos a reforzar."""
 from __future__ import annotations
 
+import hashlib
 import math
 import random
 from dataclasses import dataclass
-from typing import Iterable
+from typing import Iterable, Sequence
 
 from .conceptos import CONCEPTOS
 
@@ -20,6 +21,17 @@ ETIQUETAS_ESTADO = {
 
 MAXIMO_REFORZADOS = 2
 Z_95 = 1.959964
+
+# Casos de la asignación escalonada (D2, ADR-004)
+CASO_A = "A"  # 2 o más débiles: se sortea entre los débiles
+CASO_B = "B"  # menos de 2 débiles y 2 o más calculables: entre los calculables
+CASO_C = "C"  # menos de 2 calculables: entre los 3 conceptos
+
+CONFIRMATORIO = "confirmatorio"
+EXPLORATORIO = "exploratorio"  # F1 < 0,70: "débil" no es confiable y se omite el caso A (R3)
+MODOS = (CONFIRMATORIO, EXPLORATORIO)
+
+ORDENES = ("AB", "BA")
 
 
 @dataclass(frozen=True)
@@ -50,12 +62,18 @@ class ResultadoIDC:
     def debiles(self) -> list[str]:
         return [c.concepto for c in self.conceptos if c.estado == DEBIL]
 
+    @property
+    def calculables(self) -> list[str]:
+        return [c.concepto for c in self.conceptos if c.estado != DATOS_INSUFICIENTES]
+
 
 @dataclass(frozen=True)
 class Reparto:
     reforzados: tuple[str, ...]
     control: tuple[str, ...]
-    comparable: bool  # hay reforzado y control, ambos débiles
+    caso: str
+    modo: str
+    semilla: int
 
 
 def calcular_idc(probabilidades: Iterable[float], theta: float) -> float | None:
@@ -97,26 +115,74 @@ def evaluar_concepto(
     return ResultadoConcepto(concepto, n_fragmentos, n_ia, idc, estado)
 
 
-def repartir_conceptos(debiles: Iterable[str], semilla: int) -> Reparto:
-    """Reparte al azar los conceptos débiles entre refuerzo y control.
+def conjunto_elegible(
+    resultado: ResultadoIDC, modo: str = CONFIRMATORIO
+) -> tuple[str, tuple[str, ...]]:
+    """Caso y conceptos entre los que se sortea (D2). Siempre hay al menos 2."""
+    if modo not in MODOS:
+        raise ValueError(f"Modo desconocido: {modo}")
+    if modo == CONFIRMATORIO and len(resultado.debiles) >= 2:
+        return CASO_A, tuple(resultado.debiles)
+    if len(resultado.calculables) >= 2:
+        return CASO_B, tuple(resultado.calculables)
+    return CASO_C, CONCEPTOS
 
-    El control también tiene que ser débil y salir por sorteo: comparar contra un
-    concepto no débil mide conceptos distintos, y reforzar siempre los IDC más
-    altos haría que mejoraran solo por regresión a la media.
 
-    Con un único concepto débil se refuerza igual, por el bien del estudiante, pero
-    no hay con qué compararlo y queda fuera de la comparación principal.
+def repartir_conceptos(
+    resultado: ResultadoIDC, semilla: int, modo: str = CONFIRMATORIO
+) -> Reparto:
+    """Sortea hasta 2 reforzados y al menos 1 de control entre los elegibles.
+
+    El control sale por sorteo y del mismo conjunto: reforzar siempre los IDC más
+    altos haría que mejoraran solo por regresión a la media. Los conceptos que no
+    son elegibles quedan sin asignar.
     """
-    candidatos = [c for c in CONCEPTOS if c in set(debiles)]
-    if len(candidatos) < 2:
-        return Reparto(tuple(candidatos), (), False)
-    cantidad = min(MAXIMO_REFORZADOS, len(candidatos) - 1)
-    elegidos = set(random.Random(semilla).sample(candidatos, cantidad))
+    caso, elegibles = conjunto_elegible(resultado, modo)
+    elegibles = tuple(c for c in CONCEPTOS if c in elegibles)
+    cantidad = min(MAXIMO_REFORZADOS, len(elegibles) - 1)
+    elegidos = set(random.Random(semilla).sample(elegibles, cantidad))
     return Reparto(
-        reforzados=tuple(c for c in candidatos if c in elegidos),
-        control=tuple(c for c in candidatos if c not in elegidos),
-        comparable=True,
+        reforzados=tuple(c for c in elegibles if c in elegidos),
+        control=tuple(c for c in elegibles if c not in elegidos),
+        caso=caso,
+        modo=modo,
+        semilla=semilla,
     )
+
+
+def derivar_semilla(semilla_base: int, *partes: str) -> int:
+    """Semilla de un flujo aleatorio propio, reproducible en cualquier proceso.
+
+    No se usa `hash()`: Python lo aleatoriza en cada proceso y el sorteo no se
+    podría repetir.
+    """
+    texto = ":".join((str(semilla_base), *partes)).encode("utf-8")
+    # 7 bytes: cabe en un entero con signo de 64 bits de la base de datos.
+    return int.from_bytes(hashlib.sha256(texto).digest()[:7], "big")
+
+
+def sortear_orden(
+    codigos: Sequence[str], semilla_base: int, tamano_bloque: int = 4
+) -> dict[str, str]:
+    """Orden de las formas por bloques permutados, en el orden de los códigos (R2).
+
+    Cada bloque completo tiene tantos AB como BA. El último, si queda incompleto, se
+    reparte por pares para que en total |#AB − #BA| ≤ 1.
+    """
+    if tamano_bloque not in (2, 4):
+        raise ValueError("El tamaño de bloque debe ser 2 o 4.")
+    azar = random.Random(derivar_semilla(semilla_base, "orden"))
+    ordenados = sorted(codigos)
+    resultado: dict[str, str] = {}
+    for inicio in range(0, len(ordenados), tamano_bloque):
+        bloque = ordenados[inicio:inicio + tamano_bloque]
+        mitad = len(bloque) // 2
+        ordenes = ["AB"] * mitad + ["BA"] * mitad
+        if len(bloque) % 2:
+            ordenes.append(azar.choice(ORDENES))
+        azar.shuffle(ordenes)
+        resultado.update(zip(bloque, ordenes))
+    return resultado
 
 
 def calcular_resultados(

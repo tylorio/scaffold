@@ -3,10 +3,14 @@
 {% block contenido %}
 <h1>Participante {{ participante.codigo }}</h1>
 
-<form method="post" action="{% url 'analisis:analizar' participante.codigo %}">
-  {% csrf_token %}
-  <button type="submit">Analizar repositorio ({{ participante.fase_siguiente }})</button>
-</form>
+{% if congelada %}
+  <p class="ayuda">La asignación está congelada: este diagnóstico ya no se puede repetir.</p>
+{% else %}
+  <form method="post" action="{% url 'analisis:analizar' participante.codigo %}">
+    {% csrf_token %}
+    <button type="submit">{% if analisis %}Volver a analizar (reemplaza este diagnóstico){% else %}Analizar repositorio{% endif %}</button>
+  </form>
+{% endif %}
 
 {% if not analisis %}
   <p>Este participante todavía no tiene análisis.</p>
@@ -23,7 +27,6 @@
     </div>
   </section>
   <p class="ayuda">
-    Fase: {{ analisis.fase }}{% if analisis.fase == "post" %} (solo código posterior al pre){% endif %}.
     Analizado el {{ analisis.fecha|date:"d/m/Y H:i" }} con
     θ = {{ analisis.theta }}, λ = {{ analisis.lambda_valor }}, m = {{ analisis.m }}.
     {% if analisis.tiene_historial %}Commit {{ analisis.commit_head|slice:":8" }}.{% else %}Sin historial Git.{% endif %}
@@ -55,12 +58,14 @@
             <td class="num">{% if c.intervalo %}{{ c.intervalo.0|floatformat:2 }} – {{ c.intervalo.1|floatformat:2 }}{% else %}—{% endif %}</td>
             <td><span class="etiqueta-estado estado-{{ c.estado }}">{{ c.get_estado_display }}</span></td>
             <td>
-              {% if c.reforzado %}
+              {% if not asignacion %}
+                Pendiente
+              {% elif c.reforzado %}
                 <a href="{% url 'refuerzo:concepto' participante.codigo c.concepto %}">Abrir refuerzo</a>
               {% elif c.concepto in asignacion.control %}
                 Control
               {% else %}
-                No reforzado
+                Sin asignar
               {% endif %}
             </td>
           </tr>
@@ -72,21 +77,17 @@
   <ul class="resumen">
     <li><strong>Conceptos débiles:</strong>
       {% for c in debiles %}{{ c.get_concepto_display }}{% if not forloop.last %}, {% endif %}{% empty %}ninguno{% endfor %}</li>
-    <li><strong>Reforzados:</strong>
-      {% for c in reforzados %}{{ c.get_concepto_display }}{% if not forloop.last %}, {% endif %}{% empty %}ninguno{% endfor %}</li>
-    <li><strong>No reforzados:</strong>
-      {% for c in no_reforzados %}{{ c.get_concepto_display }}{% if not forloop.last %}, {% endif %}{% empty %}ninguno{% endfor %}</li>
     {% if asignacion %}
+      <li><strong>Caso:</strong> {{ asignacion.get_caso_display }} (modo {{ asignacion.modo }}).</li>
+      <li><strong>Reforzados:</strong>
+        {% for nombre in asignacion.nombres_reforzados %}{{ nombre }}{% if not forloop.last %}, {% endif %}{% empty %}ninguno{% endfor %}</li>
       <li><strong>Control:</strong>
-      {% for nombre in asignacion.nombres_control %}{{ nombre }}{% if not forloop.last %}, {% endif %}{% empty %}ninguno{% endfor %}</li>
+        {% for nombre in asignacion.nombres_control %}{{ nombre }}{% if not forloop.last %}, {% endif %}{% empty %}ninguno{% endfor %}</li>
+      <li><strong>Orden de las formas:</strong> {{ asignacion.get_orden_display }}.</li>
+    {% else %}
+      <li><strong>Asignación:</strong> pendiente; se sortea al congelar la de toda la muestra.</li>
     {% endif %}
   </ul>
-  {% if asignacion and not asignacion.comparable %}
-    <p class="ayuda">
-      Hubo menos de 2 conceptos débiles en el análisis pre: este participante queda
-      fuera de la comparación principal.
-    </p>
-  {% endif %}
 
   {% if analisis.archivos_con_error %}
     <p class="mensaje mensaje-warning">Archivos omitidos: {{ analisis.archivos_con_error|join:", " }}</p>

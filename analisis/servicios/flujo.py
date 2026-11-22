@@ -41,10 +41,9 @@ def analizar_repositorio(
     modelo: ModeloCargado,
     parametros: Parametros = Parametros(),
     base: Path | None = None,
-    desde_commit: str | None = None,
     filtro: FiltroAutor | None = None,
 ) -> ResultadoAnalisis:
-    """Analiza el repositorio; con `desde_commit`, solo lo escrito después de él.
+    """Analiza el repositorio una sola vez, en el diagnóstico (no hay análisis post, R5).
 
     Con `filtro`, solo entran las funciones cuyo commit mayoritario es de un correo
     declarado por el participante (D19). Sin historial Git no hay autoría que
@@ -60,13 +59,6 @@ def analizar_repositorio(
                 )
             except (ErrorSintaxis, UnicodeDecodeError, SyntaxError):
                 con_error.append(archivo.ruta)
-
-        if desde_commit:
-            nuevos = repositorio.commits_desde(desde_commit)
-            extraidos = [
-                f for f in extraidos
-                if repositorio.commit_de(f.archivo, f.linea_inicio, f.linea_fin) in nuevos
-            ]
 
         n_otros_autores = 0
         if filtro is not None and extraidos:

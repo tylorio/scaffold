@@ -106,7 +106,17 @@ button {
   cursor: pointer;
 }
 
-input, textarea {
+.boton {
+  display: inline-block;
+  padding: 8px 14px;
+  border-radius: 6px;
+  background: var(--acento);
+  color: var(--acento-texto);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+input, textarea, select {
   width: 100%;
   padding: 8px 10px;
   border: 1px solid var(--borde);
@@ -169,6 +179,7 @@ details summary { cursor: pointer; }
   border-radius: 8px;
   scroll-margin-top: 12px;
 }
+.tarjeta h2 { margin-top: 0; }
 .nivel {
   margin-right: 6px;
   padding: 2px 8px;

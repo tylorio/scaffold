@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block titulo %}Congelar la asignación · Prototipo IDC{% endblock %}
+{% block contenido %}
+<p><a href="{% url 'analisis:lista' %}">← Volver a participantes</a></p>
+<h1>Congelar la asignación</h1>
+
+{% if estado.congelada %}
+  <p>La asignación ya se congeló el {{ estado.congelada.fecha|date:"d/m/Y H:i" }}.</p>
+{% elif not estado.lista %}
+  <p><strong>Todavía no se puede congelar. Falta:</strong></p>
+  <ul>{% for motivo in estado.faltantes %}<li>{{ motivo }}</li>{% endfor %}</ul>
+{% else %}
+  <p>
+    Esto se hace <strong>una sola vez</strong> y no se puede deshacer. Después ya no se
+    podrá volver a analizar a ningún participante. Hazlo cuando hayas terminado los
+    diagnósticos y antes del pretest.
+  </p>
+
+  <h2>Qué va a pasar</h2>
+  <ul class="resumen">
+    <li><strong>Participantes:</strong> {{ estado.n_participantes }}.</li>
+    <li><strong>Modo:</strong> {{ estado.modo }}{% if estado.modo == "exploratorio" %}: no se usa el caso A, porque el IDC no es confiable{% endif %}.</li>
+    <li>
+      <strong>Conceptos entre los que se sortea:</strong>
+      <ul>
+        {% for caso, cantidad in estado.casos.items %}
+          <li>
+            Caso {{ caso }}{% if caso == "A" %}, entre los débiles{% elif caso == "B" %}, entre los calculables{% else %}, entre los tres conceptos{% endif %}:
+            {{ cantidad }} participante{{ cantidad|pluralize }}.
+          </li>
+        {% endfor %}
+      </ul>
+    </li>
+    <li>
+      <strong>Orden de las formas:</strong>
+      {% with pares=estado.ordenes.0 sobra=estado.ordenes.1 %}
+        {% if pares %}{{ pares }} con AB y {{ pares }} con BA{% if sobra %}, más 1 con un orden al azar{% endif %}{% else %}1 con un orden al azar{% endif %}.
+      {% endwith %}
+    </li>
+  </ul>
+  <p class="ayuda">
+    El sorteo usa una semilla que se genera ahora y queda registrada, para poder
+    reproducirlo. Cada participante recibe hasta dos conceptos reforzados y al menos
+    uno de control.
+  </p>
+
+  <form method="post">
+    {% csrf_token %}
+    <button type="submit">Congelar la asignación de los {{ estado.n_participantes }} participantes</button>
+  </form>
+{% endif %}
+{% endblock %}

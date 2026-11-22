@@ -15,7 +15,7 @@ from .conceptos import CONCEPTOS
 from .idc import intervalo_wilson
 
 COLUMNAS_ANALISIS = (
-    "codigo", "analisis", "fase", "fecha", "concepto", "condicion", "comparable",
+    "codigo", "analisis", "fecha", "concepto", "condicion", "caso", "orden", "modo",
     "semilla", "n_fragmentos", "n_ia", "idc", "idc_ic_inf", "idc_ic_sup", "estado",
     "n_autores", "theta", "lambda", "m", "modelo_version", "modelo_es_demo",
     "version_reglas",
@@ -30,8 +30,9 @@ COLUMNAS_APERTURAS = ("codigo", "concepto", "condicion", "fecha")
 @dataclass(frozen=True)
 class RegistroParticipante:
     codigo: str
-    fase: str = ""
-    comparable: bool | None = None
+    caso: str = ""  # vacío mientras la asignación no está congelada
+    orden: str = ""
+    modo: str = ""
     control: tuple = ()
     fecha: str = ""
     n_fragmentos: int | None = None
@@ -51,7 +52,7 @@ class RegistroParticipante:
 
 def _columnas() -> list[str]:
     columnas = [
-        "codigo", "fase", "comparable", "fecha_analisis", "n_fragmentos",
+        "codigo", "caso", "orden", "modo", "fecha_analisis", "n_fragmentos",
         "n_triviales", "n_autores", "idc_global", "idc_global_ic_inf", "idc_global_ic_sup",
         "indice_historial", "theta", "lambda", "m", "modelo_version", "modelo_es_demo",
         "version_reglas",
@@ -82,8 +83,9 @@ def _intervalo(prefijo: str, idc: float | None, n_ia: int | None, n: int | None)
 def _fila(registro: RegistroParticipante) -> dict:
     fila = {
         "codigo": registro.codigo,
-        "fase": registro.fase,
-        "comparable": "" if registro.comparable is None else int(registro.comparable),
+        "caso": registro.caso,
+        "orden": registro.orden,
+        "modo": registro.modo,
         "conceptos_control": ";".join(registro.control),
         "fecha_analisis": registro.fecha,
         "n_fragmentos": _entero(registro.n_fragmentos),
@@ -132,7 +134,7 @@ def generar_csv(registros: Iterable[RegistroParticipante]) -> str:
 
 
 def generar_csv_analisis(filas: Iterable[dict]) -> str:
-    """Una fila por análisis y concepto: es la tabla para comparar pre y post."""
+    """Una fila por participante y concepto, con su condición tras la congelación."""
     return csv_de_filas(COLUMNAS_ANALISIS, (
         {
             **fila,

@@ -124,11 +124,6 @@ class CarpetaLocal:
     def insercion_commit(self, archivo: str, inicio: int, fin: int) -> int | None:
         return None
 
-    def commits_desde(self, base: str) -> set[str]:
-        raise ErrorRepositorio(
-            "Sin historial Git no se puede aislar el código nuevo desde el análisis pre."
-        )
-
     def commit_de(self, archivo: str, inicio: int, fin: int) -> str | None:
         return None
 
@@ -227,16 +222,6 @@ class RepositorioGit:
         """Tamaño del commit que aportó la mayoría de las líneas del fragmento."""
         commit = self.commit_de(archivo, inicio, fin)
         return None if commit is None else self._cargar_inserciones().get(commit)
-
-    def commits_desde(self, base: str) -> set[str]:
-        """Commits posteriores a `base` que llegan a HEAD."""
-        try:
-            return set(self._repo.git.rev_list(f"{base}..HEAD").split())
-        except GitCommandError as error:
-            raise ErrorRepositorio(
-                "El commit del análisis pre ya no está en el repositorio: pudo "
-                "reescribirse el historial."
-            ) from error
 
 
 def _abrir_local(ruta: Path) -> tuple[CarpetaLocal | RepositorioGit, Repo | None]:

@@ -52,28 +52,33 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
 
 ## Probar el flujo con `demo_repo/`
 
-`demo_repo/` es pequeño: antes de empezar, pon m = 3 y λ = 0,4 en **Configuración**.
-Con el valor por defecto (m = 5), recursión y excepciones quedarían como «datos
-insuficientes», porque solo tienen 4 fragmentos. Con λ = 0,5, estructuras de datos
-no llegaría a débil y no habría concepto de control que mostrar.
+`demo_repo/` es pequeño: antes de empezar, en **Configuración** pon m = 3, λ = 0,4
+y el modo **confirmatorio**. Con el valor por defecto (m = 5), recursión y
+excepciones quedarían como «datos insuficientes», porque solo tienen 4 fragmentos.
+Con λ = 0,5, estructuras de datos no llegaría a débil y el sorteo iría al caso B.
 
 1. En **Participantes**, registra el código `P01` con el repositorio `demo_repo` y el
    correo de commit `demo@example.invalid`. Es el autor que usa
    `preparar_demo_repo.py`; con otro correo no se analizaría ninguna función (D19).
-2. Pulsa **Analizar repositorio (pre)**. Este primer análisis sortea la asignación.
+2. Pulsa **Analizar**. El diagnóstico calcula el IDC, pero **no sortea**. Puedes
+   repetirlo con **Volver a analizar**: reemplaza al anterior.
 3. En el detalle de `P01` verás 16 fragmentos (2 triviales omitidos), un IDC
    global de 0,44 y esta evaluación:
 
-   | Concepto | Fragmentos | IDC | IC 95 % | Estado | Asignación |
-   |---|---:|---:|---:|---|---|
-   | Recursión | 4 | 1,00 | 0,51 – 1,00 | Débil | Sorteo |
-   | Estructuras de datos | 7 | 0,43 | 0,16 – 0,75 | Débil | Sorteo |
-   | Manejo de excepciones | 4 | 0,00 | 0,00 – 0,49 | No débil | Sin asignar |
+   | Concepto | Fragmentos | IDC | IC 95 % | Estado |
+   |---|---:|---:|---:|---|
+   | Recursión | 4 | 1,00 | 0,51 – 1,00 | Débil |
+   | Estructuras de datos | 7 | 0,43 | 0,16 – 0,75 | Débil |
+   | Manejo de excepciones | 4 | 0,00 | 0,00 – 0,49 | No débil |
 
-   Hay 2 conceptos débiles: uno sale reforzado y el otro queda de control, por
-   sorteo. Los valores exactos pueden variar un poco con otra versión de
-   scikit-learn.
-4. Pulsa **Abrir refuerzo** y pega la solución del concepto que te tocó. Debe
+   La columna de asignación dice «Pendiente». Los valores exactos pueden variar un
+   poco con otra versión de scikit-learn.
+4. Vuelve a **Participantes** y pulsa **Revisar y congelar la asignación**. La página
+   muestra lo que va a pasar (1 participante en el caso A, entre los débiles) y pide
+   confirmar. Al confirmar se sortea quién se refuerza y quién queda de control, y el
+   orden de las formas. Desde ahí ya no se puede reanalizar. Lo mismo hace
+   `python manage.py congelar_asignacion`.
+5. En el detalle, pulsa **Abrir refuerzo** y pega la solución del concepto que te tocó. Debe
    mostrar **4 de 4 pruebas pasadas**.
 
    Recursión, en «Suma de dígitos»:
@@ -97,15 +102,14 @@ no llegaría a débil y no habría concepto de control que mostrar.
                resultado.append(x)
        return resultado
    ```
-5. Prueba el control: abre `/refuerzo/P01/recursion/` o
+6. Prueba el control: abre `/refuerzo/P01/recursion/` o
    `/refuerzo/P01/estructuras_datos/`, según cuál quedó de control. Debe responder
    «Refuerzo no disponible».
-6. Pulsa **Analizar repositorio (post)**. Debe avisar de que no hay funciones
-   nuevas: el post solo mide lo escrito después del pre.
-7. Para ver el caso de 3 conceptos débiles, pon λ = 0 en **Configuración** y
-   registra otro participante: se refuerzan 2 y el tercero queda de control. La
-   asignación de `P01` no cambia, porque está congelada.
-8. Descarga los datos con los enlaces **CSV** del menú.
+7. Descarga los datos con los enlaces **CSV** del menú.
+
+Para repetir la demostración desde cero (por ejemplo, con λ = 0 para ver 3 débiles),
+borra `db.sqlite3` y vuelve a ejecutar `python manage.py migrate`: la congelación no
+se puede deshacer desde la interfaz.
 
 ## Pruebas
 
@@ -176,27 +180,33 @@ tests/               Pruebas con pytest
   las carpetas `test`, `tests` y `pruebas`) y las funciones triviales: una sola
   sentencia sin conceptos, como un getter. El análisis guarda cuántas triviales
   omitió.
-- **Repositorios individuales:** el estudio los supone y el sistema no filtra por
-  autor. Si hay más de un correo de autor avisa en el detalle y lo exporta en
-  `n_autores`; los correos no se guardan.
+- **Filtro por autor (D19):** solo se analizan las funciones cuyo commit mayoritario
+  es de un correo declarado por el participante. Si hay más de un autor, avisa en
+  el detalle y lo exporta en `n_autores`. Los correos de otros autores no se
+  guardan, ni en claro ni hasheados.
 - **Concepto débil:** IDC ≥ λ y al menos m fragmentos. Con menos de m se marca
   «datos insuficientes» y no se calcula.
-- **Asignación:** se sortea entre los conceptos débiles en el análisis pre y queda
-  congelada, con su semilla. Con 3 débiles se refuerzan 2 y 1 queda de control; con
-  2 débiles, 1 y 1. Con 1 débil se refuerza, pero el participante queda fuera de la
-  comparación principal (`comparable = 0`). Los conceptos no débiles quedan sin
-  asignar.
-- **Fases:** el primer análisis es `pre` y los siguientes son `post`. Un `post` solo
-  mide las funciones cuya mayoría de líneas se escribió después del commit del pre,
-  y necesita historial Git.
-- **Repetir un participante:** borra su asignación desde el admin. El siguiente
-  análisis vuelve a ser `pre`. Hazlo con todos si cambias del modelo demo al real.
-- **Control:** la página de refuerzo de un concepto no reforzado responde 403.
-- **Cada análisis guarda** θ, λ, m y la versión del modelo. Volver a analizar crea
-  un análisis nuevo y conserva los anteriores. La interfaz y el CSV de participantes
-  usan el último.
-- **Datos para el estudio:** el **CSV análisis** trae una fila por análisis y
-  concepto, con su fase y condición; es la tabla para comparar pre y post. El **CSV
+- **Un diagnóstico por participante (R5):** el repositorio se analiza una vez. No
+  hay análisis post: el resultado de la intervención se mide con la prueba de
+  desempeño. Volver a analizar reemplaza al diagnóstico anterior mientras la
+  asignación no esté congelada.
+- **Congelación (D3, ADR-004):** se hace una vez, para toda la muestra, cuando todos
+  tienen diagnóstico y el modo está fijado. Sortea, con una semilla base registrada:
+  - los conceptos de cada participante, con la regla escalonada (caso A entre los
+    débiles, caso B entre los calculables, caso C entre los tres; en modo
+    exploratorio no hay caso A). Siempre quedan hasta 2 reforzados y al menos 1 de
+    control;
+  - el orden de las formas AB/BA, por bloques permutados de 4 y con un flujo
+    aleatorio separado (R2).
+
+  Después no se puede reanalizar, ni cambiar el modo, ni editar o borrar la
+  asignación desde el admin.
+- **Control:** la página de refuerzo de un concepto no reforzado responde 403. Antes
+  de congelar no hay ningún concepto reforzado.
+- **Cada análisis guarda** θ, λ, m y las versiones del modelo, las reglas y las
+  características.
+- **Datos para el estudio:** el **CSV análisis** trae una fila por participante y
+  concepto, con su condición, caso, orden y modo. El **CSV
   intentos** trae cada envío numerado y el **CSV aperturas**, cada vez que se abrió
   el material. No incluyen código, rutas, URLs ni hashes de commit.
 - **Sin funciones:** si el repositorio no tiene funciones Python se avisa y no se
@@ -270,6 +280,6 @@ Por eso `db.sqlite3` y `datos/` están en `.gitignore`.
   colgado no tiene tiempo límite.
 - Se analiza solo HEAD y se omiten carpetas como `venv`, `build` y `migrations`.
 - Una función con el mismo commit de otras recibe el mismo tamaño de inserción.
-- Reescribir el historial (`push --force`) borra el commit del pre y el análisis
-  post dará error.
+- La congelación no se puede deshacer desde la interfaz. Corregir un error después
+  exige restaurar un respaldo de la base.
 - Las pruebas corren en Windows. Se probó con Python 3.12 y 3.13, no con 3.11.

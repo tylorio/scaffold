@@ -2,7 +2,26 @@ from django.core.validators import MaxValueValidator, MinValueValidator, RegexVa
 from django.db import models
 
 from .servicios.conceptos import NOMBRES_CONCEPTOS
-from .servicios.idc import ETIQUETAS_ESTADO, intervalo_wilson
+from .servicios.idc import (
+    CASO_A,
+    CASO_B,
+    CASO_C,
+    CONFIRMATORIO,
+    ETIQUETAS_ESTADO,
+    EXPLORATORIO,
+    intervalo_wilson,
+)
+
+MODOS = [
+    (CONFIRMATORIO, "Confirmatorio (F1 ≥ 0,70)"),
+    (EXPLORATORIO, "Exploratorio (F1 < 0,70)"),
+]
+CASOS = [
+    (CASO_A, "A: entre los débiles"),
+    (CASO_B, "B: entre los calculables"),
+    (CASO_C, "C: entre los tres conceptos"),
+]
+ORDENES = [("AB", "Pretest A, postest B"), ("BA", "Pretest B, postest A")]
 
 CODIGO_ANONIMO = RegexValidator(
     r"^[A-Z]{1,3}\d{2,4}$",
@@ -24,6 +43,8 @@ class Configuracion(models.Model):
     m = models.PositiveIntegerField(
         "m (fragmentos mínimos)", default=5, validators=[MinValueValidator(1)],
     )
+    # Se fija tras el go/no-go del clasificador (semana 7) y no cambia después de congelar (R3).
+    modo = models.CharField(max_length=13, choices=MODOS, blank=True)
 
     class Meta:
         verbose_name = "configuración"
@@ -52,23 +73,16 @@ class Participante(models.Model):
     def ultimo_analisis(self):
         return self.analisis.first()
 
-    @property
-    def fase_siguiente(self):
-        """El primer análisis es el pre; una vez asignado, todos son post."""
-        return Analisis.POST if hasattr(self, "asignacion") else Analisis.PRE
-
 
 class Analisis(models.Model):
-    """Una corrida. Guarda los parámetros usados para poder reproducirla."""
+    """El diagnóstico de un participante. Hay uno solo válido por participante (R5).
 
-    PRE = "pre"
-    POST = "post"
-    FASES = [(PRE, "Pre"), (POST, "Post")]
+    Guarda los parámetros usados para poder reproducirlo.
+    """
 
     participante = models.ForeignKey(
         Participante, on_delete=models.CASCADE, related_name="analisis",
     )
-    fase = models.CharField(max_length=4, choices=FASES, default=PRE)
     fecha = models.DateTimeField(auto_now_add=True)
     theta = models.FloatField()
     lambda_valor = models.FloatField()
@@ -105,11 +119,30 @@ class Analisis(models.Model):
         return intervalo_wilson(self.n_ia, self.n_fragmentos)
 
 
-class Asignacion(models.Model):
-    """Reparto entre refuerzo y control de un participante.
+class Congelacion(models.Model):
+    """El momento único en que se sortea y fija la asignación de toda la muestra (D3).
 
-    Se sortea en el análisis pre y no cambia después. Para repetir un
-    participante, por ejemplo tras cambiar de modelo, se borra desde el admin.
+    Existe a lo sumo una fila. Desde ese momento no se puede reanalizar a nadie.
+    """
+
+    fecha = models.DateTimeField(auto_now_add=True)
+    semilla_base = models.BigIntegerField()
+    modo = models.CharField(max_length=13, choices=MODOS)
+    tamano_bloque = models.PositiveSmallIntegerField()
+
+    class Meta:
+        verbose_name = "congelación"
+        verbose_name_plural = "congelación"
+
+    def __str__(self):
+        return f"{self.fecha:%Y-%m-%d %H:%M} · {self.modo}"
+
+
+class Asignacion(models.Model):
+    """Reparto entre refuerzo y control de un participante, y su orden de formas.
+
+    Se crea al congelar (`congelar_asignacion`) y no cambia después. Su fecha es la
+    de la congelación, anterior al pretest (D3).
     """
 
     participante = models.OneToOneField(
@@ -118,11 +151,13 @@ class Asignacion(models.Model):
     analisis_base = models.ForeignKey(
         Analisis, on_delete=models.RESTRICT, related_name="+",
     )
-    semilla = models.PositiveIntegerField()
+    semilla = models.BigIntegerField()  # derivada de la semilla base y del código
     debiles = models.JSONField(default=list)
     reforzados = models.JSONField(default=list)
     control = models.JSONField(default=list)
-    comparable = models.BooleanField(default=False)
+    caso = models.CharField(max_length=1, choices=CASOS)
+    modo = models.CharField(max_length=13, choices=MODOS)
+    orden = models.CharField(max_length=2, choices=ORDENES)
     fecha = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -136,6 +171,10 @@ class Asignacion(models.Model):
         if concepto in self.reforzados:
             return "reforzado"
         return "control" if concepto in self.control else "sin_asignar"
+
+    @property
+    def nombres_reforzados(self):
+        return [NOMBRES_CONCEPTOS[c] for c in self.reforzados]
 
     @property
     def nombres_control(self):

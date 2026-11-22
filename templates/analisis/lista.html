@@ -3,25 +3,51 @@
 {% block contenido %}
 <h1>Participantes</h1>
 
+<section class="tarjeta" id="asignacion">
+  {% if estado.congelada %}
+    <h2>Asignación congelada</h2>
+    <p>
+      El {{ estado.congelada.fecha|date:"d/m/Y H:i" }}, en modo
+      {{ estado.congelada.get_modo_display|lower }}. Ya no se puede reanalizar a nadie.
+    </p>
+  {% else %}
+    <h2>Asignación pendiente</h2>
+    <p class="ayuda">
+      Analiza a todos los participantes; puedes repetir un análisis para corregirlo.
+      Cuando termines, congela la asignación una sola vez, antes del pretest: sortea
+      los conceptos de cada uno y el orden de las formas de toda la muestra.
+    </p>
+    {% if estado.lista %}
+      <a class="boton" href="{% url 'analisis:congelar' %}">Revisar y congelar la asignación</a>
+    {% else %}
+      <p><strong>Antes de congelar falta:</strong></p>
+      <ul>{% for motivo in estado.faltantes %}<li>{{ motivo }}</li>{% endfor %}</ul>
+    {% endif %}
+  {% endif %}
+</section>
+
 {% if participantes %}
   <div class="tabla-scroll">
     <table>
       <thead>
-        <tr><th>Código</th><th>Último análisis</th><th class="num">Fragmentos</th><th class="num">IDC global</th><th></th></tr>
+        <tr><th>Código</th><th>Diagnóstico</th><th class="num">Fragmentos</th><th class="num">IDC global</th><th>Asignación</th><th></th></tr>
       </thead>
       <tbody>
         {% for participante in participantes %}
-          {% with analisis=participante.ultimo_analisis %}
+          {% with analisis=participante.ultimo_analisis asignacion=participante.asignacion %}
             <tr>
               <td><a href="{% url 'analisis:detalle' participante.codigo %}">{{ participante.codigo }}</a></td>
               <td>{% if analisis %}{{ analisis.fecha|date:"d/m/Y H:i" }}{% else %}Sin analizar{% endif %}</td>
               <td class="num">{% if analisis %}{{ analisis.n_fragmentos }}{% else %}—{% endif %}</td>
               <td class="num">{% if analisis and analisis.idc_global is not None %}{{ analisis.idc_global|floatformat:2 }}{% else %}—{% endif %}</td>
+              <td>{% if asignacion %}Caso {{ asignacion.caso }} · {{ asignacion.orden }}{% else %}—{% endif %}</td>
               <td class="acciones">
-                <form method="post" action="{% url 'analisis:analizar' participante.codigo %}">
-                  {% csrf_token %}
-                  <button type="submit">Analizar repositorio ({{ participante.fase_siguiente }})</button>
-                </form>
+                {% if not estado.congelada %}
+                  <form method="post" action="{% url 'analisis:analizar' participante.codigo %}">
+                    {% csrf_token %}
+                    <button type="submit">{% if analisis %}Volver a analizar{% else %}Analizar{% endif %}</button>
+                  </form>
+                {% endif %}
               </td>
             </tr>
           {% endwith %}

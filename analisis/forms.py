@@ -53,9 +53,20 @@ class ParticipanteForm(forms.ModelForm):
 
 
 class ConfiguracionForm(forms.ModelForm):
+    def __init__(self, *args, congelada=False, **kwargs):
+        super().__init__(*args, **kwargs)
+        modo = self.fields["modo"]
+        modo.help_text = (
+            "Se fija después del go/no-go del clasificador (semana 7). En modo "
+            "exploratorio el sorteo no usa el caso A."
+        )
+        if congelada:
+            modo.disabled = True
+            modo.help_text = "La asignación ya está congelada: el modo no puede cambiar."
+
     class Meta:
         model = Configuracion
-        fields = ["theta", "lambda_valor", "m"]
+        fields = ["theta", "lambda_valor", "m", "modo"]
         widgets = {
             "theta": forms.NumberInput(attrs={"step": "0.01", "min": 0, "max": 1}),
             "lambda_valor": forms.NumberInput(
