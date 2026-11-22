@@ -102,6 +102,13 @@ def test_4b_no_lee_el_entorno_del_servidor_por_proc():
     assert TOKEN not in json.dumps(ejecutar(codigo))
 
 
+def test_4c_no_lee_la_memoria_del_servidor():
+    codigo = "def f():\n    return repr(open('/proc/1/mem', 'rb').read(16))\n"
+    respuesta = ejecutar(codigo)
+    assert respuesta["pasados"] == 0
+    assert "PermissionError" in obtenido(respuesta)
+
+
 def test_5_bomba_de_procesos():
     codigo = (
         "def f():\n    import os\n    while True:\n"

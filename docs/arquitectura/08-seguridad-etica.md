@@ -108,7 +108,7 @@ Cada prueba envía código malicioso al ejecutor real, en su contenedor, y compr
 | 1 | Abrir una conexión de red (`socket.create_connection(("1.1.1.1", 53))`) | Error de red |
 | 2 | Resolver un nombre de dominio | Error |
 | 3 | Escribir fuera de `/tmp` (en `/app` o `/etc`) | Error de permisos o de disco de solo lectura |
-| 4 | Leer las variables de entorno | El entorno está vacío y no aparece el token |
+| 4 | Leer las variables de entorno, las propias y las del servidor por `/proc/1/environ` y `/proc/1/mem` | El entorno propio está vacío. Los archivos del servidor dan permiso denegado, porque el servidor se declara no volcable (`PR_SET_DUMPABLE`). La primera ronda de SP-04 encontró aquí una fuga real del token, ya corregida |
 | 5 | Bomba de procesos (`os.fork()` en bucle) | Se corta por el límite de procesos; el servidor sigue vivo |
 | 6 | Reservar 2 GB de memoria | `MemoryError` o el proceso muere; el servidor sigue vivo |
 | 7 | Bucle infinito | Se corta por tiempo y se informa |

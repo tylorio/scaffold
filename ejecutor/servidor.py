@@ -68,6 +68,18 @@ def token_valido(recibido: str | None, esperado: str | None) -> bool:
     return bool(esperado) and recibido is not None and hmac.compare_digest(recibido, esperado)
 
 
+def proteger_memoria() -> None:
+    """El hijo corre con el mismo usuario: sin esto podría leer /proc/1/environ (el token).
+
+    Un proceso no volcable deja su entorno y su memoria en /proc solo para root.
+    """
+    import ctypes
+
+    PR_SET_DUMPABLE = 4
+    if ctypes.CDLL(None, use_errno=True).prctl(PR_SET_DUMPABLE, 0, 0, 0, 0) != 0:
+        sys.exit("No se pudo proteger la memoria del ejecutor.")
+
+
 def es_proceso_1() -> bool:
     """La limpieza mata todo proceso ajeno: solo es segura dentro de su contenedor."""
     return os.getpid() == 1
@@ -206,6 +218,7 @@ class Manejador(BaseHTTPRequestHandler):
 def main() -> None:
     if not es_proceso_1():
         sys.exit("El ejecutor debe correr como proceso 1 de su contenedor (ver ejecutor/Dockerfile).")
+    proteger_memoria()
     signal.signal(signal.SIGINT, signal.SIG_IGN)  # sin manejadores: nadie de dentro puede detenerlo
     if "--una-vez" in sys.argv:
         estado, cuerpo = atender(json.loads(sys.stdin.read() or "null"))
