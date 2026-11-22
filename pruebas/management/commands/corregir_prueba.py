@@ -4,6 +4,7 @@ from pathlib import Path
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
+from analisis.perfil import exigir_perfil
 from analisis.persistencia import NoSePuedeCongelar
 from pruebas.persistencia import corregir_momento
 from pruebas.servicios.banco import BancoInvalido, cargar_bancos
@@ -28,6 +29,7 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, momento, soluciones, salida, banco, **opciones):
+        exigir_perfil("local")
         carpeta_banco = banco or Path(settings.BANCO_PRUEBA_DIR)
         remoto = ejecutor_configurado()
         if remoto is None:

@@ -8,15 +8,19 @@
 </head>
 <body>
   <header class="barra">
-    <a class="marca" href="{% url 'analisis:lista' %}">Prototipo IDC</a>
-    <nav>
-      <a href="{% url 'analisis:lista' %}">Participantes</a>
-      <a href="{% url 'analisis:configuracion' %}">Configuración</a>
-      <a href="{% url 'analisis:exportar' %}">CSV participantes</a>
-      <a href="{% url 'analisis:exportar_analisis' %}">CSV análisis</a>
-      <a href="{% url 'refuerzo:exportar_intentos' %}">CSV intentos</a>
-      <a href="{% url 'refuerzo:exportar_aperturas' %}">CSV aperturas</a>
-    </nav>
+    {% if perfil == "local" %}
+      <a class="marca" href="{% url 'analisis:lista' %}">Prototipo IDC</a>
+      <nav>
+        <a href="{% url 'analisis:lista' %}">Participantes</a>
+        <a href="{% url 'analisis:configuracion' %}">Configuración</a>
+        <a href="{% url 'analisis:exportar' %}">CSV participantes</a>
+        <a href="{% url 'analisis:exportar_analisis' %}">CSV análisis</a>
+        <a href="{% url 'refuerzo:exportar_intentos' %}">CSV intentos</a>
+        <a href="{% url 'refuerzo:exportar_aperturas' %}">CSV aperturas</a>
+      </nav>
+    {% else %}
+      <span class="marca">Refuerzo de programación</span>
+    {% endif %}
   </header>
 
   {% if modelo is None %}

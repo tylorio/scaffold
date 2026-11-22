@@ -3,5 +3,4 @@
 {% block contenido %}
 <h1>Refuerzo no disponible</h1>
 <p>«{{ nombre }}» no forma parte del refuerzo asignado a {{ participante.codigo }}.</p>
-<p><a href="{% url 'analisis:detalle' participante.codigo %}">Volver a {{ participante.codigo }}</a></p>
 {% endblock %}

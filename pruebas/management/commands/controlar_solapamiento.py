@@ -4,6 +4,7 @@ from pathlib import Path
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
+from analisis.perfil import exigir_perfil
 from pruebas.servicios.banco import BancoInvalido, cargar_bancos
 from pruebas.servicios.solapamiento import material_de_refuerzo, pares_sospechosos
 
@@ -15,6 +16,7 @@ class Command(BaseCommand):
         parser.add_argument("--banco", type=Path, default=None)
 
     def handle(self, *args, banco, **opciones):
+        exigir_perfil("local")
         try:
             bancos = cargar_bancos(banco or Path(settings.BANCO_PRUEBA_DIR))
         except BancoInvalido as error:

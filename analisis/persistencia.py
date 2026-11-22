@@ -9,6 +9,7 @@ from django.db import transaction
 from .models import (
     Analisis,
     Asignacion,
+    Auditoria,
     Configuracion,
     Congelacion,
     Fragmento,
@@ -154,7 +155,7 @@ def _motivo_sin_fragmentos(datos: ResultadoAnalisis) -> str:
     return detalle + " No se guardó el análisis."
 
 
-def ejecutar_analisis(participante: Participante) -> Analisis:
+def ejecutar_analisis(participante: Participante, usuario: str = "web") -> Analisis:
     """Hace el diagnóstico. Antes de congelar, repetirlo reemplaza al anterior (R5)."""
     if congelacion() is not None:
         raise AsignacionCongelada(
@@ -177,8 +178,15 @@ def ejecutar_analisis(participante: Participante) -> Analisis:
     if not datos.fragmentos:
         raise RepositorioSinFunciones(_motivo_sin_fragmentos(datos))
     with transaction.atomic():
+        anteriores = [str(a.analisis_id) for a in participante.analisis.all()]
         participante.analisis.all().delete()
-        return _guardar(participante, datos, parametros, modelo)
+        nuevo = _guardar(participante, datos, parametros, modelo)
+        if anteriores:
+            Auditoria.anotar(
+                usuario, Auditoria.REANALIZAR, participante.codigo,
+                anteriores=anteriores, nuevo=str(nuevo.analisis_id),
+            )
+        return nuevo
 
 
 # Congelación
@@ -247,7 +255,7 @@ def estado_congelacion() -> EstadoCongelacion:
 
 
 def congelar_asignacion(
-    semilla_base: int | None = None, tamano_bloque: int = TAMANO_BLOQUE
+    semilla_base: int | None = None, tamano_bloque: int = TAMANO_BLOQUE, usuario: str = "web",
 ) -> Congelacion:
     """Sortea y fija, una sola vez, los conceptos y el orden AB/BA de toda la muestra.
 
@@ -285,9 +293,14 @@ def congelar_asignacion(
                 orden=ordenes[participante.codigo],
             )
             analisis.conceptos.filter(concepto__in=reparto.reforzados).update(reforzado=True)
-        return Congelacion.objects.create(
+        hecha = Congelacion.objects.create(
             semilla_base=base, modo=estado.modo, tamano_bloque=tamano_bloque,
         )
+        Auditoria.anotar(
+            usuario, Auditoria.CONGELAR, modo=estado.modo, semilla_base=base,
+            n_participantes=len(participantes), casos=estado.casos,
+        )
+        return hecha
 
 
 # Exportación

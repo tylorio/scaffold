@@ -41,10 +41,19 @@ if not SECRET_KEY:
 
 DEBUG = os.environ.get("DJANGO_DEBUG", "").lower() in {"1", "true", "si", "sí"}
 
-# Sal del HMAC de los correos de commit (D19). Si se pierde, no se puede repetir
-# el filtro por autor: se respalda junto con la clave del almacén local.
+# Perfil (ADR-001). "local": núcleo de análisis en la máquina del investigador, con el
+# código de los estudiantes. "nube": portal de refuerzo, sin código, sin Git y sin modelo.
+PERFIL = os.environ.get("IDC_PERFIL", "local")
+if PERFIL not in ("local", "nube"):
+    raise ImproperlyConfigured("IDC_PERFIL debe ser 'local' o 'nube'.")
+LOCAL = PERFIL == "local"
+
+VERSION_SISTEMA = "0.8.0"
+
+# Sal del HMAC de los correos de commit (D19), solo en local. Si se pierde, no se
+# puede repetir el filtro por autor: se respalda junto con la clave del almacén.
 SAL_CORREOS = os.environ.get("IDC_SAL_CORREOS", "")
-if not SAL_CORREOS:
+if LOCAL and not SAL_CORREOS:
     raise ImproperlyConfigured(
         "Falta IDC_SAL_CORREOS: defínela en el entorno o en .env (ver .env.ejemplo)."
     )
@@ -88,7 +97,9 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'analisis.context_processors.estado_modelo',
+                'config.context_processors.perfil',
+                # El aviso del modelo carga scikit-learn: solo existe en local.
+                *(['analisis.context_processors.estado_modelo'] if LOCAL else []),
             ],
         },
     },
@@ -160,5 +171,9 @@ EJECUTOR_URL = os.environ.get("IDC_EJECUTOR_URL", "")
 EJECUTOR_TOKEN = os.environ.get("IDC_EJECUTOR_TOKEN", "")
 if EJECUTOR_URL and not EJECUTOR_TOKEN:
     raise ImproperlyConfigured("IDC_EJECUTOR_URL exige IDC_EJECUTOR_TOKEN.")
+if not LOCAL and not EJECUTOR_URL:
+    raise ImproperlyConfigured(
+        "El perfil nube exige el ejecutor aislado: define IDC_EJECUTOR_URL e IDC_EJECUTOR_TOKEN."
+    )
 # Banco real de la prueba (formas A y B): fuera de Git y nunca en el portal (D21).
 BANCO_PRUEBA_DIR = BASE_DIR / 'datos' / 'banco_prueba'

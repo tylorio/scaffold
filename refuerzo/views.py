@@ -5,7 +5,7 @@ from django.urls import reverse
 
 from analisis.models import Participante
 from analisis.servicios.conceptos import NOMBRES_CONCEPTOS
-from analisis.views import respuesta_csv
+from analisis.http import respuesta_csv
 
 from .ejecucion import ejecutor_configurado
 from .models import AperturaRefuerzo, IntentoEjercicio

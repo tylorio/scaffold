@@ -111,6 +111,29 @@ Para repetir la demostración desde cero (por ejemplo, con λ = 0 para ver 3 dé
 borra `db.sqlite3` y vuelve a ejecutar `python manage.py migrate`: la congelación no
 se puede deshacer desde la interfaz.
 
+## Perfiles: núcleo local y portal en la nube (ADR-001)
+
+El mismo proyecto corre en dos perfiles, que se eligen con `IDC_PERFIL`:
+
+| | `local` (por defecto) | `nube` |
+| --- | --- | --- |
+| Dónde | Máquina del investigador | Azure |
+| Tiene | Repositorios, código de los fragmentos, modelo, banco de la prueba | Códigos anónimos, IDC agregado, asignación, uso del refuerzo |
+| No carga | — | Git, GitPython, scikit-learn ni el modelo |
+| Exige | `IDC_SAL_CORREOS` | `IDC_EJECUTOR_URL` e `IDC_EJECUTOR_TOKEN` (el ejecutor aislado) |
+| Comandos | Analizar, congelar, corregir la prueba, `exportar_resultados` | `importar_resultados` |
+
+Lo único que viaja de un perfil al otro es el archivo `resultados-v1`, que **no lleva código, rutas, URLs, correos ni hashes**:
+
+```powershell
+# En local, después de congelar la asignación:
+python manage.py exportar_resultados --salida resultados.json
+# En el portal:
+python manage.py importar_resultados resultados.json
+```
+
+El exportador y el importador rechazan cualquier campo fuera del esquema y cualquier texto que parezca código o un dato personal. La importación es idempotente: volver a importar los mismos datos no duplica nada. Un participante con otro diagnóstico, o una congelación distinta, se rechazan. Reanalizar, congelar, exportar e importar quedan en la **auditoría** (admin → Auditoría).
+
 ## Corregir la prueba de desempeño (T1–T3)
 
 El banco real de la prueba (formas A y B) **no se versiona**: va en

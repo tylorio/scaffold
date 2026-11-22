@@ -1,3 +1,5 @@
+import uuid
+
 from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models
 
@@ -83,6 +85,8 @@ class Analisis(models.Model):
     participante = models.ForeignKey(
         Participante, on_delete=models.CASCADE, related_name="analisis",
     )
+    # Única llave entre el portal y el almacén local (05 §3.6, ESC-16).
+    analisis_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     fecha = models.DateTimeField(auto_now_add=True)
     theta = models.FloatField()
     lambda_valor = models.FloatField()
@@ -121,6 +125,51 @@ class Analisis(models.Model):
     @property
     def intervalo(self):
         return intervalo_wilson(self.n_ia, self.n_fragmentos)
+
+
+class Auditoria(models.Model):
+    """Registro inmutable de las acciones que cambian el estudio (08 §3.5)."""
+
+    CONGELAR = "congelar"
+    REANALIZAR = "reanalizar"
+    EXPORTAR = "exportar_resultados"
+    IMPORTAR = "importar_resultados"
+    ACCIONES = [
+        (CONGELAR, "Congelar la asignación"),
+        (REANALIZAR, "Reemplazar un diagnóstico"),
+        (EXPORTAR, "Exportar resultados"),
+        (IMPORTAR, "Importar resultados"),
+    ]
+
+    fecha = models.DateTimeField(auto_now_add=True)
+    usuario = models.CharField(max_length=150)
+    accion = models.CharField(max_length=30, choices=ACCIONES)
+    objeto = models.CharField(max_length=100, blank=True)  # código anónimo, nunca un nombre
+    detalle = models.JSONField(default=dict)
+
+    class Meta:
+        ordering = ["-fecha", "-id"]
+        verbose_name_plural = "auditoría"
+
+    @classmethod
+    def anotar(cls, usuario, accion, objeto="", **detalle):
+        return cls.objects.create(usuario=usuario, accion=accion, objeto=objeto, detalle=detalle)
+
+
+class Importacion(models.Model):
+    """Archivo de resultados importado en el portal (ESC-15, ESC-18)."""
+
+    fecha = models.DateTimeField(auto_now_add=True)
+    usuario = models.CharField(max_length=150)
+    esquema = models.CharField(max_length=20)
+    hash_archivo = models.CharField(max_length=64, unique=True)
+    n_participantes = models.PositiveIntegerField()
+    generado = models.CharField(max_length=40)  # fecha en que el núcleo produjo el archivo
+
+    class Meta:
+        ordering = ["-fecha", "-id"]
+        verbose_name = "importación"
+        verbose_name_plural = "importaciones"
 
 
 class Congelacion(models.Model):

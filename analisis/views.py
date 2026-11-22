@@ -1,9 +1,9 @@
 from django.contrib import messages
-from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from .forms import ConfiguracionForm, ParticipanteForm
+from .http import respuesta_csv
 from .models import Configuracion, Participante
 from .persistencia import (
     AsignacionCongelada,
@@ -20,6 +20,10 @@ from .persistencia import (
 from .servicios.clasificador import ModeloNoDisponible
 from .servicios.conceptos import NOMBRES_CONCEPTOS
 from .servicios.repositorio import ErrorRepositorio, OrigenInvalido
+
+
+def _usuario(request) -> str:
+    return request.user.get_username() or "web"
 
 
 def lista_participantes(request):
@@ -43,7 +47,7 @@ def analizar(request, codigo):
     participante = get_object_or_404(Participante, codigo=codigo)
     reemplaza = participante.ultimo_analisis is not None
     try:
-        analisis = ejecutar_analisis(participante)
+        analisis = ejecutar_analisis(participante, usuario=_usuario(request))
     except (
         OrigenInvalido, ErrorRepositorio, ModeloNoDisponible, RepositorioSinFunciones,
         SinCorreosDeclarados, AsignacionCongelada,
@@ -104,7 +108,7 @@ def congelar(request):
     """Muestra qué va a pasar y, al confirmar, congela la asignación de todos (D3)."""
     if request.method == "POST":
         try:
-            hecha = congelar_asignacion()
+            hecha = congelar_asignacion(usuario=_usuario(request))
         except (NoSePuedeCongelar, AsignacionCongelada) as error:
             messages.error(request, str(error))
             return redirect("analisis:congelar")
@@ -115,12 +119,6 @@ def congelar(request):
         )
         return redirect("analisis:lista")
     return render(request, "analisis/congelar.html", {"estado": estado_congelacion()})
-
-
-def respuesta_csv(contenido, nombre):
-    respuesta = HttpResponse(contenido, content_type="text/csv; charset=utf-8")
-    respuesta["Content-Disposition"] = f'attachment; filename="{nombre}"'
-    return respuesta
 
 
 def exportar(request):

@@ -16,6 +16,7 @@ import analisis.servicios.clasificador
 import analisis.servicios.historial
 import analisis.servicios.idc
 import analisis.servicios.repositorio
+import analisis.servicios.resultados
 import analisis.servicios.flujo
 import analisis.servicios.exportacion
 import refuerzo.servicios.contenido

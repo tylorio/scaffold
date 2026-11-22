@@ -1,6 +1,14 @@
 from django.contrib import admin
 
-from .models import Analisis, Asignacion, Configuracion, Congelacion, Participante
+from .models import (
+    Analisis,
+    Asignacion,
+    Auditoria,
+    Configuracion,
+    Congelacion,
+    Importacion,
+    Participante,
+)
 
 admin.site.register(Configuracion)
 admin.site.register(Participante)
@@ -22,3 +30,5 @@ class SoloLectura(admin.ModelAdmin):
 
 admin.site.register(Asignacion, SoloLectura)
 admin.site.register(Congelacion, SoloLectura)
+admin.site.register(Auditoria, SoloLectura)
+admin.site.register(Importacion, SoloLectura)

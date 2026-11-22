@@ -1,6 +1,7 @@
 """Congela la asignación de toda la muestra, igual que el botón de la interfaz."""
 from django.core.management.base import BaseCommand, CommandError
 
+from analisis.perfil import exigir_perfil
 from analisis.persistencia import (
     AsignacionCongelada,
     NoSePuedeCongelar,
@@ -21,13 +22,14 @@ class Command(BaseCommand):
         parser.add_argument("--tamano-bloque", type=int, choices=(2, 4), default=4)
 
     def handle(self, *args, semilla_base, tamano_bloque, **opciones):
+        exigir_perfil("local")
         estado = estado_congelacion()
         if estado.congelada is not None:
             raise CommandError("La asignación ya se congeló.", returncode=11)
         if estado.faltantes:
             raise CommandError(" ".join(estado.faltantes), returncode=10)
         try:
-            hecha = congelar_asignacion(semilla_base, tamano_bloque)
+            hecha = congelar_asignacion(semilla_base, tamano_bloque, usuario="manage.py")
         except (NoSePuedeCongelar, AsignacionCongelada) as error:
             raise CommandError(str(error), returncode=10) from error
 
