@@ -1,9 +1,9 @@
-import math
-
+import joblib
 import pytest
 
 from analisis.servicios.caracteristicas import (
     NOMBRES_CARACTERISTICAS,
+    RASGOS_VERSION,
     extraer_caracteristicas,
 )
 from analisis.servicios.clasificador import ModeloNoDisponible, cargar_modelo
@@ -33,8 +33,8 @@ ESTILO_IA = '''def calculate_total_sum(numbers_list: list[int]) -> int:
 ESTILO_HUMANO = "def s1(l):\n    t=0\n    for i in l:\n        t+=i\n    return t"
 
 
-def caracteristica(nombre, codigo, insercion=None):
-    vector = extraer_caracteristicas(codigo, insercion)
+def caracteristica(nombre, codigo):
+    vector = extraer_caracteristicas(codigo)
     return vector[NOMBRES_CARACTERISTICAS.index(nombre)]
 
 
@@ -46,7 +46,7 @@ def muestras_demo():
 
 
 def test_vector_tiene_una_entrada_por_caracteristica():
-    assert len(extraer_caracteristicas(ESTILO_IA, 10)) == len(NOMBRES_CARACTERISTICAS)
+    assert len(extraer_caracteristicas(ESTILO_IA)) == len(NOMBRES_CARACTERISTICAS)
 
 
 def test_detecta_docstring_y_type_hints():
@@ -71,9 +71,22 @@ def test_uniformidad_baja_con_estilos_mezclados():
     assert caracteristica("uniformidad_estilo", ESTILO_IA) == 1.0
 
 
-def test_insercion_ausente_queda_como_nan():
-    assert math.isnan(caracteristica("log_insercion_commit", ESTILO_IA, None))
-    assert caracteristica("log_insercion_commit", ESTILO_IA, 0) == 0.0
+def test_el_clasificador_no_usa_el_historial():
+    """D9: solo estilo y estructura; el historial va al índice aparte."""
+    assert RASGOS_VERSION == "rasgos-v2"
+    assert not any("insercion" in nombre for nombre in NOMBRES_CARACTERISTICAS)
+
+
+def test_la_insercion_no_cambia_la_prediccion():
+    paquete = entrenar_modelo(muestras_demo(), version="prueba", es_demo=True)
+    from analisis.servicios.clasificador import ModeloCargado
+    modelo = ModeloCargado(paquete["pipeline"], "prueba", True)
+    pequena, grande, ausente = modelo.predecir([
+        {"codigo": ESTILO_HUMANO, "insercion_commit": 1},
+        {"codigo": ESTILO_HUMANO, "insercion_commit": 5000},
+        {"codigo": ESTILO_HUMANO},
+    ])
+    assert pequena == grande == ausente
 
 
 def test_codigo_invalido_no_rompe_la_extraccion():
@@ -143,3 +156,18 @@ def test_el_corpus_se_reemplaza_con_un_jsonl(tmp_path):
 def test_modelo_inexistente_da_error_claro(tmp_path):
     with pytest.raises(ModeloNoDisponible):
         cargar_modelo(tmp_path / "no_existe.joblib")
+
+
+def test_guarda_la_version_de_rasgos(tmp_path):
+    ruta = tmp_path / "modelo.joblib"
+    guardar_modelo(entrenar_modelo(muestras_demo(), version="prueba", es_demo=True), ruta)
+    assert cargar_modelo(ruta).rasgos_version == RASGOS_VERSION
+
+
+def test_modelo_de_otra_version_de_rasgos_se_rechaza(tmp_path):
+    paquete = entrenar_modelo(muestras_demo(), version="viejo", es_demo=True)
+    del paquete["rasgos_version"]  # así quedaron los modelos anteriores a D9
+    ruta = tmp_path / "viejo.joblib"
+    joblib.dump(paquete, ruta)
+    with pytest.raises(ModeloNoDisponible, match="rasgos-v1"):
+        cargar_modelo(ruta)

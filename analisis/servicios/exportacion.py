@@ -18,6 +18,7 @@ COLUMNAS_ANALISIS = (
     "codigo", "analisis", "fase", "fecha", "concepto", "condicion", "comparable",
     "semilla", "n_fragmentos", "n_ia", "idc", "idc_ic_inf", "idc_ic_sup", "estado",
     "n_autores", "theta", "lambda", "m", "modelo_version", "modelo_es_demo",
+    "version_reglas",
 )
 COLUMNAS_INTENTOS = (
     "codigo", "concepto", "condicion", "ejercicio", "intento", "fecha", "pasados",
@@ -38,6 +39,8 @@ class RegistroParticipante:
     n_autores: int | None = None
     n_triviales: int | None = None
     idc_global: float | None = None
+    indice_historial: float | None = None
+    version_reglas: str = ""
     theta: float | None = None
     lambda_: float | None = None
     m: int | None = None
@@ -49,8 +52,9 @@ class RegistroParticipante:
 def _columnas() -> list[str]:
     columnas = [
         "codigo", "fase", "comparable", "fecha_analisis", "n_fragmentos",
-        "n_triviales", "n_autores", "idc_global", "idc_global_ic_inf", "idc_global_ic_sup", "theta",
-        "lambda", "m", "modelo_version", "modelo_es_demo",
+        "n_triviales", "n_autores", "idc_global", "idc_global_ic_inf", "idc_global_ic_sup",
+        "indice_historial", "theta", "lambda", "m", "modelo_version", "modelo_es_demo",
+        "version_reglas",
     ]
     for concepto in CONCEPTOS:
         columnas += [
@@ -89,6 +93,8 @@ def _fila(registro: RegistroParticipante) -> dict:
         **_intervalo(
             "idc_global", registro.idc_global, registro.n_ia, registro.n_fragmentos
         ),
+        "indice_historial": _numero(registro.indice_historial),
+        "version_reglas": registro.version_reglas,
         "theta": _numero(registro.theta),
         "lambda": _numero(registro.lambda_),
         "m": _entero(registro.m),

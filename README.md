@@ -123,8 +123,11 @@ Prepara un corpus JSONL con una línea por función:
 {"codigo": "def f(): ...", "etiqueta": 1, "insercion_commit": 42}
 ```
 
-`etiqueta` es 1 si es IA y 0 si es humano. `insercion_commit` puede ser `null`.
-Luego entrena:
+`etiqueta` es 1 si es IA y 0 si es humano. `insercion_commit` puede ser `null`. El
+clasificador no lo usa (D9), pero conviene guardarlo para calibrar el índice por
+historial. Luego entrena. Un modelo entrenado con otra versión de las
+características (`rasgos-v1`, de antes de D9) se rechaza al cargarlo, así que
+vuelve a entrenar el de demostración después de actualizar el código:
 
 ```powershell
 python scripts\entrenar_modelo.py --corpus datos\corpus_real.jsonl `
@@ -201,7 +204,11 @@ tests/               Pruebas con pytest
 - **Tamaño de inserción:** cuenta las líneas `.py` añadidas en el commit, sin las
   carpetas excluidas (`.venv`, `build`, `migrations`...). El commit de cada línea
   sale de `git blame -w -M -C`, que ignora los cambios de espacios y sigue al
-  código movido.
+  código movido. No entra al clasificador (D9).
+- **Índice por historial:** proporción de las funciones con historial cuyo commit
+  añadió 30 líneas o más (`historial-v1`). Es una medida exploratoria para HE1,
+  independiente del clasificador. El umbral es provisional: se fija con el corpus
+  de la sesión de etiquetado antes del diagnóstico.
 - **URLs:** no se aceptan con usuario, token, parámetros ni fragmento, porque
   quedarían guardados en la base de datos.
 
@@ -229,9 +236,12 @@ Por eso `db.sqlite3` y `datos/` están en `.gitignore`.
 **Clasificador**
 - El corpus es sintético y las métricas de `entrenar_modelo.py` no valen como
   resultado: miden si recupera la regla con la que se generó el corpus.
-- Las características son solo de estilo. Un estudiante ordenado puede parecer IA
-  y un código de IA retocado puede parecer humano.
-- El tamaño de inserción castiga a quien trabaja mucho y sube todo en un commit.
+- Las características son solo de estilo y estructura (`rasgos-v2`). Un estudiante
+  ordenado puede parecer IA y un código de IA retocado puede parecer humano. Sin
+  el historial no hay contrapeso dentro del clasificador, así que hay que revisar
+  los falsos positivos por nivel de calidad (D10).
+- En el índice por historial, el tamaño de inserción castiga a quien trabaja mucho
+  y sube todo en un commit.
   Un formateador que cambia más que espacios, como comillas, sigue contando como
   código nuevo: `-w` solo cubre los espacios.
 - Falta calibrar las probabilidades, y θ = 0,5 solo tiene sentido si lo están.

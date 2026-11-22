@@ -8,6 +8,7 @@ from .autoria import FiltroAutor
 from .clasificador import ModeloCargado
 from .conceptos import ESTRUCTURAS
 from .extraccion import ErrorSintaxis, Fragmento, extraer_funciones
+from .historial import IndiceHistorial, indice_por_historial
 from .idc import Parametros, ResultadoIDC, calcular_resultados
 from .repositorio import ErrorRepositorio, abrir_repositorio, decodificar
 
@@ -32,6 +33,7 @@ class ResultadoAnalisis:
     # Fragmentos sin estructuras de datos que tienen alguna indexación de tipo desconocido (R4).
     n_indexacion_indeterminada: int = 0
     n_fragmentos_otros_autores: int = 0  # descartados por el filtro por autor (D19)
+    indice_historial: IndiceHistorial | None = None  # D9, exploratorio para HE1
 
 
 def analizar_repositorio(
@@ -90,10 +92,7 @@ def analizar_repositorio(
         tiene_historial = repositorio.tiene_historial
         n_autores = repositorio.n_autores
 
-    probabilidades = modelo.predecir([
-        {"codigo": f.codigo, "insercion_commit": i}
-        for f, i in zip(fragmentos, inserciones)
-    ])
+    probabilidades = modelo.predecir([{"codigo": f.codigo} for f in fragmentos])
     clasificados = [
         FragmentoClasificado(f, i, p)
         for f, i, p in zip(fragmentos, inserciones, probabilidades)
@@ -118,4 +117,5 @@ def analizar_repositorio(
             if f.indexaciones_indeterminadas and ESTRUCTURAS not in f.conceptos
         ),
         n_fragmentos_otros_autores=n_otros_autores,
+        indice_historial=indice_por_historial(inserciones),
     )

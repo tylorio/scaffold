@@ -14,7 +14,7 @@ from .models import (
 )
 from .servicios.autoria import FiltroAutor
 from .servicios.clasificador import cargar_modelo
-from .servicios.conceptos import CONCEPTOS
+from .servicios.conceptos import CONCEPTOS, REGLAS_VERSION
 from .servicios.exportacion import (
     RegistroParticipante,
     generar_csv,
@@ -76,6 +76,12 @@ def _guardar(
             n_triviales=datos.n_triviales,
             n_fragmentos_otros_autores=datos.n_fragmentos_otros_autores,
             n_indexacion_indeterminada=datos.n_indexacion_indeterminada,
+            version_reglas=REGLAS_VERSION,
+            version_rasgos=modelo.rasgos_version,
+            indice_historial=datos.indice_historial.valor,
+            n_con_historial=datos.indice_historial.n_con_historial,
+            umbral_historial=datos.indice_historial.umbral_lineas,
+            version_historial=datos.indice_historial.version,
         )
         if asignacion is None:
             asignacion = _sortear(participante, analisis, resultado.debiles)
@@ -181,6 +187,8 @@ def _registro(participante: Participante) -> RegistroParticipante:
         n_autores=analisis.n_autores,
         n_triviales=analisis.n_triviales,
         idc_global=analisis.idc_global,
+        indice_historial=analisis.indice_historial,
+        version_reglas=analisis.version_reglas,
         theta=analisis.theta,
         lambda_=analisis.lambda_valor,
         m=analisis.m,
@@ -224,6 +232,7 @@ def _filas_analisis():
                 "m": a.m,
                 "modelo_version": a.modelo_version,
                 "modelo_es_demo": int(a.modelo_es_demo),
+                "version_reglas": a.version_reglas,
             }
 
 

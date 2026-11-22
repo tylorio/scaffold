@@ -13,6 +13,7 @@ import analisis.servicios.extraccion
 import analisis.servicios.caracteristicas
 import analisis.servicios.entrenamiento
 import analisis.servicios.clasificador
+import analisis.servicios.historial
 import analisis.servicios.idc
 import analisis.servicios.repositorio
 import analisis.servicios.flujo

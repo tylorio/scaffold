@@ -1,10 +1,13 @@
-"""Características de un fragmento y su transformador para scikit-learn."""
+"""Características de un fragmento y su transformador para scikit-learn.
+
+Solo miden el producto (estilo y estructura). El tamaño de inserción por commit
+mide el proceso y no entra aquí: va al índice por historial (D9, `historial.py`).
+"""
 from __future__ import annotations
 
 import ast
 import builtins
 import io
-import math
 import re
 import tokenize
 from collections import Counter
@@ -16,6 +19,8 @@ from sklearn.base import BaseEstimator, TransformerMixin
 
 from .conceptos import FUNCIONES
 
+RASGOS_VERSION = "rasgos-v2"
+
 NOMBRES_CARACTERISTICAS = (
     "densidad_comentarios",
     "tiene_docstring",
@@ -24,7 +29,6 @@ NOMBRES_CARACTERISTICAS = (
     "uniformidad_estilo",
     "complejidad",
     "lineas",
-    "log_insercion_commit",
 )
 
 _SNAKE = re.compile(r"^_*[a-z][a-z0-9]*(_[a-z0-9]+)*_*$")
@@ -166,24 +170,12 @@ def _lineas(codigo: str) -> float:
         return float(len(codigo.splitlines()))
 
 
-def extraer_caracteristicas(
-    codigo: str, insercion_commit: int | None = None
-) -> list[float]:
-    """Vector en el orden de NOMBRES_CARACTERISTICAS.
-
-    `log_insercion_commit` queda en NaN cuando no hay historial; el imputador
-    del pipeline se encarga de ese caso.
-    """
+def extraer_caracteristicas(codigo: str) -> list[float]:
+    """Vector en el orden de NOMBRES_CARACTERISTICAS."""
     arbol = _parsear(codigo)
     funcion = _primera_funcion(arbol)
-    insercion = (
-        math.nan if insercion_commit is None else math.log1p(max(insercion_commit, 0))
-    )
     if funcion is None:
-        return [
-            densidad_comentarios(codigo), 0.0, 0.0, 0.0, 1.0, 1.0,
-            _lineas(codigo), insercion,
-        ]
+        return [densidad_comentarios(codigo), 0.0, 0.0, 0.0, 1.0, 1.0, _lineas(codigo)]
     return [
         densidad_comentarios(codigo),
         float(ast.get_docstring(funcion) is not None),
@@ -192,23 +184,18 @@ def extraer_caracteristicas(
         uniformidad_estilo(codigo, funcion),
         _complejidad(arbol),
         _lineas(codigo),
-        insercion,
     ]
 
 
 class ExtractorCaracteristicas(BaseEstimator, TransformerMixin):
-    """Convierte `{"codigo": str, "insercion_commit": int | None}` en una matriz."""
+    """Convierte `{"codigo": str}` en una matriz; ignora cualquier otra clave."""
 
     def fit(self, X, y=None):
         return self
 
     def transform(self, X):
         return np.array(
-            [
-                extraer_caracteristicas(m["codigo"], m.get("insercion_commit"))
-                for m in X
-            ],
-            dtype=float,
+            [extraer_caracteristicas(m["codigo"]) for m in X], dtype=float,
         ).reshape(len(X), len(NOMBRES_CARACTERISTICAS))
 
     def get_feature_names_out(self, input_features=None):

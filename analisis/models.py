@@ -85,6 +85,13 @@ class Analisis(models.Model):
     n_triviales = models.PositiveIntegerField(default=0)
     n_fragmentos_otros_autores = models.PositiveIntegerField(default=0)  # D19
     n_indexacion_indeterminada = models.PositiveIntegerField(default=0)  # R4
+    version_reglas = models.CharField(max_length=30, blank=True)
+    version_rasgos = models.CharField(max_length=30, blank=True)
+    # Índice de delegación por historial (D9): fuera del clasificador, exploratorio para HE1.
+    indice_historial = models.FloatField(null=True)
+    n_con_historial = models.PositiveIntegerField(default=0)
+    umbral_historial = models.PositiveIntegerField(null=True)
+    version_historial = models.CharField(max_length=30, blank=True)
 
     class Meta:
         ordering = ["-fecha", "-id"]

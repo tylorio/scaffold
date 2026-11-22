@@ -12,19 +12,19 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import joblib
-from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import StratifiedKFold, cross_validate
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-from .caracteristicas import ExtractorCaracteristicas
+from .caracteristicas import RASGOS_VERSION, ExtractorCaracteristicas
 
 
 @dataclass(frozen=True)
 class Muestra:
     codigo: str
     etiqueta: int  # 1 = generado por IA, 0 = escrito por una persona
+    # No entra al clasificador (D9); el corpus lo guarda para validar el índice por historial.
     insercion_commit: int | None = None
 
 
@@ -48,9 +48,6 @@ def cargar_corpus(ruta: str | Path) -> list[Muestra]:
 def construir_pipeline() -> Pipeline:
     return Pipeline([
         ("caracteristicas", ExtractorCaracteristicas()),
-        ("imputador", SimpleImputer(
-            strategy="median", add_indicator=True, keep_empty_features=True,
-        )),
         ("escala", StandardScaler()),
         ("modelo", LogisticRegression(max_iter=1000, random_state=42)),
     ])
@@ -64,10 +61,7 @@ def entrenar_modelo(
     if set(etiquetas) != {0, 1}:
         raise ValueError("El corpus necesita muestras de ambas clases (0 y 1).")
 
-    entradas = [
-        {"codigo": m.codigo, "insercion_commit": m.insercion_commit}
-        for m in muestras
-    ]
+    entradas = [{"codigo": m.codigo} for m in muestras]
     pliegues = min(5, etiquetas.count(0), etiquetas.count(1))
     metricas = {}
     if pliegues >= 2:
@@ -87,6 +81,7 @@ def entrenar_modelo(
         "pipeline": pipeline,
         "version": version,
         "es_demo": es_demo,
+        "rasgos_version": RASGOS_VERSION,
         "entrenado_en": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "n_muestras": len(muestras),
         "metricas_cv": metricas,

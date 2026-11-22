@@ -238,6 +238,18 @@ def test_detalle_no_avisa_con_un_autor(client, participante):
     assert "autores" not in html
 
 
+def test_analizar_guarda_versiones_e_indice_por_historial(client, participante):
+    client.post(reverse("analisis:analizar", args=["P01"]))
+    analisis = participante.ultimo_analisis
+    assert (analisis.version_reglas, analisis.version_rasgos) == ("conceptos-v1", "rasgos-v2")
+    # Las 3 funciones entraron en un único commit de 13 líneas, por debajo del umbral.
+    assert (analisis.indice_historial, analisis.n_con_historial) == (0.0, 3)
+    assert analisis.version_historial == "historial-v1"
+    [fila] = filas_csv(client)
+    assert fila["indice_historial"] == "0.0"
+    assert fila["version_reglas"] == "conceptos-v1"
+
+
 def test_analizar_guarda_autores_y_triviales(client, participante, repositorio):
     (repositorio / "extra.py").write_text("def g():\n    return 1\n", encoding="utf-8")
     with Repo(repositorio) as repo:
