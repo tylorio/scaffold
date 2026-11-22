@@ -153,5 +153,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Parámetros del prototipo
 RUTA_MODELO = BASE_DIR / 'datos' / 'modelos' / 'modelo_demo.joblib'
 TIEMPO_LIMITE_EJERCICIO = 5.0  # segundos por envío
+
+# Ejecutor aislado (ADR-005). Sin URL, las soluciones corren en un subproceso local,
+# que no es un sandbox y solo sirve para desarrollo y pruebas.
+EJECUTOR_URL = os.environ.get("IDC_EJECUTOR_URL", "")
+EJECUTOR_TOKEN = os.environ.get("IDC_EJECUTOR_TOKEN", "")
+if EJECUTOR_URL and not EJECUTOR_TOKEN:
+    raise ImproperlyConfigured("IDC_EJECUTOR_URL exige IDC_EJECUTOR_TOKEN.")
 # Banco real de la prueba (formas A y B): fuera de Git y nunca en el portal (D21).
 BANCO_PRUEBA_DIR = BASE_DIR / 'datos' / 'banco_prueba'

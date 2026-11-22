@@ -9,6 +9,7 @@ from pruebas.persistencia import corregir_momento
 from pruebas.servicios.banco import BancoInvalido, cargar_bancos
 from pruebas.servicios.corrector import verificar_referencias
 from pruebas.servicios.exportacion import generar_csv_puntajes
+from refuerzo.ejecucion import ejecutor_configurado
 
 
 class Command(BaseCommand):
@@ -28,16 +29,22 @@ class Command(BaseCommand):
 
     def handle(self, *args, momento, soluciones, salida, banco, **opciones):
         carpeta_banco = banco or Path(settings.BANCO_PRUEBA_DIR)
+        remoto = ejecutor_configurado()
+        if remoto is None:
+            self.stdout.write(
+                "Aviso: sin IDC_EJECUTOR_URL, las soluciones corren en un subproceso local "
+                "que no es un sandbox. Lo recomendable es usar el ejecutor aislado."
+            )
         try:
             bancos = cargar_bancos(carpeta_banco)
-            verificar_referencias(bancos, settings.TIEMPO_LIMITE_EJERCICIO)
+            verificar_referencias(bancos, settings.TIEMPO_LIMITE_EJERCICIO, remoto)
         except BancoInvalido as error:
             raise CommandError(f"Banco inválido: {error}", returncode=14) from error
         if not soluciones.is_dir():
             raise CommandError(f"No existe la carpeta {soluciones}.", returncode=15)
         try:
             correccion = corregir_momento(
-                momento, soluciones, bancos, settings.TIEMPO_LIMITE_EJERCICIO,
+                momento, soluciones, bancos, settings.TIEMPO_LIMITE_EJERCICIO, remoto,
             )
         except NoSePuedeCongelar as error:
             raise CommandError(str(error), returncode=13) from error

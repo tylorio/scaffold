@@ -65,7 +65,19 @@ def ejecutar_caso(funcion, caso):
     return resultado
 
 
+def aplicar_limites(argumentos):
+    """En el ejecutor aislado: límites del sistema antes de tocar el código ajeno."""
+    if "--limites" not in argumentos:
+        return
+    import resource
+
+    limites = json.loads(argumentos[argumentos.index("--limites") + 1])
+    for nombre, valor in limites.items():
+        resource.setrlimit(getattr(resource, nombre), (valor, valor))
+
+
 def main():
+    aplicar_limites(sys.argv)
     salida_real = sys.stdout
     entrada = json.loads(sys.stdin.read())
     sys.stdin = io.StringIO("")

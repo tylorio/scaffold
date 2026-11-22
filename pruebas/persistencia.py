@@ -7,6 +7,7 @@ from pathlib import Path
 from analisis.models import Asignacion
 from analisis.persistencia import exigir_asignacion_congelada
 from analisis.servicios.repositorio import decodificar
+from refuerzo.servicios.ejecutor import EjecutorRemoto
 
 from .models import PuntajeItem
 from .servicios.banco import Banco
@@ -41,6 +42,7 @@ def _leer(ruta: Path) -> str | None:
 
 def corregir_momento(
     momento: str, soluciones: Path, bancos: dict[str, Banco], tiempo_limite: float = 5.0,
+    remoto: EjecutorRemoto | None = None,
 ) -> Correccion:
     """Corrige `soluciones/<código>/T1.py…T3.py` con la forma que le tocó a cada uno.
 
@@ -79,7 +81,7 @@ def corregir_momento(
                 resultado = resultado_ausente(item)
             else:
                 resultado = corregir_item(
-                    _leer(carpeta / f"{item.item}.py"), item, tiempo_limite,
+                    _leer(carpeta / f"{item.item}.py"), item, tiempo_limite, remoto,
                 )
             valores = {
                 "forma": forma, "concepto": item.concepto, "banco_version": banco.version,

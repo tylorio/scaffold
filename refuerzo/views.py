@@ -7,6 +7,7 @@ from analisis.models import Participante
 from analisis.servicios.conceptos import NOMBRES_CONCEPTOS
 from analisis.views import respuesta_csv
 
+from .ejecucion import ejecutor_configurado
 from .models import AperturaRefuerzo, IntentoEjercicio
 from .persistencia import exportar_csv_aperturas, exportar_csv_intentos
 from .servicios.contenido import generar_recurso
@@ -57,7 +58,8 @@ def ver_concepto(request, codigo, concepto):
             raise Http404("Ejercicio desconocido")
         codigo_solucion = request.POST.get("codigo", "")[:MAXIMO_CARACTERES]
         ejecucion = ejecutar_solucion(
-            codigo_solucion, ejercicio, settings.TIEMPO_LIMITE_EJERCICIO
+            codigo_solucion, ejercicio, settings.TIEMPO_LIMITE_EJERCICIO,
+            remoto=ejecutor_configurado(),
         )
         IntentoEjercicio.objects.create(
             analisis=analisis,

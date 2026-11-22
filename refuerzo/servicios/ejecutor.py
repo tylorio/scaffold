@@ -1,8 +1,10 @@
-"""Ejecuta soluciones en un subproceso con tiempo límite.
+"""Ejecuta soluciones: en el ejecutor aislado (ADR-005) o, solo en desarrollo, en local.
 
-ESTO NO ES UN SANDBOX. El tiempo límite corta bucles infinitos, pero el código
-corre con los permisos del usuario que levantó el servidor: puede leer y borrar
-archivos o usar la red. Solo sirve para un prototipo en una máquina controlada.
+Con `EjecutorRemoto`, la solución va por HTTP al contenedor del ejecutor, sin red de
+salida y con límites (08 §2). Sin él, corre en un subproceso local con tiempo límite.
+ESE MODO NO ES UN SANDBOX: el código tiene los permisos del usuario que levantó el
+servidor. Solo sirve para el desarrollo y las pruebas; el perfil de nube exige el
+ejecutor aislado.
 """
 from __future__ import annotations
 
@@ -11,6 +13,8 @@ import os
 import subprocess
 import sys
 import tempfile
+import urllib.error
+import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -28,6 +32,49 @@ class ResultadoEjecucion:
     total: int
     casos: list[dict] = field(default_factory=list)
     error: str = ""
+
+
+@dataclass(frozen=True)
+class EjecutorRemoto:
+    url: str
+    token: str = field(repr=False)
+
+
+NO_DISPONIBLE = "El ejecutor no está disponible en este momento. Intenta de nuevo en unos minutos."
+
+
+def _carga(codigo: str, ejercicio: Ejercicio) -> dict:
+    return {
+        "codigo": codigo,
+        "funcion": ejercicio.funcion,
+        "casos": [
+            {"args": list(c.args), "esperado": c.esperado, "lanza": c.lanza}
+            for c in ejercicio.casos
+        ],
+    }
+
+
+def _ejecutar_remoto(
+    codigo: str, ejercicio: Ejercicio, tiempo_limite: float, remoto: EjecutorRemoto
+) -> ResultadoEjecucion:
+    total = len(ejercicio.casos)
+    peticion = urllib.request.Request(
+        remoto.url.rstrip("/") + "/ejecutar",
+        data=json.dumps({**_carga(codigo, ejercicio), "tiempo_limite_s": tiempo_limite}).encode(),
+        headers={"Content-Type": "application/json", "X-Token": remoto.token},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(peticion, timeout=tiempo_limite + 20) as respuesta:
+            dato = json.loads(respuesta.read())
+    except (urllib.error.URLError, OSError, ValueError):
+        return ResultadoEjecucion(0, total, error=NO_DISPONIBLE)
+    if not isinstance(dato, dict):
+        return ResultadoEjecucion(0, total, error=NO_DISPONIBLE)
+    casos = [c for c in dato.get("casos", []) if isinstance(c, dict)]
+    return ResultadoEjecucion(
+        sum(1 for c in casos if c.get("paso") is True), total, casos, dato.get("error") or "",
+    )
 
 
 def _interprete() -> str:
@@ -49,17 +96,13 @@ def _entorno(carpeta: str) -> dict[str, str]:
 
 
 def ejecutar_solucion(
-    codigo: str, ejercicio: Ejercicio, tiempo_limite: float = TIEMPO_LIMITE
+    codigo: str, ejercicio: Ejercicio, tiempo_limite: float = TIEMPO_LIMITE,
+    remoto: EjecutorRemoto | None = None,
 ) -> ResultadoEjecucion:
+    if remoto is not None:
+        return _ejecutar_remoto(codigo, ejercicio, tiempo_limite, remoto)
     total = len(ejercicio.casos)
-    carga = json.dumps({
-        "codigo": codigo,
-        "funcion": ejercicio.funcion,
-        "casos": [
-            {"args": list(c.args), "esperado": c.esperado, "lanza": c.lanza}
-            for c in ejercicio.casos
-        ],
-    })
+    carga = json.dumps(_carga(codigo, ejercicio))
 
     with tempfile.TemporaryDirectory(
         prefix="idc_solucion_", ignore_cleanup_errors=True

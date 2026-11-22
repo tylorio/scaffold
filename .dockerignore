@@ -1,0 +1,5 @@
+# La imagen del ejecutor solo lleva estos dos archivos. Todo lo demás queda fuera,
+# en especial .env, datos/, db.sqlite3 y los repositorios de los participantes.
+*
+!ejecutor/servidor.py
+!refuerzo/servicios/corredor.py

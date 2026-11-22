@@ -1,13 +1,14 @@
 """Corrección automática de T1–T3: porcentaje de casos superados y métricas de calidad.
 
-Reutiliza el corredor de los ejercicios de refuerzo. Corre en la máquina del
-investigador, con las soluciones de la sesión supervisada; no es un sandbox.
+Reutiliza el corredor de los ejercicios de refuerzo. Con `remoto`, las soluciones
+corren en el ejecutor aislado (ADR-005), lo recomendable porque también es código de
+estudiantes. Sin él, corren en un subproceso local, que no es un sandbox.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
 
-from refuerzo.servicios.ejecutor import ejecutar_solucion
+from refuerzo.servicios.ejecutor import EjecutorRemoto, ejecutar_solucion
 
 from .banco import Banco, BancoInvalido, ItemPrueba
 from .calidad import metricas_calidad
@@ -34,7 +35,8 @@ class ResultadoItem:
 
 
 def corregir_item(
-    solucion: str | None, item: ItemPrueba, tiempo_limite: float = 5.0
+    solucion: str | None, item: ItemPrueba, tiempo_limite: float = 5.0,
+    remoto: EjecutorRemoto | None = None,
 ) -> ResultadoItem:
     referencia = metricas_calidad(item.referencia)
     total = len(item.casos)
@@ -43,7 +45,7 @@ def corregir_item(
         estado, pasados = (SIN_RESPUESTA if solucion is None else ILEGIBLE), 0
     else:
         estado = OK
-        pasados = ejecutar_solucion(solucion, item, tiempo_limite).pasados
+        pasados = ejecutar_solucion(solucion, item, tiempo_limite, remoto).pasados
     return ResultadoItem(
         item=item.item,
         concepto=item.concepto,
@@ -68,7 +70,9 @@ def resultado_ausente(item: ItemPrueba) -> ResultadoItem:
     )
 
 
-def verificar_referencias(bancos: dict[str, Banco], tiempo_limite: float = 5.0) -> None:
+def verificar_referencias(
+    bancos: dict[str, Banco], tiempo_limite: float = 5.0, remoto: EjecutorRemoto | None = None,
+) -> None:
     """Cada solución de referencia debe superar todos los casos de su ítem."""
     fallas = []
     for forma, banco in bancos.items():
@@ -76,7 +80,7 @@ def verificar_referencias(bancos: dict[str, Banco], tiempo_limite: float = 5.0) 
             if metricas_calidad(item.referencia) is None:
                 fallas.append(f"{forma}/{item.item}: la referencia no es Python válido.")
                 continue
-            resultado = corregir_item(item.referencia, item, tiempo_limite)
+            resultado = corregir_item(item.referencia, item, tiempo_limite, remoto)
             if resultado.casos_pasados != resultado.casos_total:
                 fallas.append(
                     f"{forma}/{item.item}: la referencia supera {resultado.casos_pasados} "
