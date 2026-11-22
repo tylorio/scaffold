@@ -10,20 +10,36 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
 from pathlib import Path
+
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
+def _cargar_env(ruta: Path) -> None:
+    """Lee CLAVE=VALOR de un .env local sin pisar las variables ya definidas."""
+    if not ruta.is_file():
+        return
+    for linea in ruta.read_text(encoding="utf-8").splitlines():
+        linea = linea.strip()
+        if not linea or linea.startswith("#") or "=" not in linea:
+            continue
+        clave, valor = linea.split("=", 1)
+        os.environ.setdefault(clave.strip(), valor.strip().strip("\"'"))
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-g0u4p#nzl#fmi+zzssn#1@pkd0o@*l^&hdg9hp(zz*a1=1xvbi'
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+_cargar_env(BASE_DIR / ".env")
+
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "")
+if not SECRET_KEY:
+    raise ImproperlyConfigured(
+        "Falta DJANGO_SECRET_KEY: defínela en el entorno o en .env (ver .env.ejemplo)."
+    )
+
+DEBUG = os.environ.get("DJANGO_DEBUG", "").lower() in {"1", "true", "si", "sí"}
 
 ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 

@@ -2,6 +2,8 @@
 __pycache__/
 *.pyc
 .pytest_cache/
+# Secretos locales: clave de Django y, más adelante, la sal de los correos
+.env
 # Contienen datos de participantes o se regeneran con los scripts
 db.sqlite3
 datos/
