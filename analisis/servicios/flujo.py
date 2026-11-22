@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from .clasificador import ModeloCargado
+from .conceptos import ESTRUCTURAS
 from .extraccion import ErrorSintaxis, Fragmento, extraer_funciones
 from .idc import Parametros, ResultadoIDC, calcular_resultados
 from .repositorio import abrir_repositorio, decodificar
@@ -26,6 +27,9 @@ class ResultadoAnalisis:
     archivos_con_error: list[str] = field(default_factory=list)
     n_autores: int | None = None
     n_triviales: int = 0
+    resultado_amplio: ResultadoIDC | None = None  # conceptos-v1-amplia, para sensibilidad
+    # Fragmentos sin estructuras de datos que tienen alguna indexación de tipo desconocido (R4).
+    n_indexacion_indeterminada: int = 0
 
 
 def analizar_repositorio(
@@ -78,6 +82,9 @@ def analizar_repositorio(
     resultado = calcular_resultados(
         ((c.p_ia, c.fragmento.conceptos) for c in clasificados), parametros
     )
+    resultado_amplio = calcular_resultados(
+        ((c.p_ia, c.fragmento.conceptos_amplia) for c in clasificados), parametros
+    )
     return ResultadoAnalisis(
         fragmentos=clasificados,
         resultado=resultado,
@@ -86,4 +93,9 @@ def analizar_repositorio(
         archivos_con_error=con_error,
         n_autores=n_autores,
         n_triviales=len(extraidos) - len(fragmentos),
+        resultado_amplio=resultado_amplio,
+        n_indexacion_indeterminada=sum(
+            1 for f in fragmentos
+            if f.indexaciones_indeterminadas and ESTRUCTURAS not in f.conceptos
+        ),
     )

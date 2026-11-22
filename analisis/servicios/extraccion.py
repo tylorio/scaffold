@@ -8,7 +8,13 @@ from typing import Iterator
 from radon.complexity import cc_visit_ast
 from radon.raw import analyze
 
-from .conceptos import FUNCIONES, detectar_conceptos, recorrer_cuerpo
+from .conceptos import (
+    FUNCIONES,
+    RECURSION,
+    DeteccionConceptos,
+    analizar_conceptos,
+    recorrer_cuerpo,
+)
 
 
 class ErrorSintaxis(Exception):
@@ -26,6 +32,8 @@ class Fragmento:
     complejidad: int
     conceptos: frozenset[str]
     trivial: bool = False  # el flujo la omite: no aporta evidencia para el IDC
+    conceptos_amplia: frozenset[str] = frozenset()  # solo para el análisis de sensibilidad (D5)
+    indexaciones_indeterminadas: int = 0  # R4
 
 
 def desindentar(lineas: list[str], columna: int) -> str:
@@ -63,12 +71,59 @@ def _recorrer_definiciones(
 
 def _conceptos_con_anidadas(
     funcion: ast.AST, clase: ast.ClassDef | None
-) -> frozenset[str]:
+) -> DeteccionConceptos:
     """Conceptos de la función más los de las definiciones que contiene."""
-    conceptos = set(detectar_conceptos(funcion, clase))
+    deteccion = analizar_conceptos(funcion, clase)
     for anidada, _, clase_anidada in _recorrer_definiciones(funcion, (), None):
-        conceptos |= _conceptos_con_anidadas(anidada, clase_anidada)
-    return frozenset(conceptos)
+        deteccion = deteccion.unir(_conceptos_con_anidadas(anidada, clase_anidada))
+    return deteccion
+
+
+Clave = tuple[tuple[str, ...], str]
+
+
+def _destino(llamada: ast.Call, prefijo: tuple[str, ...]) -> Clave | None:
+    objetivo = llamada.func
+    if isinstance(objetivo, ast.Name):
+        return (), objetivo.id
+    if (
+        prefijo
+        and isinstance(objetivo, ast.Attribute)
+        and isinstance(objetivo.value, ast.Name)
+        and objetivo.value.id in {"self", "cls", prefijo[-1]}
+    ):
+        return prefijo, objetivo.attr
+    return None
+
+
+def _en_recursion_mutua(definiciones: list) -> set[Clave]:
+    """Funciones del archivo que forman un ciclo de llamadas de dos o más (D6).
+
+    Las llamadas a sí misma no cuentan aquí: ya son recursión directa.
+    """
+    claves = {(prefijo, nodo.name) for nodo, prefijo, _ in definiciones}
+    grafo: dict[Clave, set[Clave]] = {}
+    for nodo, prefijo, _ in definiciones:
+        origen = (prefijo, nodo.name)
+        destinos = {
+            destino
+            for llamada in ast.walk(nodo)
+            if isinstance(llamada, ast.Call)
+            and (destino := _destino(llamada, prefijo)) in claves
+        }
+        grafo.setdefault(origen, set()).update(destinos - {origen})
+
+    def alcanzables(origen: Clave) -> set[Clave]:
+        vistos: set[Clave] = set()
+        pendientes = [origen]
+        while pendientes:
+            for destino in grafo.get(pendientes.pop(), ()):
+                if destino not in vistos:
+                    vistos.add(destino)
+                    pendientes.append(destino)
+        return vistos
+
+    return {clave for clave in grafo if clave in alcanzables(clave)}
 
 
 def _es_trivial(funcion: ast.AST, conceptos: frozenset[str]) -> bool:
@@ -102,11 +157,15 @@ def extraer_funciones(fuente: str, archivo: str = "<memoria>") -> list[Fragmento
         raise ErrorSintaxis(f"{archivo}: {error}") from error
 
     lineas = fuente.splitlines()
+    definiciones = list(_recorrer_definiciones(arbol, (), None))
+    mutuas = _en_recursion_mutua(definiciones)
     fragmentos = []
-    for nodo, prefijo, clase in _recorrer_definiciones(arbol, (), None):
+    for nodo, prefijo, clase in definiciones:
         inicio = min([nodo.lineno, *(d.lineno for d in nodo.decorator_list)])
         codigo = desindentar(lineas[inicio - 1 : nodo.end_lineno], nodo.col_offset)
-        conceptos = _conceptos_con_anidadas(nodo, clase)
+        deteccion = _conceptos_con_anidadas(nodo, clase)
+        if (prefijo, nodo.name) in mutuas:
+            deteccion = deteccion.con(RECURSION)
         fragmentos.append(
             Fragmento(
                 archivo=archivo,
@@ -116,8 +175,10 @@ def extraer_funciones(fuente: str, archivo: str = "<memoria>") -> list[Fragmento
                 linea_fin=nodo.end_lineno,
                 lineas=_contar_lineas(codigo),
                 complejidad=_complejidad(nodo),
-                conceptos=conceptos,
-                trivial=_es_trivial(nodo, conceptos),
+                conceptos=deteccion.conceptos,
+                trivial=_es_trivial(nodo, deteccion.conceptos),
+                conceptos_amplia=deteccion.conceptos_amplia,
+                indexaciones_indeterminadas=deteccion.indexaciones_indeterminadas,
             )
         )
     return sorted(fragmentos, key=lambda f: f.linea_inicio)

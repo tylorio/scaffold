@@ -1,14 +1,24 @@
+"""Reglas conceptos-v1 (decisiones del asesor D5, D6 y R4)."""
 import pytest
 
 from analisis.servicios.conceptos import ESTRUCTURAS, EXCEPCIONES, RECURSION
 from analisis.servicios.extraccion import extraer_funciones
 
 
-def conceptos(fuente, nombre=None):
+def fragmento(fuente, nombre=None):
     fragmentos = extraer_funciones(fuente)
     if nombre is None:
-        return fragmentos[0].conceptos
-    return next(f.conceptos for f in fragmentos if f.nombre == nombre)
+        return fragmentos[0]
+    return next(f for f in fragmentos if f.nombre == nombre)
+
+
+def conceptos(fuente, nombre=None):
+    return fragmento(fuente, nombre).conceptos
+
+
+def en_funcion(cuerpo, parametros="y"):
+    lineas = "\n".join(f"    {linea}" for linea in cuerpo.splitlines())
+    return f"def f({parametros}):\n{lineas}\n"
 
 
 # Recursión
@@ -25,17 +35,65 @@ def test_recursion_en_metodo(receptor):
     assert RECURSION in conceptos(fuente)
 
 
+def test_recursion_sobre_atributo():
+    fuente = (
+        "class Nodo:\n"
+        "    def insertar(self, x):\n"
+        "        if x < self.valor:\n"
+        "            self.izquierda.insertar(x)\n"
+    )
+    assert RECURSION in conceptos(fuente)
+
+
+def test_recursion_mutua_marca_las_dos_funciones():
+    fuente = (
+        "def es_par(n):\n    return True if n == 0 else es_impar(n - 1)\n\n"
+        "def es_impar(n):\n    return False if n == 0 else es_par(n - 1)\n"
+    )
+    assert RECURSION in conceptos(fuente, "es_par")
+    assert RECURSION in conceptos(fuente, "es_impar")
+
+
+def test_recursion_mutua_de_tres_funciones():
+    fuente = (
+        "def a(n):\n    return b(n)\n\n"
+        "def b(n):\n    return c(n)\n\n"
+        "def c(n):\n    return a(n - 1) if n else 0\n"
+    )
+    assert all(RECURSION in conceptos(fuente, nombre) for nombre in "abc")
+
+
+def test_recursion_mutua_entre_metodos():
+    fuente = (
+        "class A:\n"
+        "    def a(self, n):\n        return self.b(n)\n"
+        "    def b(self, n):\n        return self.a(n - 1)\n"
+    )
+    assert RECURSION in conceptos(fuente, "A.a")
+
+
+def test_llamar_a_una_funcion_recursiva_no_es_recursion_mutua():
+    fuente = (
+        "def f(n):\n    return f(n - 1)\n\n"
+        "def g(n):\n    return f(n)\n"
+    )
+    assert RECURSION not in conceptos(fuente, "g")
+
+
+def test_recursion_mutua_no_vuelve_trivial_una_funcion_de_una_linea():
+    fuente = (
+        "def a(n):\n    return b(n)\n\n"
+        "def b(n):\n    return a(n - 1) if n else 0\n"
+    )
+    assert not fragmento(fuente, "a").trivial
+
+
 def test_llamar_a_otra_funcion_no_es_recursion():
     assert RECURSION not in conceptos("def f(n):\n    return g(n)\n")
 
 
 def test_llamada_suelta_dentro_de_un_metodo_no_es_recursion():
     fuente = "class A:\n    def f(self):\n        return f()\n"
-    assert RECURSION not in conceptos(fuente)
-
-
-def test_metodo_homonimo_de_otro_objeto_no_es_recursion():
-    fuente = "class A:\n    def f(self):\n        return self.b.f()\n"
     assert RECURSION not in conceptos(fuente)
 
 
@@ -48,56 +106,84 @@ def test_recursion_de_funcion_anidada_se_suma_a_la_externa():
     assert RECURSION in conceptos(fuente, "f")
 
 
-# Estructuras de datos
+# Estructuras de datos: los 8 elementos de la lista cerrada (D5)
 
 @pytest.mark.parametrize("cuerpo", [
-    "x = [1, 2]",
-    "x = {'a': 1}",
-    "x = {1, 2}",
-    "x = (1, 2)",
-    "x = [i for i in y]",
-    "x = {i: 1 for i in y}",
-    "x = {i for i in y}",
-    "x = sum(i for i in y)",
-    "y.append(1)",
-    "y.pop()",
-    "x = y.keys()",
-    "x = y.items()",
-    "x = list(y)",
-    "x = dict()",
-    "x = deque()",
-    "x = y[0]",
-    "y[0] = 1",
+    # 1. Diccionario o conjunto construido y consultado
+    "d = {}\nd['a'] = 1",
+    "d = dict()\nreturn d['a']",
+    "d = {'a': 1}\nreturn 'a' in d",
+    "s = set()\nreturn y not in s",
+    "d = {}\nreturn d.get(y)",
+    "y.setdefault('a', []).append(1)",
+    # 2. Comprensión de diccionario o de conjunto
+    "return {i: 1 for i in y}",
+    "return {i for i in y}",
+    # 3. Ordenación o búsqueda
+    "return sorted(y)",
+    "y.sort()",
+    "return bisect.bisect_left(y, 3)",
+    "heapq.heappush(y, 1)",
+    "return heappop(y)",
+    # 4. collections
+    "return deque(y)",
+    "return Counter(y)",
+    "return collections.defaultdict(list)",
+    # 5. Colecciones anidadas
+    "return [[0] * 3 for _ in y]",
+    "return {'a': [1, 2]}",
+    "y.append([1, 2])",
+    # 6. Índices sobre listas
+    "a = [3, 1]\nreturn a[0]",
+    "a = list(y)\na[0], a[1] = a[1], a[0]",
+    "y.append(1)\nreturn y[-1]",
+    "partes = y.split(',')\nreturn partes[1]",
+    # 7. Pila o cola
+    "return y.pop()",
+    "y.appendleft(1)",
 ])
 def test_detecta_estructuras_de_datos(cuerpo):
-    assert ESTRUCTURAS in conceptos(f"def f(y):\n    {cuerpo}\n")
+    assert ESTRUCTURAS in conceptos(en_funcion(cuerpo))
 
 
-def test_anotacion_de_contenedor_cuenta():
-    assert ESTRUCTURAS in conceptos("def f(y: list[int]) -> int:\n    return 1\n")
-
-
-def test_anotacion_como_texto_cuenta():
-    assert ESTRUCTURAS in conceptos("def f(y: 'dict[str, int]'):\n    return 1\n")
-
-
-def test_metodos_de_clase_contenedora():
+def test_metodo_de_clase_contenedora_aunque_tenga_una_linea():
     fuente = (
         "class Pila:\n"
-        "    def __len__(self):\n        return 0\n"
-        "    def vacia(self):\n        return True\n"
+        "    def push(self, x):\n        self.items.append(x)\n"
+        "    def vacia(self):\n        return not self.items\n"
     )
     assert ESTRUCTURAS in conceptos(fuente, "Pila.vacia")
+    assert not fragmento(fuente, "Pila.vacia").trivial
+
+
+@pytest.mark.parametrize("atributo", ["siguiente", "izquierda", "derecha", "next"])
+def test_nodos_enlazados(atributo):
+    cuerpo = f"actual = y\nwhile actual:\n    actual = actual.{atributo}"
+    assert ESTRUCTURAS in conceptos(en_funcion(cuerpo))
 
 
 @pytest.mark.parametrize("cuerpo", [
-    "return 1 + 2",
+    # Lo que D5 excluye de forma explícita
+    "r = []\nfor x in y:\n    r.append(x)\nreturn r",
+    "return [x * 2 for x in y]",
+    "s = 'hola'\nreturn s[0]",
+    "s = input()\nreturn s[1:3]",
+    "return requests.get(y)['datos']",
     "return a, b",
     "a, b = b, a",
-    "x: int = 1",
+    # Construir sin consultar, o construir algo que no está en la lista
+    "return list(set(y))",
+    "x = [1, 2]",
+    "x = (1, 2)\nreturn x[0]",
+    "return sum(i for i in y)",
+    "return y.keys()",
 ])
-def test_no_marca_estructuras_de_datos_sin_evidencia(cuerpo):
-    assert ESTRUCTURAS not in conceptos(f"def f(a, b):\n    {cuerpo}\n")
+def test_no_cuenta_como_estructura_de_datos(cuerpo):
+    assert ESTRUCTURAS not in conceptos(en_funcion(cuerpo, "y, a, b"))
+
+
+def test_las_anotaciones_de_tipo_ya_no_cuentan():
+    assert ESTRUCTURAS not in conceptos("def f(y: list[int]) -> int:\n    return 1\n")
 
 
 def test_tupla_de_excepciones_no_cuenta_como_estructura():
@@ -105,15 +191,60 @@ def test_tupla_de_excepciones_no_cuenta_como_estructura():
     assert ESTRUCTURAS not in conceptos(fuente)
 
 
+# Definición amplia, solo para el análisis de sensibilidad (D5)
+
+@pytest.mark.parametrize("cuerpo", [
+    "r = []\nfor x in y:\n    r.append(x)\nreturn r",
+    "return [x * 2 for x in y]",
+])
+def test_la_definicion_amplia_suma_append_y_comprension_de_lista(cuerpo):
+    resultado = fragmento(en_funcion(cuerpo))
+    assert ESTRUCTURAS not in resultado.conceptos
+    assert ESTRUCTURAS in resultado.conceptos_amplia
+
+
+def test_la_definicion_amplia_incluye_lo_de_v1():
+    resultado = fragmento("def f(n):\n    return f(n - 1)\n")
+    assert resultado.conceptos_amplia == {RECURSION}
+
+
+# Indexación de tipo desconocido (R4)
+
+@pytest.mark.parametrize("cuerpo, esperadas", [
+    ("return y[0]", 1),
+    ("return self.datos[0]", 1),
+    ("return y[0] + y[1]", 2),
+    ("return matriz[0][1]", 1),
+    ("a = [1]\nreturn a[0]", 0),
+    ("s = 'x'\nreturn s[0]", 0),
+    ("return requests.get(y)['datos']", 0),
+])
+def test_cuenta_indexaciones_indeterminadas(cuerpo, esperadas):
+    resultado = fragmento(en_funcion(cuerpo, "self, y, matriz"))
+    assert resultado.indexaciones_indeterminadas == esperadas
+
+
+def test_indexacion_indeterminada_no_asigna_el_concepto():
+    assert ESTRUCTURAS not in conceptos("def f(lista):\n    return lista[0] + 1\n")
+
+
 # Manejo de excepciones
 
 @pytest.mark.parametrize("cuerpo", [
-    "try:\n        g()\n    except ValueError:\n        pass",
-    "try:\n        g()\n    finally:\n        h()",
+    "try:\n    g()\nexcept ValueError:\n    pass",
+    "try:\n    g()\nfinally:\n    h()",
+    "try:\n    g()\nexcept:\n    pass",
     "raise ValueError('x')",
 ])
 def test_detecta_excepciones(cuerpo):
-    assert EXCEPCIONES in conceptos(f"def f():\n    {cuerpo}\n")
+    assert EXCEPCIONES in conceptos(en_funcion(cuerpo))
+
+
+def test_raise_en_funcion_corta_de_validacion_no_es_trivial():
+    fuente = "def validar(x):\n    if x < 0:\n        raise ValueError('negativo')\n"
+    resultado = fragmento(fuente)
+    assert EXCEPCIONES in resultado.conceptos
+    assert not resultado.trivial
 
 
 def test_sin_excepciones():
@@ -148,6 +279,7 @@ def test_ningun_concepto():
 def test_varios_conceptos_a_la_vez():
     fuente = (
         "def f(l):\n"
+        "    l = list(l)\n"
         "    try:\n"
         "        return l[0] + f(l[1:])\n"
         "    except IndexError:\n"

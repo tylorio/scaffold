@@ -59,7 +59,7 @@ def test_marca_como_trivial_una_sola_sentencia_sin_conceptos(fuente):
     "def f(n):\n    x = n + 1\n    return x\n",
     "def f(n):\n    if n:\n        return 1\n",
     "def f(n):\n    return f(n - 1)\n",  # una sola sentencia, pero con concepto
-    "def f(l):\n    return [x for x in l]\n",
+    "def f(l):\n    return sorted(l)\n",
 ])
 def test_no_marca_como_trivial_lo_que_aporta_evidencia(fuente):
     assert not extraer_funciones(fuente)[0].trivial
@@ -104,7 +104,7 @@ def test_archivo_invalido_lanza_error_propio():
 
 
 def test_guarda_los_conceptos_detectados():
-    fuente = "def f(n):\n    return f(n - 1)\n\ndef g(l):\n    l.append(1)\n"
+    fuente = "def f(n):\n    return f(n - 1)\n\ndef g(l):\n    l.sort()\n"
     fragmentos = extraer_funciones(fuente)
     assert fragmentos[0].conceptos == {RECURSION}
     assert fragmentos[1].conceptos == {ESTRUCTURAS}

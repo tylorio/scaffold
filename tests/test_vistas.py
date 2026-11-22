@@ -35,7 +35,7 @@ def recursiva(n):
 
 
 def con_lista(l):
-    l.append(1)
+    l.sort()
 
 
 def con_try():
@@ -301,7 +301,7 @@ def todo_debil():
 
 def agregar_funcion(repositorio, nombre="tarea_nueva"):
     ruta = repositorio / f"{nombre}.py"
-    ruta.write_text(f"def {nombre}(l):\n    l.append(1)\n", encoding="utf-8")
+    ruta.write_text(f"def {nombre}(l):\n    l.sort()\n", encoding="utf-8")
     with Repo(repositorio) as repo:
         repo.index.add([ruta.name])
         autor = Actor("Persona Real", "persona@example.invalid")
@@ -378,7 +378,7 @@ def test_post_sin_codigo_nuevo_avisa_y_no_guarda(client, participante, todo_debi
 
 
 def test_post_sin_historial_avisa_y_no_guarda(client, tmp_path, todo_debil):
-    (tmp_path / "a.py").write_text("def f(l):\n    l.append(1)\n", encoding="utf-8")
+    (tmp_path / "a.py").write_text("def f(l):\n    l.sort()\n", encoding="utf-8")
     Participante.objects.create(codigo="P02", repositorio=str(tmp_path))
     analizar(client, "P02")
     html = analizar(client, "P02").content.decode()
@@ -408,7 +408,7 @@ def test_borrar_el_participante_borra_todo(client, participante, todo_debil):
 
 
 def test_un_solo_debil_se_marca_como_no_comparable(client, tmp_path):
-    (tmp_path / "a.py").write_text("def f(l):\n    l.append(1)\n", encoding="utf-8")
+    (tmp_path / "a.py").write_text("def f(l):\n    l.sort()\n", encoding="utf-8")
     with Repo.init(tmp_path) as repo:
         repo.index.add(["a.py"])
         autor = Actor("Persona Real", "persona@example.invalid")

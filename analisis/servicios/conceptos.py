@@ -1,13 +1,17 @@
-"""Detección estática de conceptos con `ast`. No depende de Django.
+"""Detección estática de conceptos con `ast` (reglas conceptos-v1). No depende de Django.
 
-La detección es heurística: Python no tiene tipos estáticos y aquí no se hace
-inferencia, así que `s[0]` cuenta como estructura de datos aunque `s` sea una
-cadena. Las limitaciones están listadas en el README.
+Implementa la guía del asesor (D5, D6, R4): un concepto se asigna cuando escribir
+el fragmento exige haberlo aplicado, no cuando la sintaxis solo lo roza. Python no
+declara tipos, así que indexar solo cuenta como estructura de datos cuando se
+puede inferir que el objeto es una lista o un diccionario; si no se puede, la
+indexación queda como indeterminada y no asigna el concepto.
+
+La recursión mutua necesita ver el archivo entero y se detecta en `extraccion`.
 """
 from __future__ import annotations
 
 import ast
-import re
+from dataclasses import dataclass
 from typing import Iterator
 
 RECURSION = "recursion"
@@ -22,31 +26,73 @@ NOMBRES_CONCEPTOS = {
     EXCEPCIONES: "Manejo de excepciones",
 }
 
+REGLAS_VERSION = "conceptos-v1"
+REGLAS_AMPLIA_VERSION = "conceptos-v1-amplia"
+
 FUNCIONES = (ast.FunctionDef, ast.AsyncFunctionDef)
 _AMBITOS = FUNCIONES + (ast.ClassDef,)
 
-METODOS_CONTENEDOR = frozenset({
-    "append", "extend", "insert", "remove", "pop", "popleft", "appendleft",
-    "clear", "sort", "reverse", "keys", "values", "items", "get", "setdefault",
-    "update", "popitem", "add", "discard", "union", "intersection",
-    "difference", "symmetric_difference", "issubset", "issuperset",
+METODOS_CLASE_CONTENEDORA = frozenset({"push", "pop", "__len__", "__iter__"})
+ATRIBUTOS_DE_NODO = frozenset({
+    "siguiente", "anterior", "izquierda", "derecha", "izquierdo", "derecho",
+    "next", "prev", "left", "right",
 })
-CONSTRUCTORES_CONTENEDOR = frozenset({
-    "list", "dict", "set", "frozenset", "tuple", "sorted", "deque",
-    "defaultdict", "OrderedDict", "Counter", "namedtuple",
+COLECCIONES = frozenset({"deque", "Counter", "defaultdict"})
+ORDENACION_Y_BUSQUEDA = frozenset({
+    "sorted", "bisect", "bisect_left", "bisect_right", "insort", "insort_left",
+    "insort_right", "heappush", "heappop", "heapify", "heappushpop", "heapreplace",
+    "nlargest", "nsmallest",
 })
-TIPOS_CONTENEDOR = frozenset({
-    "list", "dict", "set", "frozenset", "tuple", "deque", "defaultdict",
-    "List", "Dict", "Set", "FrozenSet", "Tuple", "Deque", "DefaultDict",
-    "OrderedDict", "Counter", "Sequence", "MutableSequence", "Mapping",
-    "MutableMapping",
+MODULOS_ORDENACION = frozenset({"bisect", "heapq"})
+OPERACIONES_PILA_COLA = frozenset({"pop", "popleft", "appendleft"})
+
+LISTA = "lista"
+DICCIONARIO = "diccionario"
+CONJUNTO = "conjunto"
+CADENA = "cadena"
+TUPLA = "tupla"
+
+_TIPO_DE_CONSTRUCTOR = {
+    "list": LISTA, "sorted": LISTA, "deque": LISTA,
+    "dict": DICCIONARIO, "Counter": DICCIONARIO, "defaultdict": DICCIONARIO,
+    "OrderedDict": DICCIONARIO,
+    "set": CONJUNTO, "frozenset": CONJUNTO,
+    "str": CADENA, "input": CADENA,
+    "tuple": TUPLA,
+}
+_METODOS_QUE_DEVUELVEN_LISTA = frozenset({"split", "rsplit", "splitlines", "readlines"})
+_METODOS_QUE_DEVUELVEN_CADENA = frozenset({
+    "strip", "lstrip", "rstrip", "lower", "upper", "title", "capitalize",
+    "casefold", "replace", "join", "format",
 })
-DUNDERS_CONTENEDOR = frozenset({
-    "__getitem__", "__setitem__", "__delitem__", "__len__", "__iter__",
-    "__contains__",
-})
-_COMPRENSIONES = (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)
-_LITERALES = (ast.List, ast.Dict, ast.Set)
+# Métodos que solo tiene un tipo: llamarlos sobre un nombre revela qué es.
+_METODOS_QUE_REVELAN_TIPO = {
+    "append": LISTA, "extend": LISTA, "insert": LISTA, "sort": LISTA, "reverse": LISTA,
+    "add": CONJUNTO, "discard": CONJUNTO,
+    "setdefault": DICCIONARIO, "items": DICCIONARIO, "keys": DICCIONARIO,
+    "values": DICCIONARIO, "popitem": DICCIONARIO,
+}
+
+
+@dataclass(frozen=True)
+class DeteccionConceptos:
+    conceptos: frozenset[str] = frozenset()
+    conceptos_amplia: frozenset[str] = frozenset()  # v1 + append acumulativo + comprensión de lista
+    indexaciones_indeterminadas: int = 0
+
+    def unir(self, otra: DeteccionConceptos) -> DeteccionConceptos:
+        return DeteccionConceptos(
+            self.conceptos | otra.conceptos,
+            self.conceptos_amplia | otra.conceptos_amplia,
+            self.indexaciones_indeterminadas + otra.indexaciones_indeterminadas,
+        )
+
+    def con(self, concepto: str) -> DeteccionConceptos:
+        return DeteccionConceptos(
+            self.conceptos | {concepto},
+            self.conceptos_amplia | {concepto},
+            self.indexaciones_indeterminadas,
+        )
 
 
 def recorrer_cuerpo(funcion: ast.AST) -> Iterator[ast.AST]:
@@ -71,11 +117,14 @@ def recorrer_cuerpo(funcion: ast.AST) -> Iterator[ast.AST]:
                 pendientes.extend(v for v in valor if isinstance(v, ast.AST))
 
 
-def es_recursiva(funcion: ast.AST, clase: ast.ClassDef | None = None) -> bool:
-    """True si la función se llama a sí misma directamente.
+# Recursión
 
-    En un método solo cuentan `self.x()`, `cls.x()` y `Clase.x()`: un `x()`
-    suelto dentro de un método llama a otra función, no al método.
+def es_recursiva(funcion: ast.AST, clase: ast.ClassDef | None = None) -> bool:
+    """True si la función se llama a sí misma, directamente o sobre un atributo.
+
+    En un método cuentan `self.f()`, `cls.f()`, `Clase.f()` y la recursión sobre
+    un atributo, como `self.izquierda.f()` en un árbol. Un `f()` suelto dentro de
+    un método llama a otra función, no al método.
     """
     for nodo in recorrer_cuerpo(funcion):
         if not isinstance(nodo, ast.Call):
@@ -84,74 +133,184 @@ def es_recursiva(funcion: ast.AST, clase: ast.ClassDef | None = None) -> bool:
         if clase is None:
             if isinstance(objetivo, ast.Name) and objetivo.id == funcion.name:
                 return True
-        elif (
-            isinstance(objetivo, ast.Attribute)
-            and objetivo.attr == funcion.name
-            and isinstance(objetivo.value, ast.Name)
-            and objetivo.value.id in {"self", "cls", clase.name}
-        ):
-            return True
+        elif isinstance(objetivo, ast.Attribute) and objetivo.attr == funcion.name:
+            receptor = objetivo.value
+            if isinstance(receptor, ast.Attribute):
+                return True
+            if isinstance(receptor, ast.Name) and receptor.id in {"self", "cls", clase.name}:
+                return True
     return False
+
+
+# Estructuras de datos
+
+def _nombre_llamado(funcion: ast.AST) -> str | None:
+    if isinstance(funcion, ast.Name):
+        return funcion.id
+    if isinstance(funcion, ast.Attribute):
+        return funcion.attr
+    return None
+
+
+def _tipo_de_expresion(nodo: ast.AST) -> str | None:
+    if isinstance(nodo, (ast.List, ast.ListComp)):
+        return LISTA
+    if isinstance(nodo, (ast.Dict, ast.DictComp)):
+        return DICCIONARIO
+    if isinstance(nodo, (ast.Set, ast.SetComp)):
+        return CONJUNTO
+    if isinstance(nodo, ast.Tuple):
+        return TUPLA
+    if isinstance(nodo, ast.JoinedStr) or (
+        isinstance(nodo, ast.Constant) and isinstance(nodo.value, str)
+    ):
+        return CADENA
+    if isinstance(nodo, ast.BinOp) and isinstance(nodo.op, (ast.Add, ast.Mult)):
+        lados = {_tipo_de_expresion(nodo.left), _tipo_de_expresion(nodo.right)} - {None}
+        return lados.pop() if len(lados) == 1 and lados <= {LISTA, CADENA, TUPLA} else None
+    if isinstance(nodo, ast.Call):
+        funcion = nodo.func
+        if isinstance(funcion, ast.Attribute):
+            if funcion.attr in _METODOS_QUE_DEVUELVEN_LISTA:
+                return LISTA
+            if funcion.attr in _METODOS_QUE_DEVUELVEN_CADENA:
+                return CADENA
+            if isinstance(funcion.value, ast.Name) and funcion.value.id == "collections":
+                return _TIPO_DE_CONSTRUCTOR.get(funcion.attr)
+            return None
+        return _TIPO_DE_CONSTRUCTOR.get(_nombre_llamado(funcion))
+    return None
+
+
+def inferir_tipos(funcion: ast.AST) -> dict[str, str]:
+    """Tipo de cada nombre local cuando la función lo deja claro y no se contradice."""
+    vistos: dict[str, set[str]] = {}
+
+    def anotar(nombre: str, tipo: str | None) -> None:
+        if tipo is not None:
+            vistos.setdefault(nombre, set()).add(tipo)
+
+    for nodo in recorrer_cuerpo(funcion):
+        if isinstance(nodo, ast.Assign):
+            for objetivo in nodo.targets:
+                if isinstance(objetivo, ast.Name):
+                    anotar(objetivo.id, _tipo_de_expresion(nodo.value))
+        elif (
+            isinstance(nodo, (ast.AnnAssign, ast.AugAssign))
+            and isinstance(nodo.target, ast.Name)
+            and nodo.value is not None
+        ):
+            anotar(nodo.target.id, _tipo_de_expresion(nodo.value))
+        elif (
+            isinstance(nodo, ast.Call)
+            and isinstance(nodo.func, ast.Attribute)
+            and isinstance(nodo.func.value, ast.Name)
+        ):
+            anotar(nodo.func.value.id, _METODOS_QUE_REVELAN_TIPO.get(nodo.func.attr))
+    return {nombre: tipos.pop() for nombre, tipos in vistos.items() if len(tipos) == 1}
+
+
+def _es_coleccion(nodo: ast.AST) -> bool:
+    if isinstance(nodo, (ast.List, ast.Dict, ast.Set, ast.ListComp, ast.DictComp, ast.SetComp)):
+        return True
+    if isinstance(nodo, ast.BinOp):
+        return _es_coleccion(nodo.left) or _es_coleccion(nodo.right)
+    return (
+        isinstance(nodo, ast.Call)
+        and isinstance(nodo.func, ast.Name)
+        and nodo.func.id in {"list", "dict", "set"}
+    )
+
+
+def _anida_colecciones(nodo: ast.AST) -> bool:
+    """Lista de listas, diccionario de listas, etc. (D5.5)."""
+    if isinstance(nodo, (ast.List, ast.Set)):
+        return any(_es_coleccion(e) for e in nodo.elts)
+    if isinstance(nodo, ast.Dict):
+        return any(_es_coleccion(v) for v in nodo.values)
+    if isinstance(nodo, (ast.ListComp, ast.SetComp, ast.GeneratorExp)):
+        return _es_coleccion(nodo.elt)
+    if isinstance(nodo, ast.Call) and isinstance(nodo.func, ast.Attribute):
+        return nodo.func.attr in {"append", "insert"} and any(
+            _es_coleccion(a) for a in nodo.args
+        )
+    return False
+
+
+def _llamada_es_estructura(nodo: ast.Call, tipos: dict[str, str]) -> bool:
+    funcion = nodo.func
+    if isinstance(funcion, ast.Name):
+        return funcion.id in ORDENACION_Y_BUSQUEDA or funcion.id in COLECCIONES
+    if not isinstance(funcion, ast.Attribute):
+        return False
+    if funcion.attr in {"sort", "setdefault"} | OPERACIONES_PILA_COLA:
+        return True
+    if funcion.attr in COLECCIONES:
+        return True
+    receptor = funcion.value
+    if isinstance(receptor, ast.Name) and receptor.id in MODULOS_ORDENACION:
+        return True
+    return (
+        funcion.attr == "get"
+        and isinstance(receptor, ast.Name)
+        and tipos.get(receptor.id) == DICCIONARIO
+    )
+
+
+def _cuenta_como_estructura(nodo: ast.AST, tipos: dict[str, str]) -> bool:
+    if isinstance(nodo, (ast.DictComp, ast.SetComp)):
+        return True
+    if _anida_colecciones(nodo):
+        return True
+    if isinstance(nodo, ast.Attribute) and nodo.attr in ATRIBUTOS_DE_NODO:
+        return True
+    if isinstance(nodo, ast.Subscript):
+        base = nodo.value
+        return isinstance(base, ast.Name) and tipos.get(base.id) in {LISTA, DICCIONARIO}
+    if isinstance(nodo, ast.Compare) and any(
+        isinstance(op, (ast.In, ast.NotIn)) for op in nodo.ops
+    ):
+        return any(
+            isinstance(c, ast.Name) and tipos.get(c.id) in {DICCIONARIO, CONJUNTO}
+            for c in nodo.comparators
+        )
+    if isinstance(nodo, ast.Call):
+        return _llamada_es_estructura(nodo, tipos)
+    return False
+
+
+def _es_indexacion_indeterminada(nodo: ast.AST, tipos: dict[str, str]) -> bool:
+    """Indexación sobre un nombre o atributo cuyo tipo no se pudo inferir (R4).
+
+    Indexar el resultado de una llamada, como `requests.get(url)["datos"]`, es leer
+    lo que devuelve una biblioteca: no cuenta y tampoco es indeterminado.
+    """
+    if not isinstance(nodo, ast.Subscript):
+        return False
+    base = nodo.value
+    if isinstance(base, ast.Name):
+        return base.id not in tipos
+    return isinstance(base, ast.Attribute)
 
 
 def es_clase_contenedora(clase: ast.ClassDef | None) -> bool:
     if clase is None:
         return False
     return any(
-        isinstance(hijo, FUNCIONES) and hijo.name in DUNDERS_CONTENEDOR
+        isinstance(hijo, FUNCIONES) and hijo.name in METODOS_CLASE_CONTENEDORA
         for hijo in clase.body
     )
 
 
-def _anotacion_es_contenedor(anotacion: ast.AST | None) -> bool:
-    if anotacion is None:
-        return False
-    for nodo in ast.walk(anotacion):
-        if isinstance(nodo, ast.Name) and nodo.id in TIPOS_CONTENEDOR:
-            return True
-        if isinstance(nodo, ast.Attribute) and nodo.attr in TIPOS_CONTENEDOR:
-            return True
-        if isinstance(nodo, ast.Constant) and isinstance(nodo.value, str):
-            if TIPOS_CONTENEDOR.intersection(re.findall(r"\w+", nodo.value)):
-                return True
-    return False
+def _es_append(nodo: ast.AST) -> bool:
+    return (
+        isinstance(nodo, ast.Call)
+        and isinstance(nodo.func, ast.Attribute)
+        and nodo.func.attr == "append"
+    )
 
 
-def _firma_declara_contenedor(funcion: ast.AST) -> bool:
-    argumentos = funcion.args
-    parametros = [
-        *argumentos.posonlyargs, *argumentos.args, *argumentos.kwonlyargs,
-        argumentos.vararg, argumentos.kwarg,
-    ]
-    anotaciones = [p.annotation for p in parametros if p is not None]
-    anotaciones.append(funcion.returns)
-    return any(_anotacion_es_contenedor(a) for a in anotaciones)
-
-
-def _nodo_usa_contenedor(nodo: ast.AST) -> bool:
-    if isinstance(nodo, _LITERALES + _COMPRENSIONES + (ast.Subscript,)):
-        return True
-    # Una tupla solo cuenta cuando se guarda como dato. `return a, b`,
-    # `except (A, B)` y `a, b = b, a` son sintaxis, no uso de una estructura.
-    if isinstance(nodo, ast.Assign) and isinstance(nodo.value, ast.Tuple):
-        return len(nodo.targets) == 1 and isinstance(nodo.targets[0], ast.Name)
-    if isinstance(nodo, ast.Call):
-        objetivo = nodo.func
-        if isinstance(objetivo, ast.Name):
-            return objetivo.id in CONSTRUCTORES_CONTENEDOR
-        if isinstance(objetivo, ast.Attribute):
-            return (
-                objetivo.attr in METODOS_CONTENEDOR
-                or objetivo.attr in CONSTRUCTORES_CONTENEDOR
-            )
-    return False
-
-
-def usa_estructuras_datos(funcion: ast.AST, clase: ast.ClassDef | None = None) -> bool:
-    if es_clase_contenedora(clase) or _firma_declara_contenedor(funcion):
-        return True
-    return any(_nodo_usa_contenedor(nodo) for nodo in recorrer_cuerpo(funcion))
-
+# Manejo de excepciones
 
 def maneja_excepciones(funcion: ast.AST) -> bool:
     return any(
@@ -160,15 +319,32 @@ def maneja_excepciones(funcion: ast.AST) -> bool:
     )
 
 
+def analizar_conceptos(
+    funcion: ast.AST, clase: ast.ClassDef | None = None
+) -> DeteccionConceptos:
+    """Conceptos del ámbito de la función, sin sus definiciones anidadas."""
+    tipos = inferir_tipos(funcion)
+    estructura = es_clase_contenedora(clase)
+    amplia = False
+    indeterminadas = 0
+    for nodo in recorrer_cuerpo(funcion):
+        estructura = estructura or _cuenta_como_estructura(nodo, tipos)
+        amplia = amplia or isinstance(nodo, ast.ListComp) or _es_append(nodo)
+        indeterminadas += _es_indexacion_indeterminada(nodo, tipos)
+
+    conceptos = set()
+    if es_recursiva(funcion, clase):
+        conceptos.add(RECURSION)
+    if estructura:
+        conceptos.add(ESTRUCTURAS)
+    if maneja_excepciones(funcion):
+        conceptos.add(EXCEPCIONES)
+    conceptos_amplia = conceptos | ({ESTRUCTURAS} if amplia else set())
+    return DeteccionConceptos(frozenset(conceptos), frozenset(conceptos_amplia), indeterminadas)
+
+
 def detectar_conceptos(
     funcion: ast.AST, clase: ast.ClassDef | None = None
 ) -> frozenset[str]:
-    """Devuelve los conceptos de la función: ninguno, uno o varios."""
-    encontrados = set()
-    if es_recursiva(funcion, clase):
-        encontrados.add(RECURSION)
-    if usa_estructuras_datos(funcion, clase):
-        encontrados.add(ESTRUCTURAS)
-    if maneja_excepciones(funcion):
-        encontrados.add(EXCEPCIONES)
-    return frozenset(encontrados)
+    """Conceptos v1 de la función: ninguno, uno o varios."""
+    return analizar_conceptos(funcion, clase).conceptos

@@ -249,6 +249,12 @@ def test_devolver_uno_en_vez_de_true_falla():
 def test_detecta_solucion_iterativa_en_ejercicio_de_recursion():
     codigo = "def suma_digitos(n):\n    return sum(int(c) for c in str(n))\n"
     assert not usa_concepto(codigo, RECURSION)
+    # Un generador sobre una cadena no está en la lista cerrada de D5.
+    assert not usa_concepto(codigo, ESTRUCTURAS)
+
+
+def test_detecta_estructuras_en_una_solucion_con_diccionario():
+    codigo = "def contar(xs):\n    d = {}\n    for x in xs:\n        d[x] = d.get(x, 0) + 1\n    return d\n"
     assert usa_concepto(codigo, ESTRUCTURAS)
 
 

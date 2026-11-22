@@ -226,12 +226,20 @@ Por eso `db.sqlite3` y `datos/` están en `.gitignore`.
   código nuevo: `-w` solo cubre los espacios.
 - Falta calibrar las probabilidades, y θ = 0,5 solo tiene sentido si lo están.
 
-**Detección de conceptos**
-- No hay inferencia de tipos: `s[0]` sobre una cadena cuenta como estructura de
-  datos, y `requests.get(url)` también.
-- Solo se detecta recursión directa. No se detecta la mutua (`a` llama a `b` y
-  `b` a `a`), ni `self.izquierda.insertar(x)` en un árbol.
-- `return a, b` y el desempaquetado no cuentan como uso de tuplas.
+**Detección de conceptos** (reglas `conceptos-v1`, decisiones D5, D6 y R4 del asesor)
+- Estructuras de datos sigue una lista cerrada. No cuentan el `append` acumulativo,
+  las comprensiones de lista, la indexación de cadenas ni el desempaquetado. Esas
+  dos primeras sí entran en la definición amplia (`conceptos_amplia`), que solo
+  sirve para el análisis de sensibilidad.
+- La inferencia de tipos es local y conservadora. Indexar cuenta solo si la
+  función deja claro que el objeto es una lista o un diccionario. Si no se puede
+  saber (por ejemplo, un parámetro), la indexación se cuenta como indeterminada y
+  no asigna el concepto.
+- La recursión mutua se detecta dentro del mismo archivo. La recursión sobre un
+  atributo (`self.izquierda.insertar(x)`) también marca como recursión una
+  delegación con el mismo nombre (`self.repo.guardar()` dentro de `guardar`).
+- Las clases contenedoras se reconocen por `push`, `pop`, `__len__` o `__iter__`;
+  nombres en español como `apilar` no cuentan.
 - El estudio supone tareas que empiezan desde cero: un código inicial del docente
   contaría como del estudiante.
 - Un archivo de tarea llamado `test_algo.py` se omite por su nombre.
