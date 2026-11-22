@@ -70,6 +70,18 @@ Nota: la versión original de este archivo proponía FastAPI + Pydantic + SQLAlc
     - S1: clave secreta y `DEBUG` por variable de entorno.
 
     Su sección 4 es el **orden de trabajo de F10** (camino crítico): el banco A/B y el corrector de T1–T3 bloquean el pretest.
+15. (2026-11-22) **Respuestas P1–P10** en `docs/decisiones/decisiones-asesor-2026-11-22.md`. Ese archivo no se edita. Contiene:
+    - P1: HE4 se mide sobre los conceptos reforzados, con el caso A como subgrupo.
+    - P2: complejidad media por función y líneas de toda la solución.
+    - P3: HE2a (autorreporte, siempre confirmatoria) y HE2b (IDC global).
+    - P5: el participante ausente es dato faltante, no cero, y se reporta un diagrama de flujo.
+    - P6: "intentado" significa al menos un envío ejecutado.
+    - P7: lista bilingüe de contenedores; nodos con `hijo`, `children`, `padre`, `parent`.
+    - P8: la recursión sobre atributo exige un atributo de nodo.
+    - P9: el repositorio sin historial Git queda excluido.
+    - P10: el índice por historial usa dos medidas continuas y un umbral de 30 *a priori*, con sensibilidad a 15 y 60.
+
+    P7 y P8 entran en `conceptos-v1` y se congelan a partir de SP-06. La autorización escrita de Azure la emite el CEI-USIL, no el asesor.
 
 ## Estado del repositorio (léelo antes de cualquier fase)
 - Existe un **prototipo funcional en Django** construido antes de adoptar este protocolo (commits del 2026-11-05). Cubre parte del módulo 1 y del módulo 2; el detalle está en `docs/arquitectura/00-estado-actual.md`.
