@@ -1,0 +1,46 @@
+{
+  "forma": "A",
+  "version": "ejemplo-v1",
+  "nota": "Banco de EJEMPLO para probar el corrector. No es el de la prueba real, que vive en datos/banco_prueba/ y no se versiona.",
+  "items": [
+    {
+      "item": "T1",
+      "concepto": "recursion",
+      "enunciado": "Escribe una función recursiva contar(lista, x) que devuelva cuántas veces aparece x en la lista, sin usar bucles ni el método count.",
+      "funcion": "contar",
+      "referencia": "def contar(lista, x):\n    if not lista:\n        return 0\n    return (1 if lista[0] == x else 0) + contar(lista[1:], x)\n",
+      "casos": [
+        {"args": [[1, 2, 1, 3, 1], 1], "esperado": 3},
+        {"args": [[], 5], "esperado": 0},
+        {"args": [["a", "b"], "c"], "esperado": 0},
+        {"args": [[2, 2], 2], "esperado": 2}
+      ]
+    },
+    {
+      "item": "T2",
+      "concepto": "estructuras_datos",
+      "enunciado": "Escribe invertir(capitales), que recibe un diccionario ciudad -> país y devuelve otro país -> lista de sus ciudades en orden alfabético.",
+      "funcion": "invertir",
+      "referencia": "def invertir(capitales):\n    resultado = {}\n    for ciudad, pais in capitales.items():\n        resultado.setdefault(pais, []).append(ciudad)\n    for ciudades in resultado.values():\n        ciudades.sort()\n    return resultado\n",
+      "casos": [
+        {"args": [{"lima": "peru", "cusco": "peru", "quito": "ecuador"}], "esperado": {"peru": ["cusco", "lima"], "ecuador": ["quito"]}},
+        {"args": [{}], "esperado": {}},
+        {"args": [{"bogota": "colombia"}], "esperado": {"colombia": ["bogota"]}}
+      ]
+    },
+    {
+      "item": "T3",
+      "concepto": "excepciones",
+      "enunciado": "Escribe edad_valida(texto), que convierta el texto en un entero y lo devuelva. Si el texto no es un número, o la edad no está entre 0 y 120, debe lanzar ValueError.",
+      "funcion": "edad_valida",
+      "referencia": "def edad_valida(texto):\n    try:\n        edad = int(texto)\n    except ValueError:\n        raise ValueError(\"no es un número\")\n    if not 0 <= edad <= 120:\n        raise ValueError(\"fuera de rango\")\n    return edad\n",
+      "casos": [
+        {"args": ["20"], "esperado": 20},
+        {"args": [" 7 "], "esperado": 7},
+        {"args": ["abc"], "lanza": "ValueError"},
+        {"args": ["-1"], "lanza": "ValueError"},
+        {"args": ["121"], "lanza": "ValueError"}
+      ]
+    }
+  ]
+}

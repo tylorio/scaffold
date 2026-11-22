@@ -111,6 +111,49 @@ Para repetir la demostración desde cero (por ejemplo, con λ = 0 para ver 3 dé
 borra `db.sqlite3` y vuelve a ejecutar `python manage.py migrate`: la congelación no
 se puede deshacer desde la interfaz.
 
+## Corregir la prueba de desempeño (T1–T3)
+
+El banco real de la prueba (formas A y B) **no se versiona**: va en
+`datos/banco_prueba/forma_A.json` y `forma_B.json`, que están en `.gitignore`, y
+nunca se sube al portal (D21). Si el banco estuviera en Git, los estudiantes podrían
+verlo. Para probar con el banco de ejemplo, cópialo a esa carpeta o pasa
+`--banco pruebas/banco_ejemplo`.
+
+Cada ítem tiene su concepto (T1 recursión, T2 estructuras de datos, T3 excepciones),
+el enunciado, el nombre de la función, la **solución de referencia** y los casos de
+prueba. Al corregir se comprueba que cada referencia supere todos sus casos.
+
+Las soluciones de una sesión van en una carpeta por participante:
+
+```text
+soluciones_pre/
+  P01/T1.py  P01/T2.py  P01/T3.py
+  P02/T1.py  ...
+```
+
+```powershell
+python manage.py corregir_prueba --momento pre --soluciones soluciones_pre --salida puntajes_pre.csv
+```
+
+- Solo funciona con la **asignación congelada**. La forma de cada participante sale
+  de su orden: AB es A en el pretest y B en el postest.
+- Por ítem calcula `T_pct` (% de casos superados) y las métricas de D1:
+  - `cc_sol` y `cc_ref`: complejidad ciclomática media por función, de la solución
+    y de la referencia;
+  - `lin_sol` y `lin_ref`: líneas de código fuente, sin blancos ni comentarios.
+- Un ítem sin archivo queda `sin_respuesta` (0 %). Un archivo que no es Python
+  válido queda `ilegible` (0 %, sin métricas) y el comando termina con código 9.
+  Un participante sin carpeta no se registra.
+- El CSV **no lleva datos de la asignación** (reforzado, caso, orden, semilla), para
+  que quien califique Q1–Q3 no la conozca (D3). La fórmula del puntaje (D1) se
+  aplica después, en el análisis estadístico.
+
+Antes de entregar el material de refuerzo, revisa que no se parezca a la prueba:
+
+```powershell
+python manage.py controlar_solapamiento
+```
+
 ## Pruebas
 
 ```powershell
@@ -164,6 +207,14 @@ refuerzo/
     contenido.py       Plantillas: explicaciones, ejemplos y ejercicios
     ejecutor.py        Lanza el subproceso con tiempo límite
     corredor.py        Proceso hijo que corre la solución
+pruebas/
+  banco_ejemplo/     Formas A y B de ejemplo (el banco real va en datos/banco_prueba/)
+  servicios/
+    banco.py           Lectura y validación de las formas A y B
+    corrector.py       T_pct y métricas por ítem, con el corredor del refuerzo
+    calidad.py         Complejidad ciclomática y líneas (D1)
+    solapamiento.py    Alarma de parecido con el material de refuerzo (D21)
+  persistencia.py    Corrige una sesión con la forma de cada participante
 scripts/             Corpus, entrenamiento e historial de demo_repo
 demo_repo/           Repositorio de ejemplo
 tests/               Pruebas con pytest

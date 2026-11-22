@@ -20,6 +20,11 @@ import analisis.servicios.flujo
 import analisis.servicios.exportacion
 import refuerzo.servicios.contenido
 import refuerzo.servicios.ejecutor
+import pruebas.servicios.banco
+import pruebas.servicios.calidad
+import pruebas.servicios.corrector
+import pruebas.servicios.exportacion
+import pruebas.servicios.solapamiento
 sys.exit(1 if any(m.split(".")[0] == "django" for m in sys.modules) else 0)
 """
 

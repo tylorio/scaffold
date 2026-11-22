@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'analisis',
     'refuerzo',
+    'pruebas',
 ]
 
 MIDDLEWARE = [
@@ -152,3 +153,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Parámetros del prototipo
 RUTA_MODELO = BASE_DIR / 'datos' / 'modelos' / 'modelo_demo.joblib'
 TIEMPO_LIMITE_EJERCICIO = 5.0  # segundos por envío
+# Banco real de la prueba (formas A y B): fuera de Git y nunca en el portal (D21).
+BANCO_PRUEBA_DIR = BASE_DIR / 'datos' / 'banco_prueba'
