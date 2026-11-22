@@ -7,16 +7,16 @@ Título: "Desarrollo de un sistema de detección de dependencia en código gener
 
 El sistema tiene tres módulos:
 1. Análisis de código: analiza repositorios Git de proyectos académicos de los participantes, divide el código en fragmentos (función o método), estima la probabilidad de que cada fragmento sea generado por IA, lo asigna a un concepto (recursión, estructuras de datos, manejo de excepciones) con reglas sobre el AST, y calcula el índice de dependencia conductual (IDC) global y por concepto.
-2. Refuerzo personalizado: para los conceptos débiles de cada participante (como máximo 2 reforzados y al menos 1 sin reforzar, elegidos por **sorteo entre los débiles con semilla registrada**; decidido 2026-11-09, ver 03 RV-04), genera recursos de refuerzo a partir de un banco curado: explicación breve, ejemplos resueltos y ejercicios graduados con casos de prueba. **Sin LLM** (decidido en F4, ADR-001). Los expertos revisan el material en una ficha externa y el investigador registra el resultado antes de entregarlo.
+2. Refuerzo personalizado: para los conceptos débiles de cada participante (como máximo 2 reforzados y al menos 1 sin reforzar, elegidos por **sorteo escalonado con semilla registrada**: entre los débiles; si hay menos de 2, entre los calculables; si tampoco, entre los 3. El sorteo se congela antes del pretest; ver ADR-004 y la decisión D2 del asesor), genera recursos de refuerzo a partir de un banco curado de **24 bloques** (8 por concepto). Cada bloque tiene una explicación breve, 1 ejemplo resuelto y 3 ejercicios graduados con casos de prueba, y se liberan 2 bloques por semana (D20). El banco no se solapa con la prueba (D21). **Sin LLM** (decidido en F4, ADR-001). Los expertos revisan el material en una ficha externa y el investigador registra el resultado antes de entregarlo.
 3. Pruebas pre/post: la prueba de desempeño (formas A y B, ítems T1–T3 y Q1–Q3) se aplica en sesión supervisada **fuera del sistema** y sus puntajes van a la base de datos codificada del plan (9.5), igual que el cuestionario de 12 ítems. El sistema aporta la corrección por lotes, en local, de T1–T3 (casos de prueba, complejidad ciclomática, longitud de funciones). Q1–Q3 se corrigen con rúbrica fuera del sistema. Decidido 2026-11-09 (F1/F4).
 
 ## Diseño de la investigación (fijo, no lo cambies)
 - Cuantitativa, aplicada, correlacional y exploratorio-aplicada; sin lenguaje causal.
 - Pre/post de un solo grupo, n = 25 participantes (muestreo por conveniencia, convocar ~30). Intervención de 4 semanas.
-- Hipótesis: HG (desempeño post > pre), HE1 (el IDC del sistema se relaciona con la dependencia autorreportada), HE2 (dependencia y desempeño se relacionan), HE3 (pertinencia del refuerzo por juicio de expertos), HE4 (mejora en conceptos débiles).
+- Hipótesis: HG (desempeño post > pre), HE1 (el IDC del sistema se relaciona con la dependencia autorreportada), HE2 (dependencia y desempeño se relacionan), HE3 (pertinencia del refuerzo por juicio de expertos), HE4 (mejora en conceptos débiles), HE5 (ganancia en los conceptos reforzados > ganancia en el control; creada por el asesor en R1, antes "control intrasujeto complementario a HE4"). En modo exploratorio, HE1 y HE2b (HE2 con el IDC) pasan a exploratorias; HE4 y HE5 siguen confirmatorias (R3).
 - Variable independiente: dependencia hacia asistentes de programación basados en IA (dimensiones cognitiva, afectiva, conductual). Variable dependiente: desempeño en programación (corrección funcional, calidad del código, comprensión conceptual).
 - Control intrasujeto: se refuerzan como máximo 2 conceptos por estudiante y al menos 1 queda sin reforzar; el no reforzado recibe su refuerzo después del postest (plan, 9.2).
-- Meta del clasificador: F1 ≥ 0,70 en el conjunto de prueba. Si no se alcanza, el IDC se reporta como exploratorio y los conceptos se asignan al azar (plan, 9.4).
+- Meta del clasificador: F1 ≥ 0,70 en el conjunto de prueba (plan, 9.4), con FP ≤ 0,15 y sensibilidad ≥ 0,60 al umbral θ (asesor, D10). Si no se alcanza, el IDC se reporta como exploratorio y los conceptos se asignan al azar (plan, 9.4).
 
 ## Restricciones
 - Lenguaje de la solución y de los repositorios analizados: Python.
@@ -41,12 +41,35 @@ Nota: la versión original de este archivo proponía FastAPI + Pydantic + SQLAlc
 3. Cuestionario de 12 ítems y prueba A/B se aplican fuera del sistema; T1–T3 se corrigen por lotes en local; Q1–Q3 con rúbrica fuera.
 4. Juicio de expertos en ficha externa; el investigador registra "validado / no validado" por recurso; la V de Aiken se calcula en la estadística.
 5. Dos roles: investigador y estudiante.
-6. Selección entre conceptos débiles por sorteo con semilla registrada.
+6. Selección por sorteo con semilla registrada. El asesor la aprobó (D3) y la amplió a una regla escalonada (D2, ADR-004).
 7. Cifrado en reposo del volumen o de la base, gestionado por la plataforma, más respaldo cifrado; no cifrado por campo.
 8. Despliegue por script reproducible; CI automatizado solo para las pruebas.
 9. Propuestas PR-01 (IDC con intervalo) y PR-04 (aviso de varios autores) aceptadas como RF-34 y RF-35; PR-02 cubierta por RNF-08; PR-05 (calibración) condicionada a SP-03.
-10. (2026-11-10) El código de IA editado a mano (`ia_editado`) se **excluye del entrenamiento** del clasificador y se evalúa aparte con dos lecturas (07 §1.1, §5).
-11. (2026-11-10) Se incluye un "índice de delegación por historial" (solo rasgos de proceso) como variable exploratoria para HE1, en modo GO y en plan B (07 §8).
+10. (2026-11-10; confirmada en D8) El código de IA editado a mano (`ia_editado`) se **excluye del entrenamiento** del clasificador y se evalúa aparte con dos lecturas. La principal: sigue siendo delegación (07 §1.1, §5).
+11. (2026-11-10; ampliada en D9) El clasificador usa **solo rasgos de estilo y estructura**. El tamaño de inserción por commit sale del vector y forma un "índice de delegación por historial" aparte, exploratorio para HE1 (07 §2.4, §8).
+12. (2026-11-21) **Decisiones del asesor D1–D18** en `docs/decisiones/decisiones-asesor-2026-11-21.md`. Ese archivo no se edita: si una decisión cambia, se registra un documento nuevo. Prevalecen sobre las decisiones anteriores. Las que más afectan al diseño:
+    - D1: la fórmula del puntaje vive en el script de análisis, no en el sistema.
+    - D2/D3: asignación escalonada, congelada antes del pretest, con calificadores ciegos (ADR-004).
+    - D5/D6: guía de conceptos con lista cerrada de estructuras de datos y una definición amplia para sensibilidad.
+    - D7: κ ≥ 0,70.
+    - D11: el IDC no se muestra hasta después del postest.
+    - D12: no se usan repositorios de compañeros antes del CEI.
+    - D13: código y derivados se borran al terminar el análisis; los CSV agregados se conservan.
+    - D16: formas contrabalanceadas AB/BA.
+    - D17: CSV largo para el análisis.
+13. Los cambios al plan que pide el asesor (su sección 4) se preparan como texto para el Drive en F12. `docs/plan/plan.md` no se edita sin orden explícita.
+14. (2026-11-21) **Complemento del asesor** en `docs/decisiones/decisiones-asesor-2026-11-21b.md`. Ese archivo no se edita. Contiene:
+    - R1: HE5 formal.
+    - R2: orden AB/BA por bloques permutados, con semilla derivada por SHA-256 y nunca con `hash()`.
+    - R3: parámetro `modo` fijado una vez tras el go/no-go.
+    - R4: salida `indeterminado`.
+    - R5: un único análisis; se reanaliza solo antes de `congelar_asignacion`.
+    - D19: filtro por autor con HMAC de los correos declarados.
+    - D20: 24 bloques, 2 por semana.
+    - D21: el banco de refuerzo no se solapa con la prueba.
+    - S1: clave secreta y `DEBUG` por variable de entorno.
+
+    Su sección 4 es el **orden de trabajo de F10** (camino crítico): el banco A/B y el corrector de T1–T3 bloquean el pretest.
 
 ## Estado del repositorio (léelo antes de cualquier fase)
 - Existe un **prototipo funcional en Django** construido antes de adoptar este protocolo (commits del 2026-11-05). Cubre parte del módulo 1 y del módulo 2; el detalle está en `docs/arquitectura/00-estado-actual.md`.
@@ -69,7 +92,7 @@ Nota: la versión original de este archivo proponía FastAPI + Pydantic + SQLAlc
 - No escribas código de implementación hasta la fase F10. Antes de esa fase solo se admiten firmas, contratos y diagramas.
 - Antes de crear o sobrescribir un archivo de `docs/arquitectura/`, lee los anteriores y mantén los mismos nombres, cifras y terminología.
 - Si un archivo ya existe y tu cambio lo contradice, dímelo antes de sobrescribirlo.
-- Terminología fija del plan: "fragmento" (función o método), "IDC" (índice de dependencia conductual), θ (umbral de P(IA)), λ (umbral de IDC por concepto), m (fragmentos mínimos por concepto), conceptos `recursion`, `estructuras_datos`, `excepciones`; formas A (pretest) y B (postest); ítems T1–T3 y Q1–Q3; cuestionario de 12 ítems C1–C4, A1–A4, B1–B4.
+- Terminología fija del plan: "fragmento" (función o método), "IDC" (índice de dependencia conductual), θ (umbral de P(IA)), λ (umbral de IDC por concepto), m (fragmentos mínimos por concepto), conceptos `recursion`, `estructuras_datos`, `excepciones` (el asesor escribe "estructuras"; el identificador sigue siendo `estructuras_datos`); formas A y B, contrabalanceadas por participante con orden AB o BA (D16; el plan dice "pretest forma A"); ítems T1–T3 y Q1–Q3; cuestionario de 12 ítems C1–C4, A1–A4, B1–B4.
 
 ## Entorno de trabajo
 - Windows 11 con PowerShell. Entorno virtual en `.venv/`; pruebas con `.\.venv\Scripts\python.exe -m pytest` (262 pruebas pasan al 2026-11-09).

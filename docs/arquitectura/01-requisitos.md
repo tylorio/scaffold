@@ -63,14 +63,14 @@ Prioridad MoSCoW: M = Must, S = Should, C = Could, W = Won't (en este estudio). 
 | RF-10 | El sistema debe identificar los conceptos débiles de cada participante a partir del IDC por concepto y del umbral λ, sin usar el pretest. | M | 1 | 9.2 (control de la regresión a la media); 9.3 (calibración de λ) |
 | RF-11 | El sistema debe permitir configurar θ, λ y m, y guardar con cada análisis los valores usados y la versión del modelo. | M | 1 | 9.3 y 9.7 (calibración en la semana 7); 4 (replicabilidad) |
 | RF-12 | El sistema debe entrenar el clasificador con un corpus de dos clases etiquetadas por procedencia (humano: sesiones supervisadas sin IA; IA: soluciones de asistentes a los mismos enunciados), evaluarlo con validación cruzada estratificada y reportar precisión, sensibilidad y F1 en un conjunto de prueba. | M | 1 | 9.4 |
-| RF-13 | Si el F1 en el conjunto de prueba es menor que 0,70, el sistema debe marcar el IDC como medida exploratoria y asignar los conceptos a reforzar de forma aleatoria por estudiante, manteniendo al menos un concepto sin reforzar. | M | 1 | 9.4 (plan de contingencia) |
+| RF-13 | Si el F1 en el conjunto de prueba es menor que 0,70, el sistema debe marcar el IDC como medida exploratoria y asignar los conceptos a reforzar de forma aleatoria por estudiante, manteniendo al menos un concepto sin reforzar. Se implementa con el parámetro `modo` (confirmatorio / exploratorio), que se fija una sola vez tras el go/no-go y queda registrado. En modo exploratorio la asignación omite el caso A (ADR-004; R3) | M | 1 | 9.4 (plan de contingencia); R3 |
 | RF-14 | El sistema debe producir la ficha de registro automatizado de cada participante: IDC global, IDC por concepto, número de fragmentos por concepto y conceptos débiles. | M | 1 | 9.3 (tabla de instrumentos) |
 
 ### Módulo 2: refuerzo personalizado
 
 | ID | Requisito | Prior. | Mód. | Origen en el plan |
 | --- | --- | --- | --- | --- |
-| RF-15 | El sistema debe asignar a cada participante como máximo dos conceptos reforzados y dejar al menos uno sin reforzar, elegidos entre los débiles; la asignación debe quedar registrada y no cambiar durante la intervención. | M | 2 | 9.2 (control intrasujeto); nota en 8.3.1 |
+| RF-15 | El sistema debe asignar a cada participante como máximo dos conceptos reforzados y dejar al menos uno sin reforzar, elegidos por **sorteo escalonado**: entre los débiles; si hay menos de dos, entre los calculables; si tampoco, entre los tres (ADR-004, D2). También debe sortear el orden de las formas AB/BA por bloques permutados (R2, D16). La asignación se congela antes del pretest, con su fecha, y no cambia durante la intervención (D3) | M | 2 | 9.2 (control intrasujeto, **HE5**); nota en 8.3.1; D2, D3, D16, R2 |
 | RF-16 | El sistema debe generar, para cada concepto reforzado, un recurso con una explicación breve del concepto, ejemplos resueltos y ejercicios graduados en Python con casos de prueba automáticos. | M | 2 | 9.3 ("Refuerzo académico"); OE3 |
 | RF-17 | El sistema debe ejecutar la solución que envía el estudiante contra los casos de prueba del ejercicio y devolverle retroalimentación. | M | 2 | 9.3 ("casos de prueba automáticos que retroalimentan") |
 | RF-18 | El sistema debe registrar el uso del refuerzo por participante y concepto: accesos, intentos y resultados, con fecha. | M | 2 | 9.7 (producto de las semanas 9–12: "Registro de uso del refuerzo") |
@@ -85,7 +85,7 @@ El plan aplica la prueba "en sesión supervisada y sin asistentes de IA" (8.2) y
 
 | ID | Requisito | Prior. | Mód. | Origen en el plan |
 | --- | --- | --- | --- | --- |
-| RF-23 | La base de datos codificada externa debe registrar por participante, momento (pretest/postest) y forma (A/B): el porcentaje de casos superados en T1, T2 y T3; el puntaje 0–20 de Q1, Q2 y Q3; la complejidad ciclomática media y la longitud media de las funciones; y el puntaje compuesto 0–20. Los puntajes deben quedar separados por concepto. El sistema aporta sus columnas mediante RF-24, RF-25 y RF-27. | M | 3 (externo) | 8.3.2 (operacionalización); 8.1.1 (puntaje compuesto 0–20); 9.5 (base de datos codificada); HE4 y control intrasujeto (por concepto) |
+| RF-23 | La base de datos codificada externa debe registrar por participante, momento (pretest/postest) y forma (A/B): el porcentaje de casos superados en T1, T2 y T3; el puntaje 0–20 de Q1, Q2 y Q3; la complejidad ciclomática media y la longitud media de las funciones; y el puntaje compuesto 0–20. Los puntajes deben quedar separados por concepto. El sistema aporta sus columnas mediante RF-24, RF-25 y RF-27. | M | 3 (externo) | 8.3.2 (operacionalización); 8.1.1 (puntaje compuesto 0–20); 9.5 (base de datos codificada); HE4 y HE5 (por concepto); fórmula en D1 |
 | RF-24 | El sistema debe ejecutar, por lotes y en local, los casos de prueba de las soluciones de T1–T3 y calcular el porcentaje de casos superados por participante, momento y forma. | S | 3 | 8.3.2 ("Porcentaje de casos de prueba superados"); ADR-001 |
 | RF-25 | El sistema debe calcular, por lotes y en local, sobre las soluciones de T1–T3 la complejidad ciclomática media por función y la longitud media de las funciones. | S | 3 | 8.3.2 ("métrica automática sobre las soluciones"); ADR-001 |
 | RF-26 | ~~Aplicar el cuestionario diagnóstico en el sistema.~~ Se aplica fuera, en un formulario con el código anónimo como campo obligatorio, y se registra en la base codificada (9.5). | W | 3 | 8.3.1; 9.3; 9.5. Decidido 2026-11-09. |
@@ -107,7 +107,19 @@ El plan aplica la prueba "en sesión supervisada y sin asistentes de IA" (8.2) y
 | ID | Requisito | Prior. | Mód. | Origen |
 | --- | --- | --- | --- | --- |
 | RF-34 | El sistema debe mostrar y exportar cada IDC (global y por concepto) con su intervalo de confianza al 95 %, y señalar cuando el intervalo es demasiado ancho para interpretar el valor. | S | 1 | PR-01 aceptada; coherente con RF-32 y plan 9.6 (probabilidad, no prueba) |
-| RF-35 | El sistema debe detectar si un repositorio tiene más de un autor de commits, avisarlo al investigador y exportarlo como variable, sin guardar los correos ni nombres de los autores. | S | 1 | PR-04 aceptada; plan 9.1.2 (repositorios "de sus proyectos") |
+| RF-35 | El sistema debe detectar si un repositorio tiene más de un autor de commits, avisarlo al investigador y exportarlo como variable, sin guardar los correos ni nombres de los autores. | S | 1 | PR-04 aceptada; plan 9.1.2 (repositorios "de sus proyectos"). Se mantiene como control de calidad junto al filtro de RF-36 |
+
+### RF añadidos por decisiones del asesor (2026-11-21)
+
+Fuente: `docs/decisiones/decisiones-asesor-2026-11-21b.md`.
+
+| ID | Requisito | Prior. | Mód. | Origen |
+| --- | --- | --- | --- | --- |
+| RF-36 | El sistema debe analizar solo los fragmentos cuyo commit mayoritario (según `git blame`) es de un correo declarado por el participante. Guarda solo un HMAC-SHA256 con sal local de esos correos; los correos de terceros se comparan en memoria y no se guardan ni en claro ni hasheados. Descarta el resto antes de clasificar y registra `n_fragmentos_otros_autores`. La inclusión se evalúa después del filtro | M | 1 | D19; plan 9.6 (solo quien consintió) |
+| RF-37 | El sistema debe organizar el refuerzo en **bloques** (explicación, ejemplo resuelto y 3 ejercicios graduados) y liberar 2 bloques por semana y concepto reforzado durante las 4 semanas, contando desde la fecha de inicio de la intervención. Solo entrega bloques validados, registra `bloque_id` y versión en cada apertura e intento, y calcula la adherencia (ejercicios intentados ÷ ejercicios liberados [PENDIENTE: confirmar "intentados" frente a "resueltos"]) | M | 2 | D20; HE3, HE4, HE5 |
+| RF-38 | El sistema debe mantener el banco de la prueba (formas A y B) separado del banco de refuerzo, solo en el perfil local, y ofrecer un control que compare los enunciados y la similitud de AST de las soluciones de referencia de ambos bancos para listar pares sospechosos | S | 3 | D21 |
+| RF-39 | El sistema debe contar, por fragmento y por participante, las indexaciones cuyo tipo no se pudo inferir (`indeterminado`). No asignan el concepto, pero entran en la muestra estratificada de validación | S | 1 | R4; D7 |
+| RF-40 | Un participante tiene un único análisis válido (el diagnóstico). Volver a analizarlo antes de congelar la asignación reemplaza el anterior; después de congelarla, se rechaza | M | 1 | R5 |
 
 ### Propuestas (no derivadas del plan; no son requisitos hasta que las apruebes)
 
@@ -182,18 +194,18 @@ Filas: hipótesis y objetivos específicos. Columnas: RF que los habilitan. Los 
 | **HE2** dependencia y desempeño pre se relacionan | RF-08, RF-27; RF-23; (RF-26) | Total del cuestionario y puntaje global del pretest; IDC global como complemento |
 | **HE3** pertinencia del refuerzo por expertos | RF-16, RF-20 (resultado de la ficha externa), RF-22 | Calificaciones ordinales de 3–5 jueces por recurso y criterio (en la ficha externa); el sistema registra qué recursos quedaron validados |
 | **HE4** mejora en conceptos débiles | RF-09, RF-10, RF-15 (qué conceptos son débiles y cuáles se refuerzan); RF-16 a RF-19; RF-23 (puntajes **por concepto**); RF-27 | Puntaje por concepto en pre y post; condición de cada concepto (reforzado / no reforzado) |
-| **Control intrasujeto** (complementario a HE4) | RF-15, RF-19, RF-23, RF-27, RNF-15 | Ganancia por concepto reforzado vs. no reforzado |
+| **HE5** control intrasujeto: ganancia en los reforzados > ganancia en el control (R1; antes "complementario a HE4") | RF-15, RF-19, RF-23, RF-27, RF-37, RNF-15 | Ganancia por concepto reforzado vs. control, con `caso`, `orden` y la forma como covariable (D16, D17). t pareada o Wilcoxon; modelo mixto de respaldo |
 | **OE1** módulo de análisis + relación con autorreporte | RF-01 a RF-14; RF-33 | Igual que HE1 |
 | **OE2** relación dependencia–desempeño | Igual que HE2 | |
 | **OE3** módulo de refuerzo validado por expertos | RF-15 a RF-22 | Igual que HE3 |
-| **OE4** efecto del refuerzo pre/post en conceptos débiles | Igual que HE4 y control intrasujeto | |
+| **OE4** efecto del refuerzo pre/post en conceptos débiles | Igual que HE4 y HE5 | |
 
 ### Huecos detectados
 
 | Hueco | Consecuencia | Dónde se resuelve |
 | --- | --- | --- |
 | HE1 y HE2 necesitan el total del cuestionario, que se registra **fuera** del sistema (RF-26 → Won't, decidido). La unión depende de que la base externa use el mismo código anónimo. | Riesgo de desalineación de códigos entre dos fuentes. | RF-27 debe fijar el formato exacto del código anónimo (el prototipo valida `^[A-Z]{1,3}\d{2,4}$`) como clave de unión, y el formulario externo debe validarlo igual. Detallar en F6. |
-| HE4 y el control intrasujeto exigen puntajes **por concepto** en pre y post. El plan los define (T1/Q1 recursión, T2/Q2 estructuras, T3/Q3 excepciones) pero no dice cómo se agregan por concepto ni cómo se pondera corrección, calidad y comprensión en el compuesto 0–20. | Sin fórmula, RF-23 no se puede implementar ni verificar. | [PENDIENTE] Definir la fórmula del compuesto y del puntaje por concepto con el asesor; registrar en 06-datos. |
+| HE4 y el control intrasujeto exigen puntajes **por concepto** en pre y post. El plan los define (T1/Q1 recursión, T2/Q2 estructuras, T3/Q3 excepciones) pero no dice cómo se agregan por concepto ni cómo se pondera corrección, calidad y comprensión en el compuesto 0–20. | Sin fórmula, RF-23 no se puede implementar ni verificar. | Resuelto el 2026-11-21: D1 (`docs/decisiones/decisiones-asesor-2026-11-21.md`, 3.1). |
 | RF-13 (modo exploratorio con asignación aleatoria) no tiene un criterio sobre **qué** conceptos son candidatos al azar cuando el IDC no es confiable (¿los tres?, ¿los que tengan ≥ m fragmentos?). | Ambigüedad en el plan B. | [PENDIENTE] Decidir en F3/F5. |
 | Ningún RF cubre la **sesión de etiquetado controlado** (los participantes resuelven tareas con y sin IA para formar el corpus, 9.4). El plan la describe como procedimiento, no como función del sistema. | El corpus se construye a mano; RF-12 solo lo consume. | Confirmar que queda fuera del sistema; si no, añadir RF en F1 (propuesta). |
 | RF-02 (criterio "5 funciones propias"): el plan no define "propias". | No se puede verificar automáticamente sin una definición. | [PENDIENTE] Propuesta: funciones no triviales en archivos que no sean de pruebas, escritas en commits del participante. |
@@ -210,7 +222,7 @@ Filas: hipótesis y objetivos específicos. Columnas: RF que los habilitan. Los 
 **Decisiones que debes tomar**
 1. ~~Alcance del módulo 3~~ Decidido: prueba fuera; T1–T3 corregidos por lotes en local.
 2. ~~Cuestionario dentro o fuera~~ Decidido: fuera.
-3. Fórmula del puntaje compuesto 0–20 y del puntaje por concepto (afecta RF-23 y HE4). **Sigue abierta: asesor.**
+3. Fórmula del puntaje compuesto 0–20 y del puntaje por concepto (afecta RF-23 y HE4). **Resuelta: D1.**
 4. ~~Propuestas~~ Decidido: PR-01, PR-02, PR-04 aceptadas; PR-03 descartada; PR-05 condicionada a SP-03.
 5. Si incluir la Ley N.º 29733 en el plan. **Sigue abierta: asesor.**
 

@@ -5,6 +5,13 @@
 - Entrada: `01-requisitos.md` (RF-05 a RF-13, RNF-01, RNF-02), `02-escenarios.md` (ESC-01 a ESC-05, ESC-12, ESC-13), `03-riesgos-spikes.md` (RT-01, RT-02, RT-03, RT-08, RV-01, RV-02, RV-07, RV-08, RV-10; SP-01 a SP-07), `06-datos-privacidad.md` (corpus, retención), `05-componentes-interfaces.md` (A4–A8, versionado §7).
 - Decisión registrada en `adr/ADR-003-clasificador.md`.
 - Estado: **protocolo previo a los spikes**. Los valores marcados [PENDIENTE: SP-xx] se rellenan con el resultado del spike indicado; el protocolo no cambia, cambian los números.
+- Actualizado el 2026-11-21 con las decisiones del asesor (`docs/decisiones/decisiones-asesor-2026-11-21.md`):
+  - D7: validación de reglas.
+  - D8: `ia_editado`.
+  - D9: el clasificador queda sin rasgos de historial.
+  - D10: FP ≤ 0,15 y sensibilidad ≥ 0,60.
+  - D12: no se usan repositorios de compañeros antes del CEI.
+- Actualizado de nuevo el 2026-11-21 con R3 (modo exploratorio y sus consecuencias) y R4 (salida `indeterminado`) (`docs/decisiones/decisiones-asesor-2026-11-21b.md`).
 
 ## 0. Dos preguntas distintas (regla del prompt)
 
@@ -23,7 +30,7 @@ Consecuencia práctica: este archivo garantiza que el **número** sea reproducib
 | --- | --- | --- | --- | --- |
 | C1 | **Sesión de etiquetado controlado** (plan 9.4): personas fuera de la muestra resuelven tareas de los tres conceptos, mitad sin IA y mitad con IA, en sesión supervisada, cada una en un repositorio Git con un commit por tarea | Humano (sin IA) e IA-sesión (con IA) | **Conjunto de referencia**: la única fuente que se parece al código de los participantes. Conjunto de prueba obligatorio | Diseño en §1.3; rendimiento [PENDIENTE: SP-02] |
 | C2 | **Generación directa por asistentes** sobre los mismos enunciados de C1, con los asistentes que declaren los participantes (RF-03) y varios estilos de prompt | IA | Amplía la clase IA a bajo costo; permite "dejar un asistente fuera" | Asistentes [PENDIENTE: lista tras el cuestionario; mientras tanto, los más usados según el autor, marcados como provisionales] |
-| C3 | **Código de IA editado a mano**: en C1, las tareas "con IA" producen código que el estudiante puede modificar; se guarda la salida cruda del asistente (C2-equivalente) y la versión final entregada | `ia_editado` (tercera etiqueta) | Mide el caso realista; se evalúa aparte (§5) | **Decidido 2026-11-10: se excluye del entrenamiento** y se evalúa aparte con las dos lecturas (§5). Pendiente comunicarlo al asesor por su efecto en el constructo |
+| C3 | **Código de IA editado a mano**: en C1, las tareas "con IA" producen código que el estudiante puede modificar; se guarda la salida cruda del asistente (C2-equivalente) y la versión final entregada | `ia_editado` (tercera etiqueta) | Mide el caso realista; se evalúa aparte (§5) | **Se excluye del entrenamiento** y se evalúa aparte con las dos lecturas (§5). Lo decidió el autor el 2026-11-10 y lo confirmó el asesor (D8). La lectura principal es que **sigue siendo delegación** si el núcleo lo escribió el asistente |
 | C4 | **Conjuntos públicos** de código humano vs. IA en Python [VERIFICAR: AIGCodeSet y MultiAIGCD, basados en Project CodeNet; existencia, licencia, lenguaje, asistentes incluidos, formato] | Según el conjunto | Solo **aumento del entrenamiento**. Nunca en prueba; nunca como única fuente. Se evalúa si ayudan (SP-01 configuraciones a/b/c) | [VERIFICAR licencias antes de descargar] |
 | C5 | Código del propio autor anterior a 2022 y proyectos académicos propios | Humano | Aumento menor de la clase humana con estilo local | Opcional; declarar si se usa |
 
@@ -44,7 +51,7 @@ Nunca entran al corpus: repositorios de los participantes del estudio (serían a
 | Asignación de condición | Cada persona hace 3 tareas sin IA y 3 con IA (una por concepto en cada condición); el orden y qué tareas van con IA se contrabalancean con un cuadrado latino, para que cada tarea aparezca en ambas condiciones y el efecto de orden se reparta |
 | Condición "sin IA" | Supervisada; sin asistentes, sin búsqueda; documentación local permitida [PENDIENTE] |
 | Condición "con IA" | La persona usa el asistente que declara usar habitualmente; se le pide **guardar la salida cruda** del asistente (pegar en `crudo/`) antes de editarla; el entregable final va a `final/` |
-| Historial | Cada persona trabaja en un repositorio Git propio con un commit por tarea como mínimo (el supervisor lo verifica). Así `insercion_commit` existe y refleja el comportamiento real: pegar la salida de un asistente produce inserciones grandes |
+| Historial | Cada persona trabaja en un repositorio Git propio con un commit por tarea como mínimo (el supervisor lo verifica). Así `insercion_commit` existe y refleja el comportamiento real: pegar la salida de un asistente produce inserciones grandes. Ya no alimenta al clasificador (D9). Sirve para **validar el índice por historial**: ¿las inserciones grandes corresponden a las tareas hechas con IA? |
 | Duración | ≤ 20 min por tarea; sesión de 2 h [PENDIENTE: SP-02] |
 | Rendimiento esperado | ≥ 5 fragmentos no triviales por persona, concepto y clase [PENDIENTE: SP-02] |
 
@@ -89,7 +96,7 @@ Desequilibrio de clases: se corrige con pesos de clase en el entrenamiento, no c
 
 Cada rasgo tiene una hipótesis de por qué separa las clases. Los que no la tengan no entran. Todos se calculan por fragmento (05, A5) y se versionan en `RASGOS_VERSION`.
 
-### 2.1 Estilo y superficie (8 existentes en el prototipo + candidatos)
+### 2.1 Estilo y superficie (los 7 del prototipo que se conservan + candidatos)
 
 | Rasgo | Por qué debería aportar | Estado |
 | --- | --- | --- |
@@ -100,7 +107,7 @@ Cada rasgo tiene una hipótesis de por qué separa las clases. Los que no la ten
 | Uniformidad de estilo (nombres y comillas) | Asistentes son consistentes; humanos mezclan | Existe |
 | Complejidad ciclomática | Asistentes tienden a funciones cortas y planas | Existe |
 | Líneas | Interactúa con las demás; necesario para el reporte por longitud | Existe |
-| log(inserción por commit) | Ver §2.4 | Existe |
+| ~~log(inserción por commit)~~ | **Sale del clasificador (D9)** y pasa al índice por historial (§2.4) | Existe; se elimina del vector en F10 |
 | **Idioma de identificadores y comentarios** (proporción de palabras en inglés) | En la USIL los estudiantes nombran en español o espanglish; los asistentes tienden al inglés salvo que se les pida lo contrario (estilo P2 lo controla) | Candidato; riesgo: cursos que exigen inglés |
 | Nombres de una letra fuera de bucles | Marca de estudiante | Candidato |
 | Longitud máxima de línea y violaciones de PEP 8 | Asistentes casi no las cometen | Candidato |
@@ -126,21 +133,25 @@ Cada rasgo tiene una hipótesis de por qué separa las clases. Los que no la ten
 | Variabilidad de la perplejidad entre líneas (*burstiness*) | Los humanos alternan líneas muy predecibles y muy raras; los asistentes son uniformes | Igual |
 | Riesgos | El modelo pequeño puede estar entrenado con código similar a C4 (contaminación); la perplejidad en español puede confundir idioma con procedencia; costo de cómputo en la máquina del investigador | Declarar en el ADR si se adopta |
 
-### 2.4 Historial de commits
+### 2.4 Historial de commits: índice de delegación por historial, fuera del clasificador
 
-| Rasgo | Por qué debería aportar | Limitación |
+**D9: estos rasgos no entran al clasificador.** Forman un **índice de delegación por historial** que se calcula aparte por participante. Es una medida exploratoria para HE1 que se reporta en modo GO y en el plan B. Como el clasificador mide el producto (estilo y estructura) y el índice mide el proceso, los dos son medidas independientes que se pueden triangular con el autorreporte.
+
+| Rasgo | Por qué debería indicar delegación | Limitación |
 | --- | --- | --- |
 | log(líneas añadidas en el commit que introdujo la función) | Pegar una salida de asistente produce inserciones grandes de golpe; escribir a mano, inserciones pequeñas e iterativas | Castiga a quien trabaja mucho y sube todo junto (03, RT-07); por eso es un rasgo, no una regla |
 | Número de commits que modificaron la función después de crearla | El código propio se retoca; el pegado, menos | Requiere `blame` por línea; costo medido en SP-06 |
 | Proporción del archivo que entró en el mismo commit | Igual que el primero, normalizado | — |
 | Tiempo entre el commit anterior y el de inserción (si hay historial denso) | Inserción grande tras poco tiempo = pegado | Historial académico suele ser escaso (plan 5) |
-| **Ausencia de historial** | Se imputa (mediana) y se añade un indicador "sin historial" para que el modelo no confunda ausencia con valor | — |
+| **Ausencia de historial** | Si el repositorio no tiene historial útil, el índice no se calcula para ese participante y queda vacío, no imputado | Se reporta cuántos participantes quedan sin índice |
 
-Nota de validez: los rasgos de historial son los únicos que miden **proceso** y no **superficie**; son los que menos dependen del estilo del asistente del momento (plan 5: "los asistentes cambian de estilo entre versiones") y los que SP-03 debe examinar como contrapeso al sesgo por calidad (RV-02).
+Nota de validez: los rasgos de historial son los únicos que miden **proceso** y no **superficie**, y los que menos dependen del estilo del asistente del momento (plan 5: "los asistentes cambian de estilo entre versiones"). Con D9 dejan de compensar dentro del clasificador el sesgo por calidad (RV-02). Por eso el reporte de falsos positivos por tercil de calidad (§5, §6.1) es obligatorio, no opcional.
+
+Definición operativa del índice [PENDIENTE: fijarla antes del diagnóstico]. Propuesta: la proporción de fragmentos del participante cuyo commit de inserción añadió ≥ N líneas, con N fijado con el corpus de la sesión de etiquetado (la mediana de inserción en las tareas con IA). Se versiona como `historial-v1`.
 
 ### 2.5 Selección de rasgos
 
-Se parte de la línea base (§2.1, 8 existentes). Cada familia nueva se añade en bloque y se mantiene solo si mejora el AUROC en validación por autor en ≥ 0,01 [PENDIENTE] sin empeorar la calibración. Se reporta la importancia por permutación por familia, no por rasgo individual, para no sobreinterpretar con un corpus pequeño.
+Se parte de la línea base (§2.1, los 7 rasgos existentes sin historial). Cada familia nueva se añade en bloque y se mantiene solo si mejora el AUROC en validación por autor en ≥ 0,01 [PENDIENTE] sin empeorar la calibración. Se reporta la importancia por permutación por familia, no por rasgo individual, para no sobreinterpretar con un corpus pequeño.
 
 ## 3. Modelos candidatos y criterio
 
@@ -177,8 +188,8 @@ Reglas duras: ningún fragmento de un autor en dos lados; `insercion_commit` se 
 | Métrica | Definición | Dónde se reporta | Umbral |
 | --- | --- | --- | --- |
 | AUROC | Área bajo la curva ROC; independiente de θ | Validación (nivel 2) y prueba | Informativo; sin umbral en el plan |
-| Precisión, sensibilidad, F1 | A θ (§6) sobre la clase IA | Validación y **prueba** (plan 9.4) | **F1 ≥ 0,70 en prueba** (plan) |
-| **Tasa de falsos positivos a θ** | Humanos clasificados como IA / humanos | Validación y prueba; **por tercil de calidad de estilo** (RV-02) | ≤ [PENDIENTE: 0,15; SP-03] |
+| Precisión, sensibilidad, F1 | A θ (§6) sobre la clase IA | Validación y **prueba** (plan 9.4) | **F1 ≥ 0,70 en prueba** (plan); **sensibilidad ≥ 0,60** (D10) |
+| **Tasa de falsos positivos a θ** | Humanos clasificados como IA / humanos | Validación y prueba; **por tercil de calidad de estilo** (RV-02; obligatorio por D10) | **≤ 0,15** (D10) |
 | Especificidad | 1 − FP | Igual | — |
 | Brier | Error cuadrático de la probabilidad | Validación y prueba | Informativo |
 | Error de calibración esperado (ECE, 10 intervalos) y curva de confiabilidad | ¿P(IA) = 0,7 ⇒ ≈ 70 % IA? | Antes y después de calibrar | ECE ≤ [PENDIENTE: 0,10; SP-03] |
@@ -186,7 +197,7 @@ Reglas duras: ningún fragmento de un autor en dos lados; `insercion_commit` se 
 | Caída de F1 por tarea | Nivel 2 − nivel 3 | — | Informativo; si > 0,15 se declara |
 | **Por concepto** | Todas las anteriores sobre los fragmentos de recursión / estructuras / excepciones | Validación y prueba | El F1 de ningún concepto queda por debajo de [PENDIENTE: 0,60] |
 | **Por longitud** | Intervalos: ≤ 5, 6–15, 16–40, > 40 líneas | Validación | Los fragmentos muy cortos son casi inclasificables; justifica la definición de "trivial" (A3) |
-| `ia_editado` | Dos lecturas: tasa de clasificados como IA si se considera IA; como FP si se considera humano | Prueba | Se reporta; no decide el go/no-go |
+| `ia_editado` | Dos lecturas. **Principal (D8):** se considera IA, y la proporción clasificada como IA es la sensibilidad en el caso realista. Secundaria: se considera humano, y esa misma proporción son falsos positivos | Prueba | Se reportan las dos; no decide el go/no-go |
 | Intervalos de confianza | Bootstrap **por autor** (remuestrear autores con reemplazo, 1 000 réplicas, percentiles 2,5 y 97,5) para F1, FP y AUROC | Prueba | Si el intervalo inferior del F1 queda bajo 0,70, se dice |
 
 ## 6. Fijación de θ e intervalo del IDC
@@ -195,8 +206,8 @@ Reglas duras: ningún fragmento de un autor en dos lados; `insercion_commit` se 
 
 1. Obtener las probabilidades **calibradas fuera de pliegue** de la validación por autor (nivel 2): cada fragmento tiene una P(IA) producida por un modelo que no lo vio.
 2. Para una rejilla de θ ∈ {0,50, 0,55, …, 0,95}: calcular FP, sensibilidad, F1 y sus intervalos por bootstrap de autores.
-3. Elegir el **menor θ** tal que FP ≤ FP_max [PENDIENTE: 0,15] **y** sensibilidad ≥ S_min [PENDIENTE: 0,60]. Si no existe, relajar FP_max a 0,20 y declararlo; si tampoco, el criterio de §8 lo recoge.
-4. Comprobar FP por tercil de calidad de estilo (proxy de RV-02; terciles de un índice simple: docstring + type hints + uniformidad): si FP en el tercil superior supera al inferior en más de [PENDIENTE: 0,10], θ no basta y se revisan rasgos (más peso al historial) antes de fijarlo.
+3. Elegir el **menor θ** tal que FP ≤ 0,15 **y** sensibilidad ≥ 0,60 (D10). Si no existe, los umbrales no se relajan por cuenta propia: se lleva al asesor la curva FP–sensibilidad (§8).
+4. Comprobar FP por tercil de calidad de estilo (proxy de RV-02; los terciles salen de un índice simple: docstring + type hints + uniformidad). Si el FP del tercil superior supera al del inferior en más de [PENDIENTE: 0,10], θ no basta. Antes de fijarlo se revisan los rasgos de estilo y estructura; el historial ya no está disponible como contrapeso (D9).
 5. Registrar θ en el modelo (`theta_recomendado`), en `Configuracion` y en el ADR; θ **no se vuelve a tocar** después del diagnóstico (ESC-14).
 6. Reportar en prueba las métricas al θ fijado, una sola vez.
 
@@ -216,13 +227,15 @@ El intervalo que ve el estudiante y el que viaja al portal es Wilson; es explíc
 
 | Paso | Especificación |
 | --- | --- |
-| Muestra | 150 fragmentos de repositorios académicos reales (SP-06) y del autor: ~40 candidatos por concepto según las reglas y ~30 que las reglas no asignan a ninguno (para medir omisiones). Se guardan como conjunto dorado versionado |
-| Guía de anotación | Una página con la definición operativa de cada concepto (plan 9.4) y los casos límite decididos: indexar una cadena **no** es estructura de datos; `requests.get(url)` no; recursión mutua **sí** es recursión (aunque la regla v1 no la detecte); `raise` en una función de una línea cuenta como excepciones si la función valida algo [PENDIENTE: cerrar la lista con el asesor] |
+| Muestra | Primero, una **ronda de calibración con 20 fragmentos**. Después, **150 fragmentos con muestreo estratificado** según la salida de las reglas: al menos 30 positivos esperados por concepto, más fragmentos que las reglas no asignan a ninguno, para medir omisiones (D7). Entran también los fragmentos con **indexación indeterminada** (R4), para medir cuántas listas reales esconden. Fuente: repositorios académicos **públicos o propios**, nunca de compañeros, hasta la aprobación del CEI (D12). Se guardan como conjunto dorado versionado |
+| Guía de anotación | La guía de la sección 3.3 del documento del asesor (D5, D6):<br>• Estructuras de datos: lista cerrada de 8 elementos. No cuentan el `append` acumulativo, la comprensión de lista, la indexación de cadenas, el desempaquetado ni la lectura de resultados de bibliotecas.<br>• Recursión: directa, mutua y sobre atributo.<br>• Excepciones: todo `try/except` y todo `raise`.<br>Se entrega a los anotadores como un anexo de una página |
+| Validación de la definición | Tres vías (D5): sílabo de Estructuras de Datos de la USIL y currículo ACM/IEEE; jueces expertos (V de Aiken por regla, en la ficha de validación); anotación (κ) |
+| Limitación técnica | El elemento 6 de ED (aritmética de índices sobre **listas**, no sobre cadenas) exige saber el tipo, y el AST no lo dice. Propuesta: una heurística local. Cuenta como lista si la variable se asignó en la función desde un literal de lista, `list()`, `sorted()` o `.split()`, o si se le aplican métodos de lista. Si no se puede saber, la salida es **`indeterminado`** (aprobado en R4). No asigna el concepto, pero se cuenta en `n_indexacion_indeterminada` por fragmento y por participante, y entra en la muestra de anotación. Si resultan muchos, una regla v2 podrá usar las anotaciones de tipo de los parámetros; **no se implementa ahora** |
 | Anotadores | Dos personas (autor y una segunda con formación en programación), a ciegas respecto a la salida de las reglas |
-| Acuerdo entre anotadores | Kappa de Cohen por concepto; se exige ≥ 0,80 [PENDIENTE]; los desacuerdos se resuelven por discusión y se anota la decisión en la guía |
-| Concordancia regla–consenso | Por concepto: precisión y sensibilidad de la regla, y concordancia global; umbral ≥ 0,90 [PENDIENTE: SP-05] |
+| Acuerdo entre anotadores | Kappa de Cohen por concepto; se exige **≥ 0,70** (D7); los desacuerdos se resuelven por discusión y se anota la decisión en la guía |
+| Concordancia regla–consenso | Por concepto: precisión y recall de la regla frente al consenso (D7). El asesor no fijó un mínimo. Propuesta interna: ≥ 0,90 como objetivo para iterar la regla, no como criterio de rechazo [PENDIENTE] |
 | Taxonomía de errores | Inferencia de tipos (cadenas indexadas), recursión mutua, `raise` trivial, métodos de clases contenedoras, funciones anidadas |
-| Resultado | `conceptos-v1` congelada con su concordancia documentada; el conjunto dorado pasa a ser prueba automatizada (05 §6): cualquier cambio de reglas que baje la concordancia falla |
+| Resultado | `conceptos-v1` congelada con su concordancia documentada. Se versiona también la **definición amplia** (`conceptos-v1-amplia`, que incluye el `append` acumulativo y las comprensiones de lista), para calcular el IDC dos veces en el análisis de sensibilidad (D5); el conjunto dorado pasa a ser prueba automatizada (05 §6): cualquier cambio de reglas que baje la concordancia falla |
 
 ## 8. Criterio go/no-go y plan B
 
@@ -230,16 +243,18 @@ Fecha límite: final de la **semana 7** (plan 9.4: "si no se alcanza en la seman
 
 | Resultado en el conjunto de prueba (una sola evaluación) | Decisión | Qué pasa |
 | --- | --- | --- |
-| F1 ≥ 0,70 **y** FP ≤ FP_max **y** ECE ≤ [PENDIENTE] **y** (si hay ≥ 3 asistentes) caída LOAO ≤ [PENDIENTE] | **GO** | IDC operativo; conceptos débiles por IDC y λ; asignación por sorteo entre débiles (ADR-002) |
-| F1 ≥ 0,70 pero FP > FP_max o ECE alto | **GO condicional** | Subir θ hasta cumplir FP aunque baje la sensibilidad; si FP no baja de 0,20 con ningún θ, pasa a NO-GO. Se declara la limitación |
+| F1 ≥ 0,70 **y** FP ≤ 0,15 **y** sensibilidad ≥ 0,60 (D10), con ECE ≤ [PENDIENTE] y (si hay ≥ 3 asistentes) caída LOAO ≤ [PENDIENTE] | **GO** | IDC operativo; conceptos débiles por IDC y λ; asignación escalonada (ADR-004) |
+| F1 ≥ 0,70, pero ningún θ da FP ≤ 0,15 con sensibilidad ≥ 0,60, o el ECE es alto | **Consulta al asesor** | Se le lleva la curva FP–sensibilidad. Los umbrales de D10 no se relajan por cuenta propia |
 | F1 ≥ 0,70 pero caída LOAO > umbral | **GO con advertencia** | IDC operativo; en la tesis se declara que no generaliza a asistentes no vistos y se recomienda interpretar HE1 con cautela |
 | F1 < 0,70 tras un ajuste (rasgos o modelo) dentro de la semana 7 | **NO-GO** → plan B | Ver abajo |
 
 Plan B (RF-13, plan 9.4, ADR-002):
-1. `exploratorio = true` en el modelo, en cada análisis y en el archivo de resultados; el portal y el informe lo muestran.
-2. El IDC se reporta como **señal con incertidumbre**: siempre con intervalo y con el F1 obtenido; HE1 y OE1 se presentan como exploratorios.
-3. La asignación de conceptos a reforzar se hace **por sorteo entre los conceptos calculables** (≥ m fragmentos), no entre los débiles, de modo que el diseño pre/post y el control intrasujeto (HE4, HG) siguen siendo válidos y la selección sigue independiente del pretest.
-4. Análisis complementario (decidido 2026-11-10): un "índice de delegación por historial" basado solo en los rasgos de proceso (§2.4) como variable alternativa para HE1, declarado como exploratorio. Definición operativa [PENDIENTE: proponer en la estadística; p. ej., proporción de fragmentos cuyo commit de inserción supera un tamaño umbral]. Se calcula también en modo GO, como análisis de sensibilidad.
+1. Se fija `modo = exploratorio` **una sola vez**, en la configuración, antes de `congelar_asignacion`. Queda registrado en cada asignación y en el archivo de resultados, y el portal y el informe lo muestran (R3).
+2. El IDC se reporta como **señal con incertidumbre**, siempre con intervalo y con el F1 obtenido. Consecuencias que deben escribirse en el plan **antes de ver los datos** (R3):
+   - **HE1, HE2b y OE1 pasan a exploratorias**, porque dependen del IDC. HE2b es el análisis de HE2 con el IDC global, que el plan llama "análisis complementario" de HE2.
+   - **HE4 y HE5 siguen siendo confirmatorias**, porque la asignación sigue siendo aleatoria.
+3. La asignación sigue el **modo exploratorio de ADR-004**: no se aplica el caso A; se sortea entre los calculables si hay 2 o más y, si no, entre los 3 conceptos (aprobado en R3). Así el diseño pre/post y el control intrasujeto (HE4, HG) siguen siendo válidos y la selección sigue independiente del pretest.
+4. Análisis complementario (decidido el 2026-11-10 y confirmado por el asesor en D9): un "índice de delegación por historial" basado solo en los rasgos de proceso (§2.4) como variable alternativa para HE1, declarado como exploratorio. Definición operativa [PENDIENTE: proponer en la estadística; p. ej., proporción de fragmentos cuyo commit de inserción supera un tamaño umbral]. Se calcula también en modo GO, como análisis de sensibilidad.
 5. Se registra en un ADR nuevo la fecha, las métricas y la decisión.
 
 El interruptor de plan B es una bandera, no un desarrollo: debe existir desde el primer sprint (RV-10).
@@ -266,10 +281,10 @@ El interruptor de plan B es una bandera, no un desarrollo: debe existir desde el
 - La calibración con Platt es suficiente con cientos de muestras.
 
 **Decisiones que debes tomar**
-1. ~~`ia_editado`~~ Decidido 2026-11-10: excluido del entrenamiento, evaluado aparte. Comunicar al asesor.
-2. Los umbrales [PENDIENTE] que rellenan los spikes: FP_max, S_min, ECE máximo, caída LOAO, F1 mínimo por concepto, umbral de casi duplicado.
-3. ~~Índice de delegación por historial~~ Decidido 2026-11-10: se incluye como variable exploratoria.
-4. Lista de casos límite de la guía de anotación (§7): cerrar con el asesor antes de SP-05.
+1. Resueltas por el asesor (2026-11-21): `ia_editado` (D8), clasificador sin historial (D9), FP y sensibilidad (D10), casos límite y guía (D5, D6), validación de reglas (D7).
+2. Siguen pendientes los umbrales que rellenan los spikes: ECE máximo, caída en LOAO, F1 mínimo por concepto, casi duplicados y tope de la diferencia de FP entre terciles.
+3. La definición operativa del índice por historial (umbral N de líneas; §2.4), antes del diagnóstico.
+4. ~~Modo exploratorio~~ y ~~heurística de tipos~~: resueltos (R3, R4).
 
 **Riesgos**
 - El corpus de C1 puede quedar pequeño (RT-02): el conjunto de prueba por autor tendría intervalos tan anchos que el go/no-go sería un lanzamiento de moneda; SP-02 debe medirlo antes de la sesión real.

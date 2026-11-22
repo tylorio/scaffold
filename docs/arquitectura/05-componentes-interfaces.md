@@ -27,32 +27,33 @@ Cada componente tiene una responsabilidad y un archivo previsto. "Existe" indica
 | A5 | Extractor de rasgos | Convertir fragmento + historial en un vector de rasgos con nombres estables; perplejidad como rasgo enchufable y opcional (SP-07) | `analisis/servicios/caracteristicas.py`, `perplejidad.py` | Sí (sin perplejidad) |
 | A6 | Clasificador | Cargar un modelo versionado y devolver P(IA) por fragmento, calibrada si el modelo lo es | `analisis/servicios/clasificador.py` | Sí (sin calibración) |
 | A7 | Entrenador y evaluador | Entrenar con partición por autor y tarea, calibrar, calcular métricas (precisión, sensibilidad, F1, FP a θ, calibración), empaquetar el modelo con su versión y metadatos | `analisis/servicios/entrenamiento.py` | Parcial |
-| A8 | IDC y asignación | IDC global y por concepto con intervalo de Wilson, estados (débil / no débil / datos insuficientes), sorteo con semilla, bandera exploratoria | `analisis/servicios/idc.py` | Sí |
+| A8 | IDC y asignación | IDC global y por concepto con intervalo de Wilson; estados (débil / no débil / datos insuficientes); sorteo escalonado A/B/C según `modo`; orden AB/BA por bloques permutados con su propio flujo aleatorio (ADR-004) | `analisis/servicios/idc.py` | Parcial (solo caso A) |
 | A9 | Orquestador | Encadenar A1→A8 para un repositorio y devolver un `ResultadoAnalisis` sin tocar la base | `analisis/servicios/flujo.py` | Sí |
 | A10 | Verificador de inclusión | Comprobar ≥ 10 commits y ≥ 5 funciones propias no triviales (RF-02) | `analisis/servicios/inclusion.py` | No |
 | A11 | Persistencia local | Guardar y leer análisis, fragmentos, probabilidades, asignaciones en el almacén local | `analisis/persistencia.py`, `analisis/models.py` | Sí |
 | A12 | Exportador de resultados | Producir el archivo de resultados JSON (esquema `resultados-v1`) sin código, rutas, URLs ni hashes; y CSV locales de auditoría | `analisis/servicios/resultados.py` | Parcial (CSV) |
-| A13 | Comandos | Entrada de línea de comandos del núcleo: `analizar`, `entrenar`, `evaluar`, `verificar_inclusion`, `exportar_resultados`, `corregir_prueba` | `analisis/management/commands/` | No |
+| A14 | Índice por historial | Calcular por participante el índice de delegación por historial a partir de `insercion_commit`, separado del clasificador (D9) | `analisis/servicios/historial.py` | No |
+| A13 | Comandos | Entrada de línea de comandos del núcleo: `analizar`, `congelar_asignacion`, `entrenar`, `evaluar`, `verificar_inclusion`, `exportar_resultados`, `corregir_prueba`, `muestrear_validacion` (D7), `controlar_solapamiento` (D21) | `analisis/management/commands/` | No |
 
 ### Módulo 2: refuerzo (Portal)
 
 | ID | Componente | Responsabilidad única | Archivo previsto | Existe |
 | --- | --- | --- | --- | --- |
-| R1 | Banco de recursos | Recursos por concepto (explicación, ejemplos, ejercicios con casos de prueba) con identificador y versión; se carga desde archivos del repositorio, no se edita en línea | `refuerzo/servicios/contenido.py`, `refuerzo/banco/*.json` | Sí (en código Python) |
-| R2 | Estado de validación | Registrar por recurso si los expertos lo validaron (RF-20) y bloquear la entrega de recursos no validados (RF-22) | `refuerzo/models.py` (`ValidacionRecurso`) | No |
+| R1 | Banco de refuerzo por bloques | 8 bloques por concepto (24 en total). Cada bloque: explicación breve, 1 ejemplo resuelto y 3 ejercicios graduados con casos de prueba; con `concepto`, `semana`, `orden` y `version` (D20, RF-37). Se carga desde archivos del repositorio y no se edita en línea. **Separado del banco de la prueba**, que no sale del perfil local (D21) | `refuerzo/banco/<concepto>/bloque_NN.json` | Parcial (1 bloque por concepto, en código Python) |
+| R2 | Validación y liberación | Registrar por bloque si los expertos lo validaron (RF-20). Entregar solo los bloques validados y ya liberados: 2 por semana, contados desde la fecha de inicio de la intervención (RF-22, RF-37) | `refuerzo/models.py` (`Bloque`), `refuerzo/servicios/liberacion.py` | No |
 | R3 | Control de acceso al refuerzo | Decidir, para participante y concepto, si el material está disponible: reforzado, control (bloqueado), liberado tras el postest, sin asignar (RF-19) | `refuerzo/servicios/acceso.py` | Parcial (403 para control) |
 | R4 | Cliente del ejecutor | Enviar código y casos al Ejecutor y traducir su respuesta; aplicar tiempo límite del lado del portal | `refuerzo/servicios/ejecutor.py` | Parcial (subproceso local) |
-| R5 | Registro de uso | Guardar aperturas e intentos con fecha, resultado y versión del recurso (RF-18) | `refuerzo/persistencia.py`, `refuerzo/models.py` | Sí (sin versión de recurso) |
+| R5 | Registro de uso | Guardar aperturas e intentos con fecha, resultado, `bloque_id` y versión; los intentos sobre el control bloqueado; la longitud y el hash de la solución, sin su código. Calcular la adherencia (RF-18, RF-37) | `refuerzo/persistencia.py`, `refuerzo/models.py` | Parcial (sin bloque ni versión; guarda el código) |
 | R6 | Vistas de refuerzo | Páginas del estudiante: mis conceptos, material, envío de solución, resultado | `refuerzo/views.py`, `templates/refuerzo/` | Sí |
 
 ### Módulo 3: pruebas (Núcleo, por lotes)
 
 | ID | Componente | Responsabilidad única | Archivo previsto | Existe |
 | --- | --- | --- | --- | --- |
-| T1 | Banco de pruebas A/B | Enunciados T1–T3 de cada forma con sus casos de prueba, versionados | `pruebas/banco/forma_A.json`, `forma_B.json` | No |
+| T1 | Banco de pruebas A/B | Enunciados T1–T3 de cada forma, con sus casos de prueba y la **solución de referencia de cada ítem**, versionados. La referencia sirve para calcular `cc_ref` y `lin_ref` (D1) | `pruebas/banco/forma_A.json`, `forma_B.json` | No |
 | T2 | Corrector de corrección funcional | Ejecutar cada solución contra los casos de su ítem y calcular el porcentaje superado (RF-24), reutilizando el corredor del Ejecutor en local | `pruebas/servicios/corrector.py` | No |
 | T3 | Métricas de calidad | Complejidad ciclomática media por función y longitud media de funciones de cada solución (RF-25), con radon | `pruebas/servicios/calidad.py` | No (radon ya en A3) |
-| T4 | Exportador de puntajes | CSV por participante, momento, forma e ítem para la base codificada externa (RF-23) | `pruebas/servicios/exportacion.py` | No |
+| T4 | Exportador de puntajes | CSV en formato largo: una fila por participante × concepto × momento, con `forma`, `orden`, `T_pct`, `cc_sol`, `cc_ref`, `lin_sol` y `lin_ref` (D17). **No lleva** `reforzado`, `caso` ni la semilla, para mantener ciegos a los calificadores (D3). La unión con la asignación y con Q se hace después (06 §2) (RF-23) | `pruebas/servicios/exportacion.py` | No |
 
 ### Plataforma
 
@@ -78,15 +79,17 @@ Cada etapa recibe y devuelve tipos concretos. El orden difiere en un punto del p
 | # | Etapa | Componente | Entrada | Salida | Nota |
 | --- | --- | --- | --- | --- | --- |
 | 1 | Ingesta del repositorio | A1 | `origen: str` (ruta o URL), `tiempo_limite_s` | `Repositorio` (contexto): `archivos()`, `commit_head`, `n_commits`, `n_autores`, `tiene_historial` | El clon se borra al salir del contexto |
-| 2 | Verificación de inclusión | A10 | `Repositorio` | `ResultadoInclusion(n_commits, n_funciones, cumple, motivos)` | Se ejecuta antes de gastar en rasgos; puede detener el análisis |
+| 2 | Verificación de inclusión | A10 | `Repositorio` | `ResultadoInclusion(n_commits, n_funciones, cumple, motivos)` | Dos momentos. El mínimo de commits se comprueba al abrir. El mínimo de funciones **propias** se comprueba **después del filtro por autor** (etapa 6c, D19). Las dos pueden detener el análisis. Un repositorio sin historial no pasa el mínimo de commits, así que el filtro siempre tiene autoría |
 | 3 | Filtrado de archivos | A2 | `Iterable[ArchivoFuente]`, `ReglasFiltro` | `Iterator[ArchivoFuente]` | Reglas versionadas (`FILTROS_VERSION`) |
 | 4 | Parsing y extracción | A3 | `ArchivoFuente` (ruta, contenido) | `list[Fragmento]`; `ErrorSintaxis` por archivo | Un fragmento por función o método; anidadas se funden en la envolvente |
 | 5 | Asignación de concepto | A4 | `Fragmento.nodo` (AST) | `frozenset[str]` ⊆ {`recursion`, `estructuras_datos`, `excepciones`} | `REGLAS_CONCEPTO_VERSION` |
-| 6 | Historial por fragmento | A1 | `Repositorio`, ruta, líneas | `insercion_commit: int | None` | `None` sin historial; el imputador del modelo lo trata |
-| 7 | Rasgos | A5 | `codigo`, `insercion_commit`, `Perplejidad | None` | `VectorRasgos` (orden = `NOMBRES_CARACTERISTICAS`) | Perplejidad solo si el modelo fue entrenado con ella |
+| 6 | Historial por fragmento | A1 | `Repositorio`, ruta, líneas | `insercion_commit: int | None` | `None` sin historial. **No entra al clasificador (D9)**: alimenta solo el índice de delegación por historial (A14) |
+| 6c | Filtro por autor | A1 | `Fragmento`, autor del commit mayoritario (en memoria), `hashes_correos` del participante, sal local | `bool` propio; contador `n_fragmentos_otros_autores` | HMAC-SHA256 en memoria; el correo de terceros no se guarda ni hasheado (D19, RF-36). Los ajenos se descartan antes de clasificar |
+| 7 | Rasgos | A5 | `codigo`, `Perplejidad | None` | `VectorRasgos` (orden = `NOMBRES_CARACTERISTICAS`) | Solo estilo y estructura (`rasgos-v2`). La perplejidad, solo si el modelo se entrenó con ella |
 | 8 | Probabilidad calibrada | A6 | `list[VectorRasgos]`, `ModeloCargado` | `list[float]` P(IA) ∈ [0,1] | `ModeloCargado.calibrado` dice si pasó por calibración (SP-03) |
 | 9 | IDC con intervalo | A8 | `Iterable[(p_ia, conceptos)]`, `Parametros(theta, lambda_, m)` | `ResultadoIDC(idc_global, ic95, n, n_ia, conceptos: tuple[ResultadoConcepto])` | Wilson al 95 %; `estado` por concepto |
-| 10 | Asignación de conceptos a reforzar | A8 | `debiles`, `semilla`, `exploratorio: bool` | `Reparto(reforzados, control, comparable, exploratorio)` | Sorteo con semilla; modo exploratorio = sorteo entre calculables (RF-13) [regla exacta: RV-03, asesor] |
+| 9b | Índice de delegación por historial | A14 | `Iterable[insercion_commit]`, umbral N | `IndiceHistorial(valor | None, n_con_historial)` | Exploratorio para HE1 (D9); `historial-v1`; vacío si no hay historial |
+| 10 | Asignación de conceptos y orden de formas | A8 | Todos los `ResultadoIDC`, `semilla_base`, `modo` | `Reparto(reforzados, control, caso, exploratorio, semilla)` por participante y `orden` AB/BA | **No ocurre dentro de `analizar`.** Es un paso por lotes (`congelar_asignacion`) que se ejecuta cuando todos tienen diagnóstico, antes del pretest (ADR-004; D2, D3, R2, R3) |
 | 11 | Persistencia | A11 | `ResultadoAnalisis`, `Participante`, `Parametros`, `ModeloCargado` | `Analisis` (con `analisis_id` UUID) | Transacción única |
 | 12 | Exportación | A12 | `Iterable[Analisis]` | `ArchivoResultados` (JSON) | Sin código, rutas, URLs ni hashes |
 
@@ -162,7 +165,7 @@ class ResultadoIDC:
 class Reparto:
     reforzados: tuple[str, ...]
     control: tuple[str, ...]
-    comparable: bool
+    caso: Literal["A", "B", "C"]   # ADR-004; reemplaza a `comparable`
     exploratorio: bool
     semilla: int
 
@@ -223,13 +226,21 @@ REGLAS_CONCEPTO_VERSION: Final = "conceptos-v1"
 def detectar_conceptos(funcion: ast.FunctionDef | ast.AsyncFunctionDef) -> frozenset[str]: ...
 
 # A5 analisis/servicios/caracteristicas.py, perplejidad.py
-RASGOS_VERSION: Final = "rasgos-v1"
+RASGOS_VERSION: Final = "rasgos-v2"   # sin historial (D9)
 NOMBRES_CARACTERISTICAS: Final[tuple[str, ...]]
 class Perplejidad(Protocol):
     version: str
     def __call__(self, codigo: str) -> float: ...
-def extraer_caracteristicas(codigo: str, insercion_commit: int | None,
+def extraer_caracteristicas(codigo: str,
                             perplejidad: Perplejidad | None = None) -> VectorRasgos: ...
+
+# A14 analisis/servicios/historial.py
+HISTORIAL_VERSION: Final = "historial-v1"
+@dataclass(frozen=True)
+class IndiceHistorial:
+    valor: float | None          # None si ningún fragmento tiene historial
+    n_con_historial: int
+def indice_por_historial(inserciones: Iterable[int | None], *, umbral_lineas: int) -> IndiceHistorial: ...
 
 # A6 analisis/servicios/clasificador.py
 @dataclass(frozen=True)
@@ -265,11 +276,14 @@ def evaluar(modelo: ModeloCargado, conjunto: Path, theta: float) -> Mapping[str,
 # A8 analisis/servicios/idc.py
 def calcular_resultados(fragmentos: Iterable[tuple[float, Iterable[str]]],
                         parametros: Parametros) -> ResultadoIDC: ...
-def repartir_conceptos(candidatos: Iterable[str], semilla: int, *,
+def repartir_conceptos(resultado: ResultadoIDC, semilla: int, *,
                        exploratorio: bool) -> Reparto:
-    """Sorteo con semilla; máximo 2 reforzados y al menos 1 control.
-    Con 1 candidato: lo refuerza y comparable=False.
-    exploratorio=True: los candidatos son los calculables, no los débiles (RF-13)."""
+    """Asignación escalonada (ADR-004): elegibles = débiles (A) | calculables (B) | los 3 (C);
+    hasta 2 reforzados y al menos 1 de control. exploratorio=True omite el caso A."""
+def derivar_semilla(semilla_base: int, *partes: str) -> int: ...   # SHA-256, nunca hash() de Python
+def sortear_orden(codigos: Sequence[str], semilla_base: int, *,
+                  tamano_bloque: Literal[2, 4] = 4) -> dict[str, Literal["AB", "BA"]]: ...
+    # bloques permutados en el orden de los códigos; |#AB − #BA| ≤ 1 (R2)
 
 # A9 analisis/servicios/flujo.py
 def analizar_repositorio(origen: str, modelo: ModeloCargado, parametros: Parametros,
@@ -291,20 +305,24 @@ def validar_sin_datos_prohibidos(documento: dict) -> list[str]:  # rutas, URLs, 
 
 # T2–T4 pruebas/servicios/
 def corregir_item(solucion: str, item: ItemPrueba, *, tiempo_limite_s: float = 5.0) -> ResultadoItem: ...
-def metricas_calidad(solucion: str) -> MetricasCalidad:   # cc_media, longitud_media, n_funciones
-def corregir_prueba(soluciones: Path, forma: Literal["A", "B"], banco: BancoPruebas) -> list[PuntajeItem]: ...
+def metricas_calidad(solucion: str) -> MetricasCalidad:   # cc, lineas, n_funciones (se aplica a la solución y a la referencia)
+def corregir_prueba(soluciones: Path, forma: Literal["A", "B"], momento: Literal["pre", "post"],
+                    banco: BancoPruebas) -> list[PuntajeItem]: ...   # sin datos de asignación (D3)
 ```
 
 ### 3.3 Comandos del Núcleo (`manage.py`, perfil local)
 
 | Comando | Argumentos | Efecto | Salida | Códigos de salida |
 | --- | --- | --- | --- | --- |
-| `analizar` | `--participante P01 --repo <ruta|url> [--rehacer] [--sin-perplejidad]` | Ejecuta el pipeline con los parámetros vigentes y el modelo configurado; guarda el análisis y sortea la asignación | Resumen en consola: inclusión, n, IDC por concepto con IC, asignación, `analisis_id` | 0 ok; 2 no cumple inclusión; 3 repositorio inaccesible; 4 sin funciones; 5 asignación congelada (usar `--rehacer`); 6 modelo no disponible |
+| `analizar` | `--participante P01 --repo <ruta|url> [--sin-perplejidad]` | Ejecuta el pipeline con los parámetros vigentes y el modelo configurado, y guarda el análisis. **No sortea.** Si el participante ya tenía un análisis y la asignación no está congelada, lo reemplaza y lo deja en auditoría (R5, RF-40) | Resumen en consola: inclusión, n propios, n de otros autores, indeterminados, IDC por concepto con IC, `analisis_id` | 0 ok; 2 no cumple inclusión; 3 repositorio inaccesible; 4 sin funciones propias; 5 asignación ya congelada: no se puede reanalizar; 6 modelo no disponible |
+| `congelar_asignacion` | `--semilla-base N [--tamano-bloque 2|4]` | Exige que `modo` esté fijado y que todos los participantes activos tengan diagnóstico. En una transacción: sortea los conceptos (A/B/C) de cada uno y el orden AB/BA de toda la muestra, y registra la fecha de congelación. Se ejecuta una sola vez | Tabla de casos y órdenes; conteo #AB/#BA | 0; 10 falta algún diagnóstico o `modo`; 11 ya congelada |
+| `muestrear_validacion` | `--n 150 --calibracion 20 --semilla N --salida <carpeta>` | Muestra estratificada según la salida de las reglas (≥ 30 positivos esperados por concepto, más los indeterminados y los no asignados), exportada a ciegas para los anotadores (D7, R4) | Archivos para anotar, sin la salida de las reglas | 0 |
+| `controlar_solapamiento` | `--banco-prueba <dir> --banco-refuerzo <dir>` | Compara los enunciados y la similitud de AST de las soluciones de referencia y lista pares sospechosos (D21) | Tabla de pares para revisión manual | 0; 12 hay pares sobre el umbral |
 | `entrenar` | `--corpus datos/corpus.jsonl --salida datos/modelos/<v>.joblib --version <v> --particion por_autor|por_tarea --semilla N [--calibrar] [--perplejidad] [--demo]` | Entrena, evalúa en el conjunto de prueba de la partición, empaqueta | Métricas y ruta; registro en `datos/experimentos.jsonl` | 0; 7 corpus inválido |
 | `evaluar` | `--modelo <ruta> --conjunto <jsonl> --theta X [--asistente-fuera <nombre>]` | Métricas en un conjunto externo; FP a θ; curva para fijar θ | Tabla y CSV de la curva | 0; 6 |
 | `verificar_inclusion` | `--repo <ruta|url>` | Solo la etapa 2, sin rasgos ni modelo | `cumple`, motivos | 0 cumple; 2 no cumple; 3 |
 | `exportar_resultados` | `--salida resultados.json [--participantes P01,P02]` | Escribe el archivo de resultados del último análisis por participante y lo valida contra datos prohibidos | Archivo + resumen | 0; 8 datos prohibidos detectados (no escribe) |
-| `corregir_prueba` | `--forma A|B --momento pre|post --soluciones <carpeta> --salida puntajes.csv` | Corre T1–T3 y métricas de calidad; una fila por participante e ítem | CSV para la base externa | 0; 9 solución ilegible (sigue con las demás, lo reporta) |
+| `corregir_prueba` | `--forma A|B --momento pre|post --soluciones <carpeta> --salida puntajes.csv` | Corre T1–T3 y las métricas de calidad de la solución y de la referencia. Escribe una fila por participante × concepto × momento, sin columnas de asignación (D3, D17) | CSV para la base externa | 0; 9 solución ilegible (sigue con las demás, lo reporta) |
 | `exportar_banco` | `--salida banco.json` | Serializa el banco de recursos con versión y hash, para importarlo en el portal | Archivo | 0 |
 
 Convención: `--repo` acepta ruta local o URL **sin** usuario, token, parámetros ni fragmento; si los trae, código 3 y no se guarda nada.
@@ -317,18 +335,18 @@ Autenticación: estudiante por **código de acceso** (distinto del código anón
 | --- | --- | --- | --- | --- | --- |
 | GET/POST | `/acceso/` | Público | código de acceso | Sesión de estudiante; redirige a `/mi/` | 400 código inválido; 429 tras N intentos [PENDIENTE] |
 | GET | `/mi/` | Estudiante | — | Sus conceptos: reforzado / control (bloqueado) / liberado; sin IDC numérico [decisión: RF-32, ver nota] | 403 |
-| GET | `/mi/refuerzo/<concepto>/` | Estudiante | — | Material del recurso validado vigente; registra apertura | 403 control no liberado o sin asignar; 404 recurso no validado |
+| GET | `/mi/refuerzo/<concepto>/` | Estudiante | — | Bloques validados y ya liberados del concepto (2 por semana, D20); registra la apertura con `bloque_id` y versión | 403 control no liberado o sin asignar (se registra el intento); 404 sin bloques liberados |
 | POST | `/mi/refuerzo/<concepto>/ejercicio/<ejercicio_id>/` | Estudiante | `codigo` (texto, ≤ 20 KB) | Resultado por caso, pasados/total, aviso si no usa el concepto | 400 vacío o demasiado largo; 403; 503 ejecutor no disponible; 504 tiempo excedido |
 | GET | `/mi/informe/` | Estudiante | — | Informe personal (solo tras liberar, al final del estudio) | 403 antes de la liberación |
 | GET/POST | `/gestion/participantes/` | Investigador | código anónimo, código de acceso | Lista y alta | 400 código no cumple patrón |
 | POST | `/gestion/importar/` | Investigador | archivo de resultados JSON | Resumen: creados, actualizados, rechazados; registro en auditoría | 400 esquema inválido; 409 intento de cambiar una asignación ya importada sin `rehacer`; 422 datos prohibidos detectados |
-| POST | `/gestion/recursos/<recurso_id>/validar/` | Investigador | `validado: bool`, `n_jueces`, `fecha` | Estado del recurso | 404 |
+| POST | `/gestion/bloques/<bloque_id>/validar/` | Investigador | `validado: bool`, `n_jueces`, `fecha` | Estado del bloque | 404 |
 | POST | `/gestion/liberar-control/` | Investigador | fecha de liberación | Habilita el material de control para todos; auditoría | 409 ya liberado |
 | GET | `/gestion/exportar/<tabla>.csv` | Investigador | `tabla ∈ {participantes, analisis, intentos, aperturas}` | CSV por código anónimo | 404 |
 | POST | `/gestion/participantes/<codigo>/borrar/` | Investigador | confirmación | Borra todo lo del participante en el portal; auditoría; recuerda borrar en local | 404 |
 | GET | `/gestion/auditoria/` | Investigador | — | Registro de importaciones, liberaciones, borrados, rehechos | — |
 
-Nota sobre `/mi/`: el plan (9.6) y RF-32 piden no presentar el IDC como prueba. Propuesta: el estudiante **no ve su IDC numérico durante la intervención**, solo qué conceptos trabaja; el valor con su intervalo aparece en el informe final (RF-31, RF-34) con el texto de interpretación. [PENDIENTE: confirmar con el asesor; afecta también la ética de la retroalimentación.]
+Nota sobre `/mi/`, decidida por el asesor (D11): el estudiante **no ve su IDC en las semanas 9–12**, solo los conceptos que trabaja. El IDC con su intervalo aparece en el informe personal (RF-31, RF-34), con el texto de interpretación, **después del postest**. El portal no muestra el IDC hasta que se registra la liberación.
 
 ### 3.5 Interfaz del Ejecutor (contenedor, red interna)
 
@@ -347,10 +365,10 @@ Garantías del contrato (se prueban en SP-04 y F8): sin red saliente, sistema de
   "generado": "2026-05-04T15:20:00-05:00",
   "sistema": {"version_codigo": "v0.3.0"},
   "versiones": {"modelo": "real-v1", "reglas_concepto": "conceptos-v1",
-                "filtros": "filtros-v1", "rasgos": "rasgos-v1"},
+                "filtros": "filtros-v1", "rasgos": "rasgos-v2", "historial": "historial-v1"},
   "modelo": {"es_demo": false, "calibrado": true, "f1_prueba": 0.74},
   "parametros": {"theta": 0.62, "lambda": 0.5, "m": 5},
-  "exploratorio": false,
+  "modo": "confirmatorio",
   "participantes": [
     {
       "codigo": "P01",
@@ -358,6 +376,7 @@ Garantías del contrato (se prueban en SP-04 y F8): sin red saliente, sistema de
       "fecha": "2026-05-04T14:55:00-05:00",
       "inclusion": {"n_commits": 14, "n_funciones_propias": 11, "cumple": true},
       "n_fragmentos": 16, "n_ia": 7, "n_triviales": 2, "n_autores": 1,
+      "n_fragmentos_otros_autores": 0, "n_indexacion_indeterminada": 3,
       "idc_global": 0.4375, "ic95": [0.23, 0.67],
       "conceptos": [
         {"concepto": "recursion", "n": 4, "n_ia": 4, "idc": null, "ic95": null,
@@ -369,7 +388,9 @@ Garantías del contrato (se prueban en SP-04 y F8): sin red saliente, sistema de
       ],
       "asignacion": {"semilla": 1734021, "debiles": ["estructuras_datos", "excepciones"],
                      "reforzados": ["estructuras_datos"], "control": ["excepciones"],
-                     "comparable": true}
+                     "caso": "A", "orden": "AB", "modo": "confirmatorio",
+                     "congelada_en": "2026-05-04T14:55:00-05:00"},
+      "indice_historial": {"valor": 0.31, "n_con_historial": 16, "version": "historial-v1"}
     }
   ]
 }
@@ -486,22 +507,27 @@ sequenceDiagram
     Inv->>Nuc: manage.py verificar_inclusion --repo
     Nuc-->>Inv: cumple / motivos
     Inv->>Nuc: manage.py analizar --participante P01 --repo
-    Nuc->>Nuc: clonar → filtrar → extraer → conceptos → rasgos → P(IA) → IDC → sorteo
-    Nuc->>Alm: guardar análisis, fragmentos, asignación (analisis_id)
-    Nuc-->>Inv: IDC por concepto con IC, reforzados, control
+    Nuc->>Nuc: clonar → filtrar → extraer → conceptos → filtro por autor → rasgos → P(IA) → IDC
+    Nuc->>Alm: guardar análisis y fragmentos (analisis_id), reemplaza el anterior si aún no se congeló
+    Nuc-->>Inv: IDC por concepto con IC
+    Note over Inv,Alm: Con todos los diagnósticos listos y el modo fijado tras el go/no-go
+    Inv->>Nuc: manage.py congelar_asignacion --semilla-base N
+    Nuc->>Alm: conceptos A/B/C por participante y orden AB/BA por bloques, con fecha de congelación
     Inv->>Nuc: manage.py exportar_resultados --salida resultados.json
     Nuc->>Nuc: validar sin datos prohibidos
     Inv->>Por: POST /gestion/importar/ (resultados.json)
     Por->>Por: validar esquema, crear asignaciones inmutables, auditoría
-    Est->>Ext: Pretest forma A (sesión supervisada, fuera del sistema)
-    Inv->>Nuc: manage.py corregir_prueba --forma A --momento pre
+    Note over Inv,Est: La asignación ya está congelada antes de esta sesión (D3)
+    Est->>Ext: Pretest en la forma que indique su orden AB/BA (D16), en sesión supervisada fuera del sistema
+    Inv->>Nuc: manage.py corregir_prueba --forma A|B --momento pre
     Nuc-->>Ext: puntajes.csv (T1–T3, calidad) → base codificada
 
     Note over Inv,Exp: Semanas 5–8 · recursos y validación
     Inv->>Nuc: manage.py exportar_banco
-    Inv->>Exp: Ficha de validación por recurso (externa)
+    Inv->>Nuc: manage.py controlar_solapamiento (banco de prueba frente a banco de refuerzo, D21)
+    Inv->>Exp: Ficha de validación por bloque (externa, con la pregunta de no solapamiento)
     Exp-->>Inv: Calificaciones (pertinencia, claridad, corrección, nivel)
-    Inv->>Por: POST /gestion/recursos/<id>/validar/
+    Inv->>Por: POST /gestion/bloques/<id>/validar/
     
     Note over Est,Eje: Semanas 9–12 · refuerzo
     Est->>Por: POST /acceso/ (código de acceso)
@@ -511,14 +537,14 @@ sequenceDiagram
     Est->>Por: POST .../ejercicio/<id>/ (solución)
     Por->>Eje: POST /ejecutar (código, casos, límite)
     Eje-->>Por: casos, pasados/total
-    Por->>Por: R5 registra intento (versión del recurso)
+    Por->>Por: R5 registra intento (bloque y versión, longitud y hash de la solución)
     Por-->>Est: resultado y retroalimentación
     Est->>Por: GET /mi/refuerzo/excepciones/ (concepto de control)
     Por-->>Est: 403 bloqueado hasta el postest (intento registrado)
 
     Note over Est,Ext: Semana 13 · postest
-    Est->>Ext: Postest forma B (sesión supervisada)
-    Inv->>Nuc: manage.py corregir_prueba --forma B --momento post
+    Est->>Ext: Postest en la otra forma (sesión supervisada)
+    Inv->>Nuc: manage.py corregir_prueba --forma B|A --momento post
     Nuc-->>Ext: puntajes.csv
     Inv->>Por: POST /gestion/liberar-control/
     Est->>Por: GET /mi/refuerzo/excepciones/ (ahora liberado)
@@ -538,22 +564,24 @@ sequenceDiagram
 | A2 Filtros | Cada regla de exclusión; versión expuesta | — | — |
 | A3 Extractor | Funciones, métodos, anidadas, triviales, errores de sintaxis, codificaciones raras | — | — |
 | A4 Conceptos | Un caso positivo y uno negativo por regla; casos límite documentados en SP-05 (indexación de cadenas, recursión mutua, `raise` trivial) | Conjunto dorado de SP-05: la concordancia no baja de la medida al congelar `conceptos-v1` | — |
-| A5 Rasgos | Cada rasgo con un fragmento donde el valor es conocido; `NaN` sin historial; orden de `NOMBRES_CARACTERISTICAS` estable | Modelo entrenado con `rasgos-v1` rechaza vectores de otra versión | — |
+| A5 Rasgos | Cada rasgo con un fragmento donde el valor es conocido; ningún rasgo de historial en el vector (D9); orden de `NOMBRES_CARACTERISTICAS` estable | Un modelo entrenado con `rasgos-v2` rechaza vectores de otra versión | — |
+| A14 Índice por historial | Valor con y sin historial; umbral N en los bordes | — | — |
 | A6 Clasificador | Carga, versión, `calibrado`, incompatibilidad de rasgos | El paquete joblib contiene todos los metadatos del esquema de versionado (sección 7) | — |
 | A7 Entrenador | Partición por autor no mezcla autores; semilla reproduce métricas | `evaluar` sobre un conjunto fijo produce las mismas cifras en dos corridas | Entrenar con el corpus demo de punta a punta |
-| A8 IDC | Wilson en 0/n, n/n, n < m; sorteo con semilla reproducible; 1, 2 y 3 débiles; modo exploratorio | — | — |
+| A8 IDC | Wilson en 0/n, n/n, n < m; casos A, B y C en sus bordes; modo exploratorio sin caso A; semilla reproducible; `sortear_orden` con |#AB − #BA| ≤ 1, reproducible en otro proceso e independiente de la semilla de conceptos | — | — |
+| A1 Filtro por autor | Repositorio de ejemplo con dos autores: solo entran las funciones del participante; ningún correo, en claro o hasheado de terceros, en la base ni en los CSV | — | `analizar` sobre un repositorio de dos autores |
 | A9 Orquestador | — | `ResultadoAnalisis` completo con un modelo simulado | `analizar` sobre `demo_repo/` con el modelo demo |
 | A10 Inclusión | Umbrales en el borde (9/10 commits, 4/5 funciones) | — | Con `demo_repo/` |
-| A11 Persistencia | Transacción atómica; `AsignacionCongelada`; rehacer deja auditoría | — | Comando `analizar` dos veces: segunda falla sin `--rehacer` |
+| A11 Persistencia | Transacción atómica; reanalizar antes de congelar reemplaza y deja auditoría; después de congelar se rechaza (RF-40) | — | `analizar`, `congelar_asignacion` y de nuevo `analizar`: el tercero falla con código 5 |
 | A12 Resultados | Detección de datos prohibidos (rutas Windows y Unix, URLs, correos, SHA) | **Esquema JSON `resultados-v1`**: fixture compartida con P2 | `exportar_resultados` → `importar` en una base de portal vacía |
 | A13 Comandos | Códigos de salida | Ayuda y argumentos estables | Flujo completo con `demo_repo/` |
 | T1–T4 Pruebas | Porcentaje de casos; métricas de radon; soluciones ilegibles | Formato del CSV de puntajes acordado con la base externa [PENDIENTE: columnas, F6] | Corregir una carpeta de soluciones de ejemplo |
 | P1 Acceso | Patrón de código; código de acceso no reutilizable; sesiones | — | Login de estudiante e investigador |
 | P2 Importador | Esquema inválido; datos prohibidos; idempotencia; 409 sin rehacer | Misma fixture que A12 | Importar y comprobar vistas del estudiante |
-| R1–R2 Banco y validación | Carga del banco; recurso no validado no se entrega | Esquema del banco exportado (`exportar_banco`) | — |
+| R1–R2 Banco y validación | Carga de los bloques; un bloque no validado o aún no liberado no se entrega; 2 por semana desde la fecha de inicio | Esquema del banco exportado (`exportar_banco`) | `controlar_solapamiento` sobre un par conocido |
 | R3 Acceso al refuerzo | Matriz condición × liberado → permitido/403 | — | — |
 | R4 Cliente ejecutor | Tiempo límite del lado del portal; errores 503/504 | **Contrato 3.5** con un ejecutor simulado y con el real | Portal + Ejecutor en contenedor: batería hostil de SP-04 |
-| R5 Registro de uso | Apertura e intento con versión del recurso | — | — |
+| R5 Registro de uso | Apertura e intento con bloque y versión; sin código de la solución; intento sobre el control bloqueado registrado; adherencia | — | — |
 | P3 Export. CSV | Columnas, sin código ni rutas, formato del código anónimo | Encabezados estables (los consume la estadística) | — |
 | P4 Informe | Texto de interpretación con intervalo; sin IDC antes de la liberación | — | — |
 | P5 Borrado | Cero registros con el código tras borrar | — | Borrar y exportar: el participante no aparece |
@@ -571,10 +599,13 @@ Objetivo (regla del prompt): dado cualquier IDC o puntaje, poder recomputarlo. L
 | Reglas de concepto | `REGLAS_CONCEPTO_VERSION` en `conceptos.py` | `Analisis.reglas_version`; `versiones.reglas_concepto` | Cualquier cambio en una regla exige subir la versión; una prueba compara contra el conjunto dorado de SP-05 |
 | Filtros de archivos | `FILTROS_VERSION` | Igual | Igual |
 | Rasgos | `RASGOS_VERSION` + `NOMBRES_CARACTERISTICAS` | Dentro del modelo y en el análisis; un modelo rechaza rasgos de otra versión | Al añadir o quitar un rasgo (por ejemplo, perplejidad) |
-| Semilla del sorteo | Generada por análisis | `Asignacion.semilla`; en el archivo de resultados | Nunca; rehacer genera otra y deja auditoría |
+| Semillas del sorteo | Una semilla base del estudio, dada a `congelar_asignacion`. Las semillas de conceptos (por participante) y de orden (de la muestra) se derivan con SHA-256 | `Asignacion.semilla`, `orden`, `caso`, `modo` y la fecha de congelación; en el archivo de resultados | Nunca: la congelación ocurre una sola vez |
 | Commit del repositorio analizado | `Analisis.commit_head` (solo local) | Referenciado por `analisis_id`; **no** sale al portal | — |
-| Banco de recursos | Cada recurso con `id` y `version`; el banco completo con `hash` al exportar | `IntentoEjercicio.recurso_version`, `AperturaRefuerzo.recurso_version`; `ValidacionRecurso` apunta a una versión concreta | Cualquier corrección de un recurso sube su versión y exige revalidar (RF-22) |
-| Banco de pruebas A/B | `forma_A.json` y `forma_B.json` con `version` | En cada fila del CSV de puntajes | Al ajustar un enunciado tras el piloto |
+| Banco de refuerzo | Cada bloque con `id` y `version`; el banco completo con `hash` al exportar | `bloque_id` y versión en cada intento y apertura; la validación apunta a una versión concreta | Cualquier corrección de un bloque sube su versión y exige revalidarlo (RF-22) |
+| Banco de pruebas A/B | `forma_A.json` y `forma_B.json` con `version`, incluidas las soluciones de referencia | En cada fila del CSV de puntajes | Al ajustar un enunciado o una referencia tras el piloto |
+| Índice por historial | `HISTORIAL_VERSION` y umbral N | En el archivo de resultados (`indice_historial.version`) | Al cambiar N o la definición |
+| Fórmula del puntaje (D1) | Script de análisis estadístico con versión, fuera del sistema | En el informe de resultados | Se fija antes del pretest |
+| Definición amplia de conceptos (D5) | `conceptos-v1-amplia` | Segundo cálculo del IDC, solo para el análisis de sensibilidad | Junto con `conceptos-v1` |
 | Esquema de resultados | `ESQUEMA_RESULTADOS = "resultados-v1"` | Campo `esquema`; el importador rechaza versiones desconocidas | Al cambiar campos |
 | Código del sistema | Etiqueta de Git (`v0.x.y`) | `sistema.version_codigo` en el archivo de resultados; `Analisis.codigo_version` | Cada despliegue o cada corrida de análisis |
 | Corpus | `hash_corpus` (SHA-256 del JSONL) + fecha | Dentro del modelo | Cada vez que se añade o quita una muestra |
@@ -584,15 +615,15 @@ Procedimiento de reproducción (se documenta en F7 y se prueba en F10): `manage.
 ---
 
 **Supuestos**
-- El estudiante no ve su IDC numérico durante la intervención, solo en el informe final (pendiente del asesor).
+- El estudiante no ve su IDC durante la intervención, solo en el informe final (decidido por el asesor, D11).
 - El banco de recursos se escribe en archivos del repositorio y se importa; no hay editor en línea.
 - El código de acceso del estudiante se entrega en persona; no hay correo.
 - Los modelos `Participante` y `Auditoria` se comparten entre perfiles (misma app `plataforma`), con tablas separadas en cada base.
 
 **Decisiones que debes tomar**
-1. Confirmar con el asesor que el estudiante no ve el IDC durante la intervención (3.4, nota de `/mi/`).
-2. Regla exacta del modo exploratorio (RF-13): sorteo entre los conceptos calculables, o entre los tres (RV-03).
-3. Columnas del CSV de puntajes T1–T3 que espera tu base externa (T4), para fijarlas en F6.
+1. ~~IDC durante la intervención~~: resuelto (D11).
+2. Modo exploratorio de la asignación: hay una propuesta en ADR-004, pendiente de que el asesor la confirme.
+3. ~~Columnas del CSV~~: resuelto (D17; 06 §2).
 4. Límite de intentos de acceso y tamaño máximo del código (20 KB propuesto) [PENDIENTE].
 
 **Riesgos**

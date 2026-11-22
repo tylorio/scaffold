@@ -2,6 +2,12 @@
 
 Revisado el 21 de noviembre de 2026: se corrigieron errores de la primera versión (número de fases, relación de spikes con riesgos, fecha del go/no-go y cifras que no tenían fuente).
 
+**Actualización del 21 de noviembre:** el asesor respondió las 9 preguntas con 18 decisiones (`docs/decisiones/decisiones-asesor-2026-11-21.md`).
+- ADR-002 está aprobada y ADR-004 la amplía.
+- ADR-003 está aceptada.
+- Los documentos 05, 06 y 07 ya incorporan esas decisiones.
+- La sección "Decisiones que esperan al asesor" queda como registro de lo que se preguntó.
+
 ## Resumen
 
 - **Arquitectura:** 7 de las 12 fases del protocolo están completas (F1 a F7). Hay 3 ADR.

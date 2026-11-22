@@ -1,6 +1,6 @@
 # ADR-002: Regla de selección de conceptos a reforzar: sorteo entre los débiles con semilla registrada
 
-- Estado: aceptada (2026-11-09, por el autor; falta comunicarla al asesor)
+- Estado: aceptada (2026-11-09, por el autor). Aprobada por el asesor el 2026-11-21 (D3). **Ampliada por ADR-004** (D2): el conjunto sobre el que se sortea sigue una regla escalonada, el campo `comparable` desaparece y el modo exploratorio se trata allí.
 - Fecha: 2026-11-09
 - Fase y prompt de origen: F5–F6 / decisión anticipada en la revisión de F2 (RV-04 en `03-riesgos-spikes.md`)
 
