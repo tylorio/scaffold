@@ -2,11 +2,14 @@
 
 Cada bloque que se agregue pasa por aquí sin escribir pruebas nuevas:
 - es válido y no choca con otro bloque;
-- cada ejercicio tiene su solución de referencia en `tests/soluciones_bloques/`,
-  y esa solución pasa todos sus casos con el mismo ejecutor que usan los estudiantes;
+- cada ejercicio tiene su solución de referencia, y esa solución pasa todos sus
+  casos con el mismo ejecutor que usan los estudiantes;
 - lo que muestra cada ejemplo resuelto es lo que de verdad devuelve su código.
 
-Las soluciones viven solo en el repositorio de pruebas: el portal no las muestra.
+Las soluciones **no están en Git**: el repositorio es público y los estudiantes
+podrían copiarlas. Viven en `datos/soluciones_bloques/` (en el almacén, si está
+configurado, o donde indique `IDC_SOLUCIONES_BLOQUES`). Sin esa carpeta, por ejemplo
+en un clon público, las pruebas que las usan se saltan con un aviso.
 """
 import ast
 import io
@@ -21,7 +24,11 @@ from refuerzo.servicios.ejecutor import ejecutar_solucion
 
 RAIZ = Path(__file__).resolve().parent.parent
 BLOQUES = cargar_carpeta(RAIZ / "refuerzo" / "bloques")
-SOLUCIONES = RAIZ / "tests" / "soluciones_bloques"
+SOLUCIONES = Path(settings.SOLUCIONES_BLOQUES_DIR)
+requiere_soluciones = pytest.mark.skipif(
+    not SOLUCIONES.is_dir(),
+    reason=f"Sin soluciones de referencia en {SOLUCIONES}: no están en Git (repositorio público).",
+)
 
 EJERCICIOS = [
     (contenido["concepto"], contenido["id"], ejercicio)
@@ -57,6 +64,7 @@ def _soluciones_de(concepto: str) -> str:
     return ruta.read_text(encoding="utf-8")
 
 
+@requiere_soluciones
 @pytest.mark.parametrize(
     "concepto, bloque, ejercicio", EJERCICIOS, ids=[e.id for _, _, e in EJERCICIOS],
 )
@@ -123,6 +131,7 @@ def solucion_completa(concepto: str, funcion: str) -> str:
     )
 
 
+@requiere_soluciones
 @pytest.mark.parametrize(
     "concepto, bloque, ejercicio", EJERCICIOS, ids=[e.id for _, _, e in EJERCICIOS],
 )

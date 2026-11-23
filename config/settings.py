@@ -213,4 +213,7 @@ BANCO_PRUEBA_DIR = DATOS_DIR / 'banco_prueba'
 # Bloques de refuerzo (D20): sí van en Git, para que cada versión quede trazable.
 BLOQUES_REFUERZO_DIR = BASE_DIR / 'refuerzo' / 'bloques'
 # Soluciones de referencia de los bloques: solo para las pruebas y la alarma de D22.
-SOLUCIONES_BLOQUES_DIR = BASE_DIR / 'tests' / 'soluciones_bloques'
+# No van a Git (el repositorio es público y los estudiantes podrían copiarlas).
+SOLUCIONES_BLOQUES_DIR = Path(
+    os.environ.get("IDC_SOLUCIONES_BLOQUES") or DATOS_DIR / 'soluciones_bloques'
+)

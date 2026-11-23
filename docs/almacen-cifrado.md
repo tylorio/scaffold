@@ -58,7 +58,10 @@ Con el almacén montado y el servidor detenido:
 
    ```text
    IDC_ALMACEN=Z:\
+   IDC_SOLUCIONES_BLOQUES=Z:\datos\soluciones_bloques
    ```
+
+   La segunda línea es para que las pruebas encuentren las soluciones de los bloques, que no están en Git.
 
 4. Comprueba:
 

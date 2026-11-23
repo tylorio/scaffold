@@ -9,7 +9,7 @@ Estado: los 24 bloques escritos (8 por concepto), con sus soluciones. Falta la v
 
 Antes de cargarlos:
 
-1. Agrega la solución de cada ejercicio en `tests/soluciones_bloques/<concepto>.py`.
+1. Agrega la solución de cada ejercicio en `datos/soluciones_bloques/<concepto>.py`. Va al almacén, no a Git: el repositorio es público.
 2. Corre `python -m pytest tests/test_contenido.py`.
 3. Corre `python manage.py controlar_solapamiento` contra la prueba real.
 

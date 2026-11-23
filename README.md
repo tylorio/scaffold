@@ -224,7 +224,7 @@ Hay dos alarmas. Ninguna decide nada: todo par marcado va a los jueces (D22, D23
 
 Las dos se calibraron igual (P10): con los tres solapamientos que el asesor
 identificó en las plantillas del prototipo, poniendo el umbral un poco por debajo
-del menor. Las soluciones salen de `tests/soluciones_bloques/`. Con los 24 bloques
+del menor. Las soluciones salen de `datos/soluciones_bloques/`. Con los 24 bloques
 marcan 20 pares.
 
 Para que los jueces respondan (D23), la opción `--ficha` escribe un CSV con un par por
@@ -285,10 +285,13 @@ Formato (el mismo que usa el asesor):
   `ejemplos` con `titulo` y `salida`), que es el de los bloques de ejemplo.
 
 **Solución de referencia.** Cada ejercicio necesita su solución en
-`tests/soluciones_bloques/<concepto>.py`, que el portal no muestra.
-`tests/test_contenido.py` corre cada solución contra sus casos con el mismo ejecutor
-de los estudiantes. Así, un caso mal escrito se descubre antes de que llegue a
-alguien.
+`datos/soluciones_bloques/<concepto>.py`. **No va a Git**: el repositorio es público
+y los estudiantes podrían copiarla. `tests/test_contenido.py` corre cada solución
+contra sus casos con el mismo ejecutor de los estudiantes. Así, un caso mal escrito
+se descubre antes de que llegue a alguien. Sin esa carpeta, por ejemplo en un clon
+del repositorio, esas pruebas se saltan con un aviso. Con el almacén configurado,
+indica la carpeta en el `.env` del proyecto:
+`IDC_SOLUCIONES_BLOQUES=Z:\datos\soluciones_bloques`.
 
 **No solapar con la prueba (D21).** Los temas que los bloques no pueden tocar
 están en la copia completa de la orientación del asesor del 2026-11-22, que vive

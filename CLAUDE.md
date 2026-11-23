@@ -82,7 +82,7 @@ Nota: la versión original de este archivo proponía FastAPI + Pydantic + SQLAlc
     - P10: el índice por historial usa dos medidas continuas y un umbral de 30 *a priori*, con sensibilidad a 15 y 60.
 
     P7 y P8 entran en `conceptos-v1` y se congelan a partir de SP-06. La autorización escrita de Azure la emite el CEI-USIL, no el asesor.
-16. (2026-11-22) **Orientación y contenido del asesor** en `docs/decisiones/orientacion-asesor-2026-11-22.md`. Ese archivo no se edita. Trae el banco real de la prueba (va a `datos/banco_prueba/`, nunca a Git), los 8 bloques de estructuras de datos y sus soluciones (en `tests/soluciones_bloques/`). Fija, como valores **provisionales**:
+16. (2026-11-22) **Orientación y contenido del asesor** en `docs/decisiones/orientacion-asesor-2026-11-22.md`. Ese archivo no se edita. Trae el banco real de la prueba (va a `datos/banco_prueba/`, nunca a Git), los 8 bloques de estructuras de datos y sus soluciones (en `datos/soluciones_bloques/`, fuera de Git). Fija, como valores **provisionales**:
     - intervalo del informe: "incierta" con un ancho entre 0,3 y 0,5, y "muy incierta" sobre 0,5;
     - ECE ≤ 0,10 y caída LOAO ≤ 0,10;
     - 5 s por envío.
@@ -97,7 +97,7 @@ Nota: la versión original de este archivo proponía FastAPI + Pydantic + SQLAlc
     - D27: identidad de sesión (`S07`, `s07@sesion.local`) en los commits.
     - D28: consentimientos y convocatoria v1, en `docs/consentimientos/`.
 
-    Los 24 bloques están completos, cada uno con su solución en `tests/soluciones_bloques/`.
+    Los 24 bloques están completos, cada uno con su solución en `datos/soluciones_bloques/`.
 18. (2026-11-23) **Decisiones D29–D34** en `docs/decisiones/decisiones-asesor-2026-11-23b.md` (copia sin lo que describe la prueba). Ese archivo no se edita. Contiene:
     - D29: `exc-s4-1-e3` reemplazado (bloque v2).
     - D30: consentimientos y convocatoria v1 corregidos.
@@ -105,6 +105,13 @@ Nota: la versión original de este archivo proponía FastAPI + Pydantic + SQLAlc
     - D32: `aviso_concepto: false` en 7 ejercicios, y aviso suavizado.
     - D33: la pieza 7 valida con `StratifiedGroupKFold` por `autor_id` y calibra con sigmoide antes del go/no-go; las métricas del modelo de demostración no valen.
     - D34: probar un repositorio privado por URL en SP-06; los clones no se guardan (06 §4 corregido).
+19. (2026-11-23) **El repositorio es público** (github.com/tylorio/scaffold), porque se entrega como trabajo final. Por eso hay cosas que nunca van a Git y viven en `datos/` (el almacén):
+    - la prueba real (D21);
+    - las soluciones de los bloques (`datos/soluciones_bloques/`);
+    - los enunciados, el protocolo y las soluciones de la sesión de etiquetado (`datos/sesion_etiquetado/`);
+    - las entregas del asesor sin procesar.
+
+    El historial se reescribió antes del primer push para sacarlas. Los commits van con `349344373+tylorio@users.noreply.github.com`.
 
 ## Estado del repositorio (léelo antes de cualquier fase)
 - Existe un **prototipo funcional en Django** construido antes de adoptar este protocolo (commits del 2026-11-05). Cubre parte del módulo 1 y del módulo 2; el detalle está en `docs/arquitectura/00-estado-actual.md`.
