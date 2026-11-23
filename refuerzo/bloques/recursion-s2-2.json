@@ -1,0 +1,158 @@
+{
+  "concepto": "recursion",
+  "semana": 2,
+  "orden": 2,
+  "version": 1,
+  "titulo": "Recursión múltiple: más de una llamada por paso",
+  "explicacion": "En los bloques anteriores cada llamada hacía, como mucho, una llamada recursiva. Hay problemas en los que la respuesta depende de dos o más subproblemas, y la función se llama varias veces en el mismo paso. Esto aparece cuando en cada paso hay varias opciones y hay que contar o explorar todas.\n\nPor ejemplo, para subir una escalera dando pasos de 1 o de 2 escalones, las formas de llegar al escalón n son las formas de llegar al n − 1 (y dar un paso de 1) más las formas de llegar al n − 2 (y dar un paso de 2).\n\nLa recursión múltiple puede necesitar varios casos base, uno por cada forma en que el problema se puede volver trivial. También crece muy rápido: la misma subllamada se repite muchas veces, algo que se resuelve en el bloque siguiente.",
+  "ejemplo": {
+    "enunciado": "Contar de cuántas formas se suben n escalones dando pasos de 1 o de 2.",
+    "codigo": "def escaleras(n):\n    if n <= 1:\n        return 1\n    return escaleras(n - 1) + escaleras(n - 2)\n\nescaleras(4)  # 5",
+    "comentario": "Las 5 formas son 1+1+1+1, 1+1+2, 1+2+1, 2+1+1 y 2+2."
+  },
+  "ejercicios": [
+    {
+      "id": "rec-s2-2-e1",
+      "nivel": "facil",
+      "enunciado": "Escribe fibonacci(n), que devuelve el n-ésimo número de Fibonacci con fibonacci(0) = 0, fibonacci(1) = 1 y, para n mayor que 1, la suma de los dos anteriores. Usa recursión directa.",
+      "funcion": "fibonacci",
+      "plantilla": "def fibonacci(n):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            0
+          ],
+          "esperado": 0
+        },
+        {
+          "args": [
+            1
+          ],
+          "esperado": 1
+        },
+        {
+          "args": [
+            2
+          ],
+          "esperado": 1
+        },
+        {
+          "args": [
+            10
+          ],
+          "esperado": 55
+        },
+        {
+          "args": [
+            20
+          ],
+          "esperado": 6765
+        }
+      ]
+    },
+    {
+      "id": "rec-s2-2-e2",
+      "nivel": "medio",
+      "enunciado": "Escribe caminos_grilla(filas, columnas), que cuenta cuántos caminos hay desde la casilla de arriba a la izquierda hasta la de abajo a la derecha en una grilla de filas × columnas, moviéndose solo hacia la derecha o hacia abajo. Una grilla de 1 fila o de 1 columna tiene un único camino.",
+      "funcion": "caminos_grilla",
+      "plantilla": "def caminos_grilla(filas, columnas):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            1,
+            1
+          ],
+          "esperado": 1
+        },
+        {
+          "args": [
+            2,
+            2
+          ],
+          "esperado": 2
+        },
+        {
+          "args": [
+            3,
+            3
+          ],
+          "esperado": 6
+        },
+        {
+          "args": [
+            3,
+            7
+          ],
+          "esperado": 28
+        },
+        {
+          "args": [
+            1,
+            5
+          ],
+          "esperado": 1
+        }
+      ]
+    },
+    {
+      "id": "rec-s2-2-e3",
+      "nivel": "dificil",
+      "enunciado": "Escribe formas_de_pagar(monto, monedas), que cuenta de cuántas formas se puede pagar monto con monedas de los valores de la lista (hay monedas ilimitadas de cada valor y el orden no importa: 1+2 y 2+1 son la misma forma). Pista: o se usa al menos una moneda del primer valor, o no se usa ninguna.",
+      "funcion": "formas_de_pagar",
+      "plantilla": "def formas_de_pagar(monto, monedas):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            5,
+            [
+              1,
+              2,
+              5
+            ]
+          ],
+          "esperado": 4
+        },
+        {
+          "args": [
+            10,
+            [
+              1,
+              2,
+              5
+            ]
+          ],
+          "esperado": 10
+        },
+        {
+          "args": [
+            0,
+            [
+              1,
+              2
+            ]
+          ],
+          "esperado": 1
+        },
+        {
+          "args": [
+            3,
+            [
+              2
+            ]
+          ],
+          "esperado": 0
+        },
+        {
+          "args": [
+            12,
+            [
+              2,
+              5
+            ]
+          ],
+          "esperado": 2
+        }
+      ]
+    }
+  ]
+}

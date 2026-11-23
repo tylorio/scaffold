@@ -2,7 +2,7 @@
 from django.core.management.base import BaseCommand, CommandError
 
 from analisis.models import Participante
-from analisis.participacion import CambioNoPermitido, retirar
+from analisis.participacion import CambioNoPermitido, carpeta_a_borrar, retirar
 
 
 class Command(BaseCommand):
@@ -21,8 +21,11 @@ class Command(BaseCommand):
             raise CommandError(
                 f"No se borró nada. Para confirmar, agrega --confirmo {codigo}.", returncode=22,
             )
+        carpeta = carpeta_a_borrar(participante.repositorio)
         try:
             borrado = retirar(participante, usuario)
         except CambioNoPermitido as error:
             raise CommandError(str(error), returncode=22) from error
         self.stdout.write(f"{codigo} retirado. Borrado: {borrado}.")
+        if carpeta:
+            self.stdout.write(f"Borra también la carpeta que entregó: {carpeta}")

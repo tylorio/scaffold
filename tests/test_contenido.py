@@ -14,6 +14,7 @@ import tokenize
 from pathlib import Path
 
 import pytest
+from django.conf import settings
 
 from refuerzo.servicios.banco import cargar_carpeta, desde_json, es_de_ejemplo, ranuras_faltantes
 from refuerzo.servicios.ejecutor import ejecutar_solucion
@@ -35,7 +36,7 @@ def test_hay_bloques_reales_y_ninguno_es_de_ejemplo():
 
 
 # Conceptos cuyos 8 bloques ya están escritos. Agrega cada concepto cuando se complete.
-COMPLETOS = ("estructuras_datos",)
+COMPLETOS = ("estructuras_datos", "excepciones", "recursion")
 
 
 @pytest.mark.parametrize("concepto", COMPLETOS)
@@ -62,7 +63,8 @@ def _soluciones_de(concepto: str) -> str:
 def test_la_solucion_de_referencia_pasa_todos_los_casos(concepto, bloque, ejercicio):
     codigo = _soluciones_de(concepto)
     assert f"def {ejercicio.funcion}(" in codigo, f"Falta la solución de {ejercicio.id}."
-    resultado = ejecutar_solucion(codigo, ejercicio, tiempo_limite=20)
+    # Con el límite real: algunos ejercicios (memoización) dependen de él.
+    resultado = ejecutar_solucion(codigo, ejercicio, tiempo_limite=settings.TIEMPO_LIMITE_EJERCICIO)
     fallidos = [c for c in resultado.casos if not c.get("paso")]
     assert not resultado.error, resultado.error
     assert resultado.pasados == resultado.total, fallidos

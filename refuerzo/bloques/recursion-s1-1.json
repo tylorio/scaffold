@@ -1,0 +1,142 @@
+{
+  "concepto": "recursion",
+  "semana": 1,
+  "orden": 1,
+  "version": 1,
+  "titulo": "Caso base y caso recursivo",
+  "explicacion": "Una función recursiva es una función que se llama a sí misma para resolver una versión más pequeña del mismo problema. Toda función recursiva necesita dos partes.\n\nEl caso base es la versión del problema tan pequeña que se responde directamente, sin volver a llamar a la función. El caso recursivo reduce el problema y se apoya en la respuesta de esa versión reducida.\n\nSi falta el caso base, o si el caso recursivo no acerca el problema al caso base, la función se llama sin fin y Python la detiene con RecursionError. Antes de escribir el código conviene responder dos preguntas: ¿cuál es el problema más pequeño que sé resolver?, y ¿cómo paso de un problema de tamaño n a uno de tamaño menor?",
+  "ejemplo": {
+    "enunciado": "Calcular el factorial de n, que es n × (n − 1) × ... × 1, con 0! = 1.",
+    "codigo": "def factorial(n):\n    if n == 0:\n        return 1\n    return n * factorial(n - 1)\n\nfactorial(5)  # 120",
+    "comentario": "El caso base es n == 0. Cada llamada recursiva reduce n en 1, así que siempre llega al caso base."
+  },
+  "ejercicios": [
+    {
+      "id": "rec-s1-1-e1",
+      "nivel": "facil",
+      "enunciado": "Escribe potencia(base, exp), que calcula base elevado a exp (exp es un entero mayor o igual que 0) sin usar ** ni pow. Usa recursión: base⁰ = 1 y baseⁿ = base × baseⁿ⁻¹.",
+      "funcion": "potencia",
+      "plantilla": "def potencia(base, exp):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            2,
+            10
+          ],
+          "esperado": 1024
+        },
+        {
+          "args": [
+            5,
+            0
+          ],
+          "esperado": 1
+        },
+        {
+          "args": [
+            3,
+            4
+          ],
+          "esperado": 81
+        },
+        {
+          "args": [
+            -2,
+            3
+          ],
+          "esperado": -8
+        },
+        {
+          "args": [
+            10,
+            1
+          ],
+          "esperado": 10
+        }
+      ]
+    },
+    {
+      "id": "rec-s1-1-e2",
+      "nivel": "medio",
+      "enunciado": "Escribe invertir_cadena(s), que devuelve la cadena s al revés, de forma recursiva y sin usar s[::-1] ni reversed. Piensa en qué hacer con el primer carácter y con el resto.",
+      "funcion": "invertir_cadena",
+      "plantilla": "def invertir_cadena(s):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            "hola"
+          ],
+          "esperado": "aloh"
+        },
+        {
+          "args": [
+            ""
+          ],
+          "esperado": ""
+        },
+        {
+          "args": [
+            "a"
+          ],
+          "esperado": "a"
+        },
+        {
+          "args": [
+            "usil"
+          ],
+          "esperado": "lisu"
+        },
+        {
+          "args": [
+            "ab c"
+          ],
+          "esperado": "c ba"
+        }
+      ]
+    },
+    {
+      "id": "rec-s1-1-e3",
+      "nivel": "dificil",
+      "enunciado": "Escribe mcd(a, b), que calcula el máximo común divisor de dos enteros no negativos con el algoritmo de Euclides en forma recursiva: el mcd de a y 0 es a; si b no es 0, el mcd de a y b es igual al mcd de b y el residuo de a entre b.",
+      "funcion": "mcd",
+      "plantilla": "def mcd(a, b):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            12,
+            18
+          ],
+          "esperado": 6
+        },
+        {
+          "args": [
+            17,
+            5
+          ],
+          "esperado": 1
+        },
+        {
+          "args": [
+            0,
+            9
+          ],
+          "esperado": 9
+        },
+        {
+          "args": [
+            100,
+            75
+          ],
+          "esperado": 25
+        },
+        {
+          "args": [
+            7,
+            7
+          ],
+          "esperado": 7
+        }
+      ]
+    }
+  ]
+}

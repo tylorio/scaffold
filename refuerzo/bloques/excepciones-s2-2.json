@@ -1,0 +1,216 @@
+{
+  "concepto": "excepciones",
+  "semana": 2,
+  "orden": 2,
+  "version": 1,
+  "titulo": "else y finally: qué pasa si no hay error y qué pasa siempre",
+  "explicacion": "Un bloque try puede tener dos cláusulas más. else se ejecuta solo si no ocurrió ninguna excepción en el try, y sirve para separar el código que puede fallar del que depende de que todo haya salido bien. finally se ejecuta siempre, haya error o no, incluso si el try o el except hacen return.\n\nfinally se usa para tareas de cierre: liberar un recurso, registrar que la operación terminó o restaurar un estado. El orden completo es try, except, else, finally.\n\nMantén el try lo más corto posible: solo la línea que puede fallar. Lo que viene después y no debe ser vigilado va en else.",
+  "ejemplo": {
+    "enunciado": "Registrar cada intento de conversión, haya salido bien o mal.",
+    "codigo": "def convertir_con_registro(texto, registro):\n    try:\n        valor = int(texto)\n    except ValueError:\n        valor = None\n    else:\n        registro.append(\"convertido\")\n    finally:\n        registro.append(\"intento\")\n    return valor\n\nconvertir_con_registro(\"12\", [])  # 12",
+    "comentario": "Con \"12\" se ejecutan else y finally; con \"doce\" solo except y finally."
+  },
+  "ejercicios": [
+    {
+      "id": "exc-s2-2-e1",
+      "nivel": "facil",
+      "enunciado": "Escribe eventos_division(a, b), que intenta calcular a / b y devuelve la lista de eventos en orden: siempre empieza con \"inicio\", luego \"ok\" si la división funcionó o \"error\" si b era 0, y siempre termina con \"fin\". Usa except, else y finally.",
+      "funcion": "eventos_division",
+      "plantilla": "def eventos_division(a, b):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            6,
+            3
+          ],
+          "esperado": [
+            "inicio",
+            "ok",
+            "fin"
+          ]
+        },
+        {
+          "args": [
+            6,
+            0
+          ],
+          "esperado": [
+            "inicio",
+            "error",
+            "fin"
+          ]
+        },
+        {
+          "args": [
+            0,
+            5
+          ],
+          "esperado": [
+            "inicio",
+            "ok",
+            "fin"
+          ]
+        },
+        {
+          "args": [
+            -1,
+            0
+          ],
+          "esperado": [
+            "inicio",
+            "error",
+            "fin"
+          ]
+        },
+        {
+          "args": [
+            1.5,
+            0.5
+          ],
+          "esperado": [
+            "inicio",
+            "ok",
+            "fin"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "exc-s2-2-e2",
+      "nivel": "medio",
+      "enunciado": "Escribe operar_cuenta(saldo, monto). Si monto es mayor que saldo, se lanza ValueError dentro del try y la operación se rechaza. Devuelve [mensaje, saldo_final], donde mensaje es \"aprobada\" (y el saldo baja en monto) o \"rechazada\" (y el saldo no cambia).",
+      "funcion": "operar_cuenta",
+      "plantilla": "def operar_cuenta(saldo, monto):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            100,
+            30
+          ],
+          "esperado": [
+            "aprobada",
+            70
+          ]
+        },
+        {
+          "args": [
+            100,
+            130
+          ],
+          "esperado": [
+            "rechazada",
+            100
+          ]
+        },
+        {
+          "args": [
+            50,
+            50
+          ],
+          "esperado": [
+            "aprobada",
+            0
+          ]
+        },
+        {
+          "args": [
+            0,
+            1
+          ],
+          "esperado": [
+            "rechazada",
+            0
+          ]
+        },
+        {
+          "args": [
+            10,
+            0
+          ],
+          "esperado": [
+            "aprobada",
+            10
+          ]
+        }
+      ]
+    },
+    {
+      "id": "exc-s2-2-e3",
+      "nivel": "dificil",
+      "enunciado": "Escribe ejecutar_pasos(divisores), que calcula 100 // d para cada divisor en orden y se detiene en el primer error. Devuelve [resultados, estado], donde resultados son los cocientes calculados antes del error y estado es \"completo\" o \"interrumpido en i\" (i es la posición del divisor que falló). Cualquier error de ZeroDivisionError o TypeError interrumpe.",
+      "funcion": "ejecutar_pasos",
+      "plantilla": "def ejecutar_pasos(divisores):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            [
+              2,
+              5,
+              10
+            ]
+          ],
+          "esperado": [
+            [
+              50,
+              20,
+              10
+            ],
+            "completo"
+          ]
+        },
+        {
+          "args": [
+            [
+              4,
+              0,
+              2
+            ]
+          ],
+          "esperado": [
+            [
+              25
+            ],
+            "interrumpido en 1"
+          ]
+        },
+        {
+          "args": [
+            []
+          ],
+          "esperado": [
+            [],
+            "completo"
+          ]
+        },
+        {
+          "args": [
+            [
+              "3",
+              2
+            ]
+          ],
+          "esperado": [
+            [],
+            "interrumpido en 0"
+          ]
+        },
+        {
+          "args": [
+            [
+              3,
+              7,
+              null
+            ]
+          ],
+          "esperado": [
+            [
+              33,
+              14
+            ],
+            "interrumpido en 2"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,399 @@
+{
+  "concepto": "recursion",
+  "semana": 4,
+  "orden": 1,
+  "version": 1,
+  "titulo": "Recursión sobre árboles",
+  "explicacion": "Un árbol es una estructura recursiva por naturaleza: cada nodo tiene un valor y una lista de hijos, y cada hijo es, a su vez, un árbol. En estos ejercicios un nodo se representa como un diccionario {\"valor\": v, \"hijos\": [...]}, y una hoja es un nodo cuya lista de hijos está vacía.\n\nLas funciones sobre árboles siguen casi siempre el mismo patrón: se resuelve algo con el valor del nodo actual, se llama a la función para cada hijo y se combinan los resultados. El caso base suele ser la hoja, aunque a menudo no hace falta tratarla aparte: si un nodo no tiene hijos, el recorrido de los hijos simplemente no hace nada.\n\nAquí la recursión es la herramienta natural, porque no sabemos de antemano qué tan profundo es el árbol.",
+  "ejemplo": {
+    "enunciado": "Calcular la altura de un árbol: la cantidad de nodos en el camino más largo desde la raíz hasta una hoja.",
+    "codigo": "def altura(nodo):\n    mayor = 0\n    for hijo in nodo[\"hijos\"]:\n        mayor = max(mayor, altura(hijo))\n    return 1 + mayor\n\narbol = {\"valor\": 1, \"hijos\": [{\"valor\": 2, \"hijos\": [{\"valor\": 4, \"hijos\": []}]}, {\"valor\": 3, \"hijos\": []}]}\naltura(arbol)  # 3",
+    "comentario": "Una hoja no entra al for, así que devuelve 1 sin necesitar un caso base aparte."
+  },
+  "ejercicios": [
+    {
+      "id": "rec-s4-1-e1",
+      "nivel": "facil",
+      "enunciado": "Escribe contiene_valor(arbol, x), que devuelve True si algún nodo del árbol tiene el valor x. Cada nodo es un diccionario {\"valor\": v, \"hijos\": [...]}.",
+      "funcion": "contiene_valor",
+      "plantilla": "def contiene_valor(arbol, x):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            {
+              "valor": 1,
+              "hijos": [
+                {
+                  "valor": 2,
+                  "hijos": [
+                    {
+                      "valor": 4,
+                      "hijos": []
+                    }
+                  ]
+                },
+                {
+                  "valor": 3,
+                  "hijos": []
+                }
+              ]
+            },
+            4
+          ],
+          "esperado": true
+        },
+        {
+          "args": [
+            {
+              "valor": 1,
+              "hijos": [
+                {
+                  "valor": 2,
+                  "hijos": [
+                    {
+                      "valor": 4,
+                      "hijos": []
+                    }
+                  ]
+                },
+                {
+                  "valor": 3,
+                  "hijos": []
+                }
+              ]
+            },
+            5
+          ],
+          "esperado": false
+        },
+        {
+          "args": [
+            {
+              "valor": "x",
+              "hijos": []
+            },
+            "x"
+          ],
+          "esperado": true
+        },
+        {
+          "args": [
+            {
+              "valor": 1,
+              "hijos": [
+                {
+                  "valor": 2,
+                  "hijos": [
+                    {
+                      "valor": 4,
+                      "hijos": []
+                    }
+                  ]
+                },
+                {
+                  "valor": 3,
+                  "hijos": []
+                }
+              ]
+            },
+            1
+          ],
+          "esperado": true
+        },
+        {
+          "args": [
+            {
+              "valor": "a",
+              "hijos": [
+                {
+                  "valor": "b",
+                  "hijos": []
+                },
+                {
+                  "valor": "c",
+                  "hijos": [
+                    {
+                      "valor": "d",
+                      "hijos": []
+                    },
+                    {
+                      "valor": "e",
+                      "hijos": []
+                    }
+                  ]
+                }
+              ]
+            },
+            "z"
+          ],
+          "esperado": false
+        }
+      ]
+    },
+    {
+      "id": "rec-s4-1-e2",
+      "nivel": "medio",
+      "enunciado": "Escribe hojas(arbol), que devuelve la lista de los valores de las hojas, de izquierda a derecha.",
+      "funcion": "hojas",
+      "plantilla": "def hojas(arbol):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            {
+              "valor": 1,
+              "hijos": [
+                {
+                  "valor": 2,
+                  "hijos": [
+                    {
+                      "valor": 4,
+                      "hijos": []
+                    }
+                  ]
+                },
+                {
+                  "valor": 3,
+                  "hijos": []
+                }
+              ]
+            }
+          ],
+          "esperado": [
+            4,
+            3
+          ]
+        },
+        {
+          "args": [
+            {
+              "valor": "x",
+              "hijos": []
+            }
+          ],
+          "esperado": [
+            "x"
+          ]
+        },
+        {
+          "args": [
+            {
+              "valor": "a",
+              "hijos": [
+                {
+                  "valor": "b",
+                  "hijos": []
+                },
+                {
+                  "valor": "c",
+                  "hijos": [
+                    {
+                      "valor": "d",
+                      "hijos": []
+                    },
+                    {
+                      "valor": "e",
+                      "hijos": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "esperado": [
+            "b",
+            "d",
+            "e"
+          ]
+        },
+        {
+          "args": [
+            {
+              "valor": 0,
+              "hijos": [
+                {
+                  "valor": "x",
+                  "hijos": []
+                },
+                {
+                  "valor": "x",
+                  "hijos": []
+                }
+              ]
+            }
+          ],
+          "esperado": [
+            "x",
+            "x"
+          ]
+        },
+        {
+          "args": [
+            {
+              "valor": 5,
+              "hijos": [
+                {
+                  "valor": 6,
+                  "hijos": [
+                    {
+                      "valor": 7,
+                      "hijos": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "esperado": [
+            7
+          ]
+        }
+      ]
+    },
+    {
+      "id": "rec-s4-1-e3",
+      "nivel": "dificil",
+      "enunciado": "Escribe camino_a(arbol, x), que devuelve la lista de valores desde la raíz hasta el primer nodo con valor x (buscando de izquierda a derecha), o None si x no está en el árbol. Ejemplo: en un árbol con raíz 1, hijo 2 y nieto 4, camino_a(arbol, 4) devuelve [1, 2, 4].",
+      "funcion": "camino_a",
+      "plantilla": "def camino_a(arbol, x):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            {
+              "valor": 1,
+              "hijos": [
+                {
+                  "valor": 2,
+                  "hijos": [
+                    {
+                      "valor": 4,
+                      "hijos": []
+                    }
+                  ]
+                },
+                {
+                  "valor": 3,
+                  "hijos": []
+                }
+              ]
+            },
+            4
+          ],
+          "esperado": [
+            1,
+            2,
+            4
+          ]
+        },
+        {
+          "args": [
+            {
+              "valor": 1,
+              "hijos": [
+                {
+                  "valor": 2,
+                  "hijos": [
+                    {
+                      "valor": 4,
+                      "hijos": []
+                    }
+                  ]
+                },
+                {
+                  "valor": 3,
+                  "hijos": []
+                }
+              ]
+            },
+            3
+          ],
+          "esperado": [
+            1,
+            3
+          ]
+        },
+        {
+          "args": [
+            {
+              "valor": 1,
+              "hijos": [
+                {
+                  "valor": 2,
+                  "hijos": [
+                    {
+                      "valor": 4,
+                      "hijos": []
+                    }
+                  ]
+                },
+                {
+                  "valor": 3,
+                  "hijos": []
+                }
+              ]
+            },
+            1
+          ],
+          "esperado": [
+            1
+          ]
+        },
+        {
+          "args": [
+            {
+              "valor": 1,
+              "hijos": [
+                {
+                  "valor": 2,
+                  "hijos": [
+                    {
+                      "valor": 4,
+                      "hijos": []
+                    }
+                  ]
+                },
+                {
+                  "valor": 3,
+                  "hijos": []
+                }
+              ]
+            },
+            9
+          ],
+          "esperado": null
+        },
+        {
+          "args": [
+            {
+              "valor": "a",
+              "hijos": [
+                {
+                  "valor": "b",
+                  "hijos": []
+                },
+                {
+                  "valor": "c",
+                  "hijos": [
+                    {
+                      "valor": "d",
+                      "hijos": []
+                    },
+                    {
+                      "valor": "e",
+                      "hijos": []
+                    }
+                  ]
+                }
+              ]
+            },
+            "e"
+          ],
+          "esperado": [
+            "a",
+            "c",
+            "e"
+          ]
+        }
+      ]
+    }
+  ]
+}

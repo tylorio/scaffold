@@ -1,0 +1,158 @@
+{
+  "concepto": "excepciones",
+  "semana": 3,
+  "orden": 2,
+  "version": 1,
+  "titulo": "Traducir una excepción: raise dentro de except",
+  "explicacion": "A veces el error original no es el más útil para quien llama a la función. Si una función que lee la configuración falla con KeyError, quien la usa entiende mejor un ValueError con el mensaje \"falta la clave puerto\". Para eso se captura la excepción original y se lanza otra dentro del except.\n\nLa forma recomendada es raise ValueError(\"mensaje\") from e: así la nueva excepción guarda la original como causa, y el mensaje de error muestra las dos. Esto ayuda a depurar sin perder información.\n\nTambién se puede volver a lanzar la misma excepción con raise, sin argumentos, después de hacer algo con ella, como anotarla en un registro.",
+  "ejemplo": {
+    "enunciado": "Leer la configuración y convertir el KeyError en un ValueError con un mensaje claro.",
+    "codigo": "def puerto(config):\n    try:\n        return int(config[\"puerto\"])\n    except KeyError as e:\n        raise ValueError(\"falta la clave puerto\") from e\n\npuerto({\"puerto\": \"8080\"})  # 8080",
+    "comentario": "Si falta la clave, quien llama recibe un ValueError cuyo motivo es el KeyError original."
+  },
+  "ejercicios": [
+    {
+      "id": "exc-s3-2-e1",
+      "nivel": "facil",
+      "enunciado": "Escribe obtener_config(config, clave), que devuelve config[clave]. Si la clave no existe, captura el KeyError y lanza en su lugar un ValueError con el mensaje \"falta <clave>\".",
+      "funcion": "obtener_config",
+      "plantilla": "def obtener_config(config, clave):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            {
+              "host": "local"
+            },
+            "host"
+          ],
+          "esperado": "local"
+        },
+        {
+          "args": [
+            {
+              "host": "local"
+            },
+            "puerto"
+          ],
+          "lanza": "ValueError"
+        },
+        {
+          "args": [
+            {},
+            "x"
+          ],
+          "lanza": "ValueError"
+        },
+        {
+          "args": [
+            {
+              "modo": null
+            },
+            "modo"
+          ],
+          "esperado": null
+        },
+        {
+          "args": [
+            {
+              "a": 1,
+              "b": 2
+            },
+            "b"
+          ],
+          "esperado": 2
+        }
+      ]
+    },
+    {
+      "id": "exc-s3-2-e2",
+      "nivel": "medio",
+      "enunciado": "Escribe parsear_fecha(texto), que recibe una fecha \"dd/mm/aaaa\" y devuelve [dia, mes, anio] como enteros. Si el texto no tiene tres partes separadas por /, si alguna parte no es un número, si el mes no está entre 1 y 12 o el día no está entre 1 y 31, lanza ValueError con el mensaje \"fecha invalida\".",
+      "funcion": "parsear_fecha",
+      "plantilla": "def parsear_fecha(texto):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            "05/11/2026"
+          ],
+          "esperado": [
+            5,
+            11,
+            2026
+          ]
+        },
+        {
+          "args": [
+            "5-11-2026"
+          ],
+          "lanza": "ValueError"
+        },
+        {
+          "args": [
+            "aa/11/2026"
+          ],
+          "lanza": "ValueError"
+        },
+        {
+          "args": [
+            "10/13/2026"
+          ],
+          "lanza": "ValueError"
+        },
+        {
+          "args": [
+            "31/1/2027"
+          ],
+          "esperado": [
+            31,
+            1,
+            2027
+          ]
+        }
+      ]
+    },
+    {
+      "id": "exc-s3-2-e3",
+      "nivel": "dificil",
+      "enunciado": "Escribe cargar_registro(linea), que recibe \"nombre;edad;correo\" y devuelve un diccionario con las claves \"nombre\", \"edad\" (entero) y \"correo\". Lanza ValueError si faltan o sobran campos, si la edad no es un entero o es negativa, o si el correo no contiene @.",
+      "funcion": "cargar_registro",
+      "plantilla": "def cargar_registro(linea):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            "Ana;20;ana@usil.pe"
+          ],
+          "esperado": {
+            "nombre": "Ana",
+            "edad": 20,
+            "correo": "ana@usil.pe"
+          }
+        },
+        {
+          "args": [
+            "Ana;20"
+          ],
+          "lanza": "ValueError"
+        },
+        {
+          "args": [
+            "Ana;veinte;ana@usil.pe"
+          ],
+          "lanza": "ValueError"
+        },
+        {
+          "args": [
+            "Ana;20;ana.usil.pe"
+          ],
+          "lanza": "ValueError"
+        },
+        {
+          "args": [
+            "Luis;-3;l@x.pe"
+          ],
+          "lanza": "ValueError"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,270 @@
+{
+  "concepto": "recursion",
+  "semana": 3,
+  "orden": 2,
+  "version": 1,
+  "titulo": "Generar todas las opciones: subconjuntos y permutaciones",
+  "explicacion": "La recursión también sirve para construir, no solo para contar. Si el problema pide todas las combinaciones posibles, cada llamada toma una decisión sobre un elemento (incluirlo o no, ponerlo primero o no) y deja que la recursión resuelva el resto.\n\nPara los subconjuntos de una lista, la decisión es si el primer elemento entra o no. Los subconjuntos de la lista completa son los subconjuntos del resto, más esos mismos subconjuntos con el primer elemento agregado. Para las permutaciones, la decisión es qué elemento va primero, y para cada elección se permuta lo que queda.\n\nLa cantidad de resultados crece muy rápido (2ⁿ subconjuntos, n! permutaciones), así que estas funciones solo se usan con entradas pequeñas.",
+  "ejemplo": {
+    "enunciado": "Generar todas las cadenas binarias de longitud n.",
+    "codigo": "def binarias(n):\n    if n == 0:\n        return [\"\"]\n    resto = binarias(n - 1)\n    return [\"0\" + r for r in resto] + [\"1\" + r for r in resto]\n\nbinarias(2)  # ['00', '01', '10', '11']",
+    "comentario": "Cada cadena de longitud n es un 0 o un 1 seguido de una cadena de longitud n − 1."
+  },
+  "ejercicios": [
+    {
+      "id": "rec-s3-2-e1",
+      "nivel": "facil",
+      "enunciado": "Escribe subconjuntos(lista), que devuelve todos los subconjuntos de una lista sin repetidos. Cada subconjunto conserva el orden original de los elementos, y la lista de subconjuntos se devuelve ordenada con sorted. Resuélvelo de forma recursiva, sin usar itertools.",
+      "funcion": "subconjuntos",
+      "plantilla": "def subconjuntos(lista):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "esperado": [
+            [],
+            [
+              1
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              2,
+              3
+            ],
+            [
+              1,
+              3
+            ],
+            [
+              2
+            ],
+            [
+              2,
+              3
+            ],
+            [
+              3
+            ]
+          ]
+        },
+        {
+          "args": [
+            []
+          ],
+          "esperado": [
+            []
+          ]
+        },
+        {
+          "args": [
+            [
+              "a",
+              "b"
+            ]
+          ],
+          "esperado": [
+            [],
+            [
+              "a"
+            ],
+            [
+              "a",
+              "b"
+            ],
+            [
+              "b"
+            ]
+          ]
+        },
+        {
+          "args": [
+            [
+              7
+            ]
+          ],
+          "esperado": [
+            [],
+            [
+              7
+            ]
+          ]
+        },
+        {
+          "args": [
+            [
+              4,
+              9
+            ]
+          ],
+          "esperado": [
+            [],
+            [
+              4
+            ],
+            [
+              4,
+              9
+            ],
+            [
+              9
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "rec-s3-2-e2",
+      "nivel": "medio",
+      "enunciado": "Escribe permutaciones(cadena), que devuelve todas las reordenaciones distintas de los caracteres de la cadena, sin repetidas y ordenadas alfabéticamente. Si la cadena tiene letras repetidas, como \"aab\", cada reordenación aparece una sola vez. Resuélvelo de forma recursiva, sin usar itertools.",
+      "funcion": "permutaciones",
+      "plantilla": "def permutaciones(cadena):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            "abc"
+          ],
+          "esperado": [
+            "abc",
+            "acb",
+            "bac",
+            "bca",
+            "cab",
+            "cba"
+          ]
+        },
+        {
+          "args": [
+            "aab"
+          ],
+          "esperado": [
+            "aab",
+            "aba",
+            "baa"
+          ]
+        },
+        {
+          "args": [
+            ""
+          ],
+          "esperado": [
+            ""
+          ]
+        },
+        {
+          "args": [
+            "z"
+          ],
+          "esperado": [
+            "z"
+          ]
+        },
+        {
+          "args": [
+            "ab"
+          ],
+          "esperado": [
+            "ab",
+            "ba"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "rec-s3-2-e3",
+      "nivel": "dificil",
+      "enunciado": "Escribe combinaciones_suma(numeros, objetivo), que recibe una lista de enteros positivos distintos y devuelve todas las formas de elegir algunos de ellos (cada uno a lo más una vez) para que sumen objetivo. Cada combinación va en orden creciente y la lista de combinaciones se devuelve ordenada con sorted. Si objetivo es 0, la única combinación es la lista vacía.",
+      "funcion": "combinaciones_suma",
+      "plantilla": "def combinaciones_suma(numeros, objetivo):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            [
+              2,
+              3,
+              5,
+              7
+            ],
+            10
+          ],
+          "esperado": [
+            [
+              2,
+              3,
+              5
+            ],
+            [
+              3,
+              7
+            ]
+          ]
+        },
+        {
+          "args": [
+            [
+              1,
+              2,
+              3
+            ],
+            7
+          ],
+          "esperado": []
+        },
+        {
+          "args": [
+            [
+              5
+            ],
+            5
+          ],
+          "esperado": [
+            [
+              5
+            ]
+          ]
+        },
+        {
+          "args": [
+            [
+              1,
+              2
+            ],
+            0
+          ],
+          "esperado": [
+            []
+          ]
+        },
+        {
+          "args": [
+            [
+              6,
+              1,
+              4,
+              3
+            ],
+            7
+          ],
+          "esperado": [
+            [
+              1,
+              6
+            ],
+            [
+              3,
+              4
+            ]
+          ]
+        }
+      ]
+    }
+  ]
+}

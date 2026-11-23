@@ -215,11 +215,26 @@ python manage.py controlar_solapamiento
 Compara la prueba con los bloques de `refuerzo/bloques/` (o los de `--bloques`). Si
 todavía no hay bloques reales, usa los de ejemplo y lo avisa.
 
-El umbral de parecido de enunciados es **0,2**. Se calibró con el primer banco real,
-como pidió el asesor en P10: los tres solapamientos que él identificó con las
-plantillas del prototipo dan entre 0,20 y 0,29, y los demás pares, 0,15 como
-máximo. Queda bajo a propósito: marca de más y la decisión la toman los jueces. Con
-los 8 bloques de estructuras de datos marca 3 pares para revisar a mano.
+Hay dos alarmas. Ninguna decide nada: todo par marcado va a los jueces (D22, D23).
+
+| Alarma | Qué compara | Umbral |
+| --- | --- | --- |
+| Enunciados | Palabras de más de 3 letras (Jaccard) | 0,20 |
+| Soluciones (D22) | La referencia del ítem contra la solución de cada ejercicio y el código de cada ejemplo, con los nombres como `ID` y los literales como `LIT` (Jaccard sobre trigramas de tokens) | 0,30 |
+
+Las dos se calibraron igual (P10): con los tres solapamientos que el asesor
+identificó en las plantillas del prototipo, poniendo el umbral un poco por debajo
+del menor. Las soluciones salen de `tests/soluciones_bloques/`. Con los 24 bloques
+marcan 20 pares.
+
+Para que los jueces respondan (D23), la opción `--ficha` escribe un CSV con un par por
+fila y una columna por juez. Las respuestas son `misma_tarea`, `misma_habilidad` o
+`sin_relacion`. Con un solo `misma_tarea` se reemplaza el ejercicio del bloque.
+Guarda la ficha en el almacén, porque nombra ítems de la prueba:
+
+```powershell
+python manage.py controlar_solapamiento --ficha datos\banco_prueba\pares-para-jueces.csv
+```
 
 ## Bloques de refuerzo (D20)
 
@@ -228,8 +243,8 @@ bloque es un archivo JSON en `refuerzo/bloques/`, que sí va en Git para que cad
 versión quede trazable. El nombre del archivo es su `id`, por ejemplo
 `estructuras_datos-s1-1.json` (concepto, semana y orden).
 
-Estado: los 8 de **estructuras de datos** están escritos (entrega del asesor del
-2026-11-22). Faltan los de excepciones y los de recursión.
+Estado: **los 24 bloques están escritos** (entregas del asesor del 22 y el 23 de
+noviembre), con las 72 soluciones de referencia. Falta que los validen los jueces.
 
 Formato (el mismo que usa el asesor):
 

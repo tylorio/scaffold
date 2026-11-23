@@ -88,6 +88,16 @@ Nota: la versión original de este archivo proponía FastAPI + Pydantic + SQLAlc
     - 5 s por envío.
 
     Los bloques del prototipo se solapan con la prueba: no se validan ni se cargan en el portal. Los temas que los bloques de recursión y de excepciones no pueden tocar (isomorfos de la prueba) están en la copia completa de la orientación, junto al banco en el almacén: por D21 no se describen en Git. El umbral de enunciado de la alarma de solapamiento quedó en 0,2, calibrado con el primer banco real (P10).
+17. (2026-11-23) **Decisiones D22–D28** en `docs/decisiones/decisiones-asesor-2026-11-23.md`, una copia sin las frases que describen la prueba; el original está junto al banco, en el almacén. Ese archivo no se edita. Contiene:
+    - D22: umbral de enunciado confirmado en 0,20 (filtro, no veredicto); segunda alarma sobre las soluciones, calibrada en 0,30.
+    - D23: los jueces clasifican cada par marcado en misma tarea, misma habilidad o sin relación. Con un solo "misma tarea", se reemplaza el ejercicio del bloque.
+    - D24: C2 usa tres estilos (B, C, E).
+    - D25: en la sesión de etiquetado, el bloque sin IA va siempre primero.
+    - D26: un solo texto por enunciado de la sesión.
+    - D27: identidad de sesión (`S07`, `s07@sesion.local`) en los commits.
+    - D28: consentimientos y convocatoria v1, en `docs/consentimientos/`.
+
+    Los 24 bloques están completos, cada uno con su solución en `tests/soluciones_bloques/`.
 
 ## Estado del repositorio (léelo antes de cualquier fase)
 - Existe un **prototipo funcional en Django** construido antes de adoptar este protocolo (commits del 2026-11-05). Cubre parte del módulo 1 y del módulo 2; el detalle está en `docs/arquitectura/00-estado-actual.md`.

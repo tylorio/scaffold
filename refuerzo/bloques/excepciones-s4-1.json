@@ -1,0 +1,229 @@
+{
+  "concepto": "excepciones",
+  "semana": 4,
+  "orden": 1,
+  "version": 1,
+  "titulo": "Excepciones propias para errores del problema",
+  "explicacion": "Además de las excepciones de Python, se pueden crear excepciones propias para los errores del problema que se resuelve. Basta con definir una clase que herede de Exception (o de una excepción más concreta, como ValueError): class CupoLleno(Exception): pass.\n\nUna excepción propia tiene un nombre que explica el problema, y permite capturar exactamente ese caso con except CupoLleno: sin atrapar por error otros ValueError que tengan otra causa.\n\nLo habitual es que la función que detecta el problema lance la excepción propia, y que la función que conoce el contexto la capture y decida qué hacer.",
+  "ejemplo": {
+    "enunciado": "Reservar un asiento y avisar con una excepción propia si ya está ocupado.",
+    "codigo": "class AsientoOcupado(Exception):\n    pass\n\ndef reservar(ocupados, asiento):\n    if asiento in ocupados:\n        raise AsientoOcupado(asiento)\n    return sorted(ocupados + [asiento])\n\ndef intentar_reserva(ocupados, asiento):\n    try:\n        return reservar(ocupados, asiento)\n    except AsientoOcupado:\n        return ocupados\n\nintentar_reserva([\"A1\", \"B2\"], \"A1\")  # ['A1', 'B2']",
+    "comentario": "intentar_reserva solo atrapa AsientoOcupado; cualquier otro error seguiría propagándose."
+  },
+  "ejercicios": [
+    {
+      "id": "exc-s4-1-e1",
+      "nivel": "facil",
+      "enunciado": "Escribe hay_cupo(inscritos, cupo), que devuelve True si la cantidad de inscritos es menor que cupo y lanza ValueError si el cupo ya se completó.",
+      "funcion": "hay_cupo",
+      "plantilla": "def hay_cupo(inscritos, cupo):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            [
+              "Ana"
+            ],
+            3
+          ],
+          "esperado": true
+        },
+        {
+          "args": [
+            [
+              "Ana",
+              "Luis"
+            ],
+            2
+          ],
+          "lanza": "ValueError"
+        },
+        {
+          "args": [
+            [],
+            1
+          ],
+          "esperado": true
+        },
+        {
+          "args": [
+            [],
+            0
+          ],
+          "lanza": "ValueError"
+        },
+        {
+          "args": [
+            [
+              "a",
+              "b",
+              "c"
+            ],
+            4
+          ],
+          "esperado": true
+        }
+      ]
+    },
+    {
+      "id": "exc-s4-1-e2",
+      "nivel": "medio",
+      "enunciado": "Define las excepciones propias CupoLleno y AlumnoDuplicado, y una función inscribir(inscritos, alumno, cupo) que las lance. Luego escribe intentar_inscripcion(inscritos, alumno, cupo), que devuelve \"inscrito\", \"duplicado\" o \"sin cupo\" según lo que ocurra. Si el alumno ya está inscrito, se informa \"duplicado\" aunque no haya cupo.",
+      "funcion": "intentar_inscripcion",
+      "plantilla": "def intentar_inscripcion(inscritos, alumno, cupo):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            [
+              "Ana"
+            ],
+            "Luis",
+            3
+          ],
+          "esperado": "inscrito"
+        },
+        {
+          "args": [
+            [
+              "Ana"
+            ],
+            "Ana",
+            3
+          ],
+          "esperado": "duplicado"
+        },
+        {
+          "args": [
+            [
+              "Ana",
+              "Rosa"
+            ],
+            "Luis",
+            2
+          ],
+          "esperado": "sin cupo"
+        },
+        {
+          "args": [
+            [
+              "Ana",
+              "Rosa"
+            ],
+            "Ana",
+            2
+          ],
+          "esperado": "duplicado"
+        },
+        {
+          "args": [
+            [],
+            "Mia",
+            1
+          ],
+          "esperado": "inscrito"
+        }
+      ]
+    },
+    {
+      "id": "exc-s4-1-e3",
+      "nivel": "dificil",
+      "enunciado": "Escribe procesar_inscripciones(solicitudes, cupo), que procesa en orden una lista de nombres con las mismas excepciones propias del ejercicio anterior y devuelve [inscritos, duplicados, sin_cupo]: la lista de inscritos en orden de llegada, los nombres rechazados por estar repetidos y los rechazados por falta de cupo.",
+      "funcion": "procesar_inscripciones",
+      "plantilla": "def procesar_inscripciones(solicitudes, cupo):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            [
+              "Ana",
+              "Luis",
+              "Ana",
+              "Rosa"
+            ],
+            2
+          ],
+          "esperado": [
+            [
+              "Ana",
+              "Luis"
+            ],
+            [
+              "Ana"
+            ],
+            [
+              "Rosa"
+            ]
+          ]
+        },
+        {
+          "args": [
+            [],
+            3
+          ],
+          "esperado": [
+            [],
+            [],
+            []
+          ]
+        },
+        {
+          "args": [
+            [
+              "A",
+              "B",
+              "C"
+            ],
+            5
+          ],
+          "esperado": [
+            [
+              "A",
+              "B",
+              "C"
+            ],
+            [],
+            []
+          ]
+        },
+        {
+          "args": [
+            [
+              "A",
+              "A",
+              "A"
+            ],
+            1
+          ],
+          "esperado": [
+            [
+              "A"
+            ],
+            [
+              "A",
+              "A"
+            ],
+            []
+          ]
+        },
+        {
+          "args": [
+            [
+              "A",
+              "B",
+              "B"
+            ],
+            1
+          ],
+          "esperado": [
+            [
+              "A"
+            ],
+            [],
+            [
+              "B",
+              "B"
+            ]
+          ]
+        }
+      ]
+    }
+  ]
+}

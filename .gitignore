@@ -9,3 +9,6 @@ db.sqlite3
 datos/
 # Entregas del asesor: traen el banco real de la prueba, que nunca va a Git (D21)
 contenido-asesor-*.zip
+# Entregas del asesor sin procesar: pueden traer material de la prueba (D21).
+# Lo que va a Git se copia a docs/ y refuerzo/ al integrarlas.
+docs/entregas-asesor/

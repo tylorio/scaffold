@@ -25,7 +25,7 @@ from refuerzo.models import BloqueRefuerzo
 from refuerzo.servicios.banco import ranuras_faltantes
 
 from .models import Configuracion, Congelacion, Importacion, Participante
-from .participacion import CambioNoPermitido, retirar
+from .participacion import CambioNoPermitido, carpeta_a_borrar, retirar
 from .servicios.conceptos import NOMBRES_CONCEPTOS
 from .resultados import ArchivoInvalido, importar_resultados
 
@@ -127,6 +127,7 @@ def retiro(request, codigo):
     if request.POST.get("confirmo", "").strip() != codigo:
         messages.error(request, f"Para borrar los datos de {codigo}, escribe su código.")
         return redirect("gestion:panel")
+    carpeta = carpeta_a_borrar(participante.repositorio)
     try:
         retirar(participante, _usuario(request))
     except CambioNoPermitido as error:
@@ -136,6 +137,10 @@ def retiro(request, codigo):
         messages.success(
             request, f"Datos de {codigo} borrados. Haz el mismo retiro en {otro}.",
         )
+        if carpeta:
+            messages.warning(
+                request, f"Borra también la carpeta que entregó: {carpeta}",
+            )
     return redirect("gestion:panel")
 
 

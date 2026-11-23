@@ -15,6 +15,19 @@ class CambioNoPermitido(Exception):
     pass
 
 
+def carpeta_a_borrar(repositorio: str) -> str | None:
+    """La carpeta local que entregó el participante, si no dio una URL.
+
+    El consentimiento promete borrar también esa copia (D13). El sistema no la
+    borra solo, porque es una ruta del disco elegida por el investigador; se la
+    recuerda. La ruta no se guarda en la auditoría.
+    """
+    origen = repositorio.strip()
+    if not origen or origen.startswith(("http://", "https://", "ssh://", "git@")):
+        return None
+    return origen
+
+
 def excluir(participante: Participante, motivo: str, usuario: str) -> Participante:
     """Deja al participante fuera de la muestra. Antes de congelar, no entra al sorteo.
 

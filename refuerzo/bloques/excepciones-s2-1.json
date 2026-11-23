@@ -1,0 +1,137 @@
+{
+  "concepto": "excepciones",
+  "semana": 2,
+  "orden": 1,
+  "version": 1,
+  "titulo": "Lanzar excepciones con raise para validar entradas",
+  "explicacion": "Una función no solo captura excepciones: también puede lanzarlas cuando recibe datos que no puede procesar. Se usa raise seguido de la excepción y un mensaje claro: raise ValueError(\"la edad no puede ser negativa\").\n\nLa convención de Python es lanzar TypeError cuando el argumento es de un tipo equivocado (un texto donde se esperaba un número) y ValueError cuando el tipo es correcto pero el valor no tiene sentido (una nota de 25 en escala vigesimal).\n\nValidar al inicio de la función hace que el error aparezca donde se origina, con un mensaje útil, en lugar de producir un resultado incorrecto o un error confuso varias líneas después.",
+  "ejemplo": {
+    "enunciado": "Crear un usuario solo si el nombre no está vacío y la edad es un entero no negativo.",
+    "codigo": "def crear_usuario(nombre, edad):\n    if not isinstance(edad, int):\n        raise TypeError(\"la edad debe ser un entero\")\n    if edad < 0:\n        raise ValueError(\"la edad no puede ser negativa\")\n    if not nombre:\n        raise ValueError(\"el nombre es obligatorio\")\n    return {\"nombre\": nombre, \"edad\": edad}\n\ncrear_usuario(\"Ana\", 20)  # {'nombre': 'Ana', 'edad': 20}",
+    "comentario": "Primero se valida el tipo y después el valor, cada uno con su excepción."
+  },
+  "ejercicios": [
+    {
+      "id": "exc-s2-1-e1",
+      "nivel": "facil",
+      "enunciado": "Escribe validar_nota(nota), que devuelve la nota si es un entero entre 0 y 20. Si no es un entero lanza TypeError; si está fuera del rango lanza ValueError.",
+      "funcion": "validar_nota",
+      "plantilla": "def validar_nota(nota):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            15
+          ],
+          "esperado": 15
+        },
+        {
+          "args": [
+            0
+          ],
+          "esperado": 0
+        },
+        {
+          "args": [
+            21
+          ],
+          "lanza": "ValueError"
+        },
+        {
+          "args": [
+            "15"
+          ],
+          "lanza": "TypeError"
+        },
+        {
+          "args": [
+            -1
+          ],
+          "lanza": "ValueError"
+        }
+      ]
+    },
+    {
+      "id": "exc-s2-1-e2",
+      "nivel": "medio",
+      "enunciado": "Escribe area_rectangulo(base, altura), que devuelve base * altura. Si alguna medida es negativa lanza ValueError; si alguna no es un número (int o float) lanza TypeError. El valor 0 es válido.",
+      "funcion": "area_rectangulo",
+      "plantilla": "def area_rectangulo(base, altura):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            3,
+            4
+          ],
+          "esperado": 12
+        },
+        {
+          "args": [
+            2.5,
+            2
+          ],
+          "esperado": 5.0
+        },
+        {
+          "args": [
+            0,
+            7
+          ],
+          "esperado": 0
+        },
+        {
+          "args": [
+            -1,
+            5
+          ],
+          "lanza": "ValueError"
+        },
+        {
+          "args": [
+            3,
+            "4"
+          ],
+          "lanza": "TypeError"
+        }
+      ]
+    },
+    {
+      "id": "exc-s2-1-e3",
+      "nivel": "dificil",
+      "enunciado": "Escribe validar_codigo(codigo), que devuelve True si codigo es una cadena con la letra U mayúscula seguida de exactamente 8 dígitos, como \"U20231234\". Si codigo no es una cadena lanza TypeError; si no cumple el formato lanza ValueError.",
+      "funcion": "validar_codigo",
+      "plantilla": "def validar_codigo(codigo):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            "U20231234"
+          ],
+          "esperado": true
+        },
+        {
+          "args": [
+            "u20231234"
+          ],
+          "lanza": "ValueError"
+        },
+        {
+          "args": [
+            "U2023123"
+          ],
+          "lanza": "ValueError"
+        },
+        {
+          "args": [
+            20231234
+          ],
+          "lanza": "TypeError"
+        },
+        {
+          "args": [
+            "U2023123A"
+          ],
+          "lanza": "ValueError"
+        }
+      ]
+    }
+  ]
+}

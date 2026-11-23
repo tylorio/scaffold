@@ -47,11 +47,11 @@ Nunca entran al corpus: repositorios de los participantes del estudio (serían a
 | Elemento | Especificación |
 | --- | --- |
 | Participantes | Personas fuera de la muestra (quedan excluidas del estudio, plan 9.1.2) con consentimiento específico para el corpus (06 §6). Número [PENDIENTE: SP-02; orientativo 10–15] |
-| Tareas | 6 enunciados, 2 por concepto, diseñados para producir 2–3 funciones cada uno; cada enunciado tiene una versión A y B de dificultad equivalente para contrabalancear [PENDIENTE: validar que cada enunciado produce fragmentos del concepto previsto; SP-05] |
-| Asignación de condición | Cada persona hace 3 tareas sin IA y 3 con IA (una por concepto en cada condición); el orden y qué tareas van con IA se contrabalancean con un cuadrado latino, para que cada tarea aparezca en ambas condiciones y el efecto de orden se reparta |
+| Tareas | 6 enunciados, 2 por concepto, con 2–3 funciones cada uno: `docs/sesion-etiquetado/enunciados-sesion-etiquetado-v1.md`. **Un solo texto por enunciado**, sin versiones A y B (D26): la tabla de asignación ya pone cada enunciado la mitad de las veces con IA. El texto no se edita después de la primera sesión; un cambio crea la v2 y se anota en el corpus [PENDIENTE: validar que cada enunciado produce fragmentos del concepto previsto; SP-05] |
+| Asignación de condición | Cada persona hace 3 tareas sin IA y 3 con IA (una por concepto en cada condición). Qué tarea va con IA y el orden de los conceptos se contrabalancean con la tabla de §2 del documento de la sesión. **La condición tiene orden fijo: primero sin IA, luego con IA** (D25), para que el código humano no llegue influido por el asistente. Limitación declarada: el cansancio cae siempre sobre la condición con IA |
 | Condición "sin IA" | Supervisada; sin asistentes, sin búsqueda; documentación local permitida [PENDIENTE] |
 | Condición "con IA" | La persona usa el asistente que declara usar habitualmente; se le pide **guardar la salida cruda** del asistente (pegar en `crudo/`) antes de editarla; el entregable final va a `final/` |
-| Historial | Cada persona trabaja en un repositorio Git propio con un commit por tarea como mínimo (el supervisor lo verifica). Así `insercion_commit` existe y refleja el comportamiento real: pegar la salida de un asistente produce inserciones grandes. Ya no alimenta al clasificador (D9). Sirve para **validar el índice por historial**: ¿las inserciones grandes corresponden a las tareas hechas con IA? |
+| Historial | Cada persona trabaja en un repositorio Git propio, configurado con una **identidad de sesión** (`S07`, `s07@sesion.local`) y no con su nombre ni su correo (D27), con un commit por tarea como mínimo (el supervisor lo verifica). Así el corpus no lleva correos personales. Así `insercion_commit` existe y refleja el comportamiento real: pegar la salida de un asistente produce inserciones grandes. Ya no alimenta al clasificador (D9). Sirve para **validar el índice por historial**: ¿las inserciones grandes corresponden a las tareas hechas con IA? |
 | Duración | ≤ 20 min por tarea; sesión de 2 h [PENDIENTE: SP-02] |
 | Rendimiento esperado | ≥ 5 fragmentos no triviales por persona, concepto y clase [PENDIENTE: SP-02] |
 
@@ -60,9 +60,9 @@ Nunca entran al corpus: repositorios de los participantes del estudio (serían a
 | Dimensión | Valores |
 | --- | --- |
 | Asistentes | Los declarados por los participantes en el cuestionario (RF-03), en las versiones vigentes en la fecha de generación [PENDIENTE]. Registrar nombre, versión o fecha y modo (chat, autocompletado, agente). Mínimo 3 asistentes distintos para poder "dejar uno fuera" [PENDIENTE: SP-01] |
-| Estilos de prompt | (P1) enunciado literal; (P2) "resuélvelo como lo haría un estudiante de segundo año, en español, sin docstrings"; (P3) "resuélvelo con comentarios explicativos"; (P4) enunciado más un intento parcial erróneo para que lo corrija. Registrar el texto exacto de cada prompt |
+| Estilos de prompt | Tres, con textos fijos (D24; §4 del documento de la sesión): **B** (breve, una línea por función), **C** (enunciado completo) y **E** (como estudiante de segundo año: nombres en español, sin docstrings ni anotaciones de tipo). Salieron "con comentarios explicativos", porque los comentarios y docstrings son rasgos del clasificador y este aprendería la instrucción, y "corregir un intento parcial", porque mezcla autores y se parece más a C3. Registrar el texto exacto enviado |
 | Repeticiones | 2 por asistente y estilo (temperatura por defecto); descartar salidas idénticas por hash normalizado |
-| Tamaño orientativo | 6 tareas × 3–4 asistentes × 4 estilos × 2 = 144–192 salidas, ~300–450 fragmentos [PENDIENTE: SP-01] |
+| Tamaño orientativo | 6 tareas × 3–4 asistentes × 3 estilos × 2 = **108–144 salidas** (D24); fragmentos [PENDIENTE: SP-01] |
 | Lo que no se hace | Pedir al asistente que "imite a un humano" para engañar al clasificador: eso mide otra cosa. Si se quiere medir evasión, es un análisis aparte y declarado |
 
 ### 1.5 Tamaños orientativos y equilibrio
@@ -70,7 +70,7 @@ Nunca entran al corpus: repositorios de los participantes del estudio (serían a
 | Conjunto | Humano | IA | `ia_editado` | Nota |
 | --- | --- | --- | --- | --- |
 | C1 sesión | 60–120 fragmentos | 60–120 (salida cruda) | 60–120 | [PENDIENTE: SP-02] |
-| C2 generado | — | 300–450 | — | [PENDIENTE] |
+| C2 generado | — | [PENDIENTE: recalcular con las 108–144 salidas de D24] | — | [PENDIENTE] |
 | C4 público | según conjunto | según conjunto | — | [VERIFICAR] |
 | **Prueba final** (solo C1, por autor) | ≥ 40 | ≥ 40 | ≥ 40 | Mínimo para que el F1 tenga un intervalo útil [PENDIENTE: justificar con el bootstrap de §5] |
 

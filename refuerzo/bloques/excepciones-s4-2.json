@@ -1,0 +1,201 @@
+{
+  "concepto": "excepciones",
+  "semana": 4,
+  "orden": 2,
+  "version": 1,
+  "titulo": "Diseñar el manejo de errores: qué capturar y qué dejar pasar",
+  "explicacion": "Manejar errores bien no significa capturarlos todos. Una función debe capturar solo los errores que sabe resolver, y dejar pasar los demás para que los vea quien tiene más contexto.\n\nHay tres decisiones frecuentes. Reintentar, cuando el error es pasajero (una conexión que no respondió a tiempo). Propagar, cuando el error indica un problema que la función no puede resolver. Revertir, cuando una operación de varios pasos falla a la mitad y hay que dejar el estado como estaba antes de empezar.\n\nUn error silenciado con un except: vacío casi siempre esconde un fallo que aparecerá más tarde, lejos de su causa, y que será más difícil de encontrar.",
+  "ejemplo": {
+    "enunciado": "Aplicar una lista de descuentos a un precio y deshacer todo si alguno es inválido.",
+    "codigo": "def aplicar_descuentos(precio, descuentos):\n    original = precio\n    try:\n        for d in descuentos:\n            if not 0 <= d <= 50:\n                raise ValueError(\"descuento fuera de rango\")\n            precio = precio * (100 - d) / 100\n    except ValueError:\n        return original\n    return round(precio, 2)\n\naplicar_descuentos(100, [10, 80])  # 100",
+    "comentario": "Como el segundo descuento es inválido, se devuelve el precio original y no uno a medio descontar."
+  },
+  "ejercicios": [
+    {
+      "id": "exc-s4-2-e1",
+      "nivel": "facil",
+      "enunciado": "Escribe dividir_lista(numeros, divisor), que devuelve cada número dividido entre divisor, redondeado a 2 decimales. Si divisor es 0, el ZeroDivisionError no se captura: debe llegar a quien llamó.",
+      "funcion": "dividir_lista",
+      "plantilla": "def dividir_lista(numeros, divisor):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            [
+              10,
+              5
+            ],
+            2
+          ],
+          "esperado": [
+            5.0,
+            2.5
+          ]
+        },
+        {
+          "args": [
+            [
+              1,
+              2
+            ],
+            3
+          ],
+          "esperado": [
+            0.33,
+            0.67
+          ]
+        },
+        {
+          "args": [
+            [],
+            0
+          ],
+          "esperado": []
+        },
+        {
+          "args": [
+            [
+              4
+            ],
+            0
+          ],
+          "lanza": "ZeroDivisionError"
+        },
+        {
+          "args": [
+            [
+              -9,
+              9
+            ],
+            3
+          ],
+          "esperado": [
+            -3.0,
+            3.0
+          ]
+        }
+      ]
+    },
+    {
+      "id": "exc-s4-2-e2",
+      "nivel": "medio",
+      "enunciado": "Escribe conectar(respuestas), que simula intentos de conexión. Cada respuesta es \"ok\", \"timeout\" o \"error\". Recorre las respuestas en orden: con \"timeout\" reintenta con la siguiente; con \"error\" lanza RuntimeError sin seguir; con \"ok\" devuelve el número de intento (empezando en 1). Si se acaban las respuestas sin un \"ok\", lanza TimeoutError.",
+      "funcion": "conectar",
+      "plantilla": "def conectar(respuestas):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            [
+              "timeout",
+              "ok"
+            ]
+          ],
+          "esperado": 2
+        },
+        {
+          "args": [
+            [
+              "ok"
+            ]
+          ],
+          "esperado": 1
+        },
+        {
+          "args": [
+            [
+              "timeout",
+              "error",
+              "ok"
+            ]
+          ],
+          "lanza": "RuntimeError"
+        },
+        {
+          "args": [
+            [
+              "timeout",
+              "timeout"
+            ]
+          ],
+          "lanza": "TimeoutError"
+        },
+        {
+          "args": [
+            []
+          ],
+          "lanza": "TimeoutError"
+        }
+      ]
+    },
+    {
+      "id": "exc-s4-2-e3",
+      "nivel": "dificil",
+      "enunciado": "Escribe transaccion(saldo, operaciones), donde cada operación es un entero: positivo para depositar y negativo para retirar. Si algún retiro deja el saldo por debajo de 0, toda la transacción se revierte. Devuelve [saldo_final, \"confirmada\"] si todas las operaciones se aplicaron o [saldo_inicial, \"revertida\"] si no.",
+      "funcion": "transaccion",
+      "plantilla": "def transaccion(saldo, operaciones):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            100,
+            [
+              50,
+              -30
+            ]
+          ],
+          "esperado": [
+            120,
+            "confirmada"
+          ]
+        },
+        {
+          "args": [
+            100,
+            [
+              -50,
+              -60,
+              200
+            ]
+          ],
+          "esperado": [
+            100,
+            "revertida"
+          ]
+        },
+        {
+          "args": [
+            0,
+            []
+          ],
+          "esperado": [
+            0,
+            "confirmada"
+          ]
+        },
+        {
+          "args": [
+            10,
+            [
+              -10
+            ]
+          ],
+          "esperado": [
+            0,
+            "confirmada"
+          ]
+        },
+        {
+          "args": [
+            5,
+            [
+              20,
+              -30
+            ]
+          ],
+          "esperado": [
+            5,
+            "revertida"
+          ]
+        }
+      ]
+    }
+  ]
+}

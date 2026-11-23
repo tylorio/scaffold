@@ -1,0 +1,137 @@
+{
+  "concepto": "recursion",
+  "semana": 3,
+  "orden": 1,
+  "version": 1,
+  "titulo": "Memoización: no calcular dos veces lo mismo",
+  "explicacion": "En la recursión múltiple, la misma subllamada se repite muchas veces. escaleras(30) llama a escaleras(10) miles de veces, y el tiempo crece de forma exponencial. La memoización consiste en guardar cada resultado la primera vez que se calcula y reutilizarlo después.\n\nSe usa un diccionario: antes de calcular, se revisa si la respuesta ya está guardada; si no, se calcula, se guarda y se devuelve. La estructura recursiva de la función no cambia.\n\nCuidado con escribir memo={} como valor por defecto de un parámetro: ese diccionario se crea una sola vez y se comparte entre llamadas independientes. Es más seguro usar memo=None y crearlo dentro, o usar el decorador functools.lru_cache, que hace la memoización por ti.",
+  "ejemplo": {
+    "enunciado": "La función de las escaleras del bloque anterior, ahora con memoización.",
+    "codigo": "def escaleras(n, memo=None):\n    if memo is None:\n        memo = {}\n    if n <= 1:\n        return 1\n    if n not in memo:\n        memo[n] = escaleras(n - 1, memo) + escaleras(n - 2, memo)\n    return memo[n]\n\nescaleras(60)  # 2504730781961",
+    "comentario": "Sin memo, escaleras(60) tardaría horas; con memo, cada valor de n se calcula una sola vez."
+  },
+  "ejercicios": [
+    {
+      "id": "rec-s3-1-e1",
+      "nivel": "facil",
+      "enunciado": "Escribe fib_memo(n), que devuelve el n-ésimo número de Fibonacci (fib(0) = 0, fib(1) = 1) de forma recursiva con memoización. Debe responder fib_memo(70) en menos de un segundo.",
+      "funcion": "fib_memo",
+      "plantilla": "def fib_memo(n):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            0
+          ],
+          "esperado": 0
+        },
+        {
+          "args": [
+            1
+          ],
+          "esperado": 1
+        },
+        {
+          "args": [
+            30
+          ],
+          "esperado": 832040
+        },
+        {
+          "args": [
+            50
+          ],
+          "esperado": 12586269025
+        },
+        {
+          "args": [
+            70
+          ],
+          "esperado": 190392490709135
+        }
+      ]
+    },
+    {
+      "id": "rec-s3-1-e2",
+      "nivel": "medio",
+      "enunciado": "Escribe caminos_memo(filas, columnas), que cuenta los caminos en la grilla igual que caminos_grilla del bloque anterior, pero con memoización. Debe responder caminos_memo(15, 15) en menos de un segundo.",
+      "funcion": "caminos_memo",
+      "plantilla": "def caminos_memo(filas, columnas):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            1,
+            1
+          ],
+          "esperado": 1
+        },
+        {
+          "args": [
+            3,
+            3
+          ],
+          "esperado": 6
+        },
+        {
+          "args": [
+            10,
+            10
+          ],
+          "esperado": 48620
+        },
+        {
+          "args": [
+            15,
+            15
+          ],
+          "esperado": 40116600
+        },
+        {
+          "args": [
+            16,
+            12
+          ],
+          "esperado": 7726160
+        }
+      ]
+    },
+    {
+      "id": "rec-s3-1-e3",
+      "nivel": "dificil",
+      "enunciado": "Escribe particiones(n), que cuenta de cuántas formas se puede escribir el entero positivo n como suma de enteros positivos sin importar el orden. Por ejemplo, 4 tiene 5 particiones: 4, 3+1, 2+2, 2+1+1 y 1+1+1+1. Pista: define una función auxiliar que cuente las particiones de n usando partes de tamaño como máximo k, y memoízala. Debe responder particiones(60) en menos de un segundo.",
+      "funcion": "particiones",
+      "plantilla": "def particiones(n):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            1
+          ],
+          "esperado": 1
+        },
+        {
+          "args": [
+            5
+          ],
+          "esperado": 7
+        },
+        {
+          "args": [
+            10
+          ],
+          "esperado": 42
+        },
+        {
+          "args": [
+            30
+          ],
+          "esperado": 5604
+        },
+        {
+          "args": [
+            60
+          ],
+          "esperado": 966467
+        }
+      ]
+    }
+  ]
+}

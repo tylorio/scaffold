@@ -1,0 +1,179 @@
+{
+  "concepto": "excepciones",
+  "semana": 3,
+  "orden": 1,
+  "version": 1,
+  "titulo": "Propagación: en qué función se captura un error",
+  "explicacion": "Si una función no captura una excepción, esta sube a la función que la llamó, y luego a la siguiente, hasta que alguna la capture o el programa se detenga. A eso se le llama propagación.\n\nNo todas las funciones deben capturar los errores. Una función de bajo nivel, como la que valida un precio, suele lanzar la excepción y dejar que suba, porque no sabe qué hacer con ella. La función de más arriba, que conoce el contexto, decide si muestra un mensaje, usa un valor por defecto o cancela la operación.\n\nUna buena pregunta para decidir dónde capturar es: ¿esta función tiene la información para resolver el problema? Si no la tiene, deja pasar la excepción.",
+  "ejemplo": {
+    "enunciado": "Una cadena de tres funciones donde el error se origina abajo y se captura arriba.",
+    "codigo": "def leer_cantidad(texto):\n    cantidad = int(texto)\n    if cantidad <= 0:\n        raise ValueError(\"la cantidad debe ser positiva\")\n    return cantidad\n\ndef subtotal(precio, texto):\n    return precio * leer_cantidad(texto)\n\ndef subtotal_o_cero(precio, texto):\n    try:\n        return subtotal(precio, texto)\n    except ValueError:\n        return 0\n\nsubtotal_o_cero(5, \"-2\")  # 0",
+    "comentario": "El ValueError nace en leer_cantidad, atraviesa subtotal sin capturarse y lo atrapa subtotal_o_cero."
+  },
+  "ejercicios": [
+    {
+      "id": "exc-s3-1-e1",
+      "nivel": "facil",
+      "enunciado": "Escribe total_carrito(precios), que devuelve la suma de los precios. Antes de sumar, cada precio pasa por una función auxiliar precio_valido(p), que escribes tú y que lanza ValueError si p es negativo. total_carrito no captura el error: debe propagarse.",
+      "funcion": "total_carrito",
+      "plantilla": "def total_carrito(precios):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            [
+              10,
+              5,
+              2.5
+            ]
+          ],
+          "esperado": 17.5
+        },
+        {
+          "args": [
+            []
+          ],
+          "esperado": 0
+        },
+        {
+          "args": [
+            [
+              3,
+              -1
+            ]
+          ],
+          "lanza": "ValueError"
+        },
+        {
+          "args": [
+            [
+              0,
+              0
+            ]
+          ],
+          "esperado": 0
+        },
+        {
+          "args": [
+            [
+              -0.5
+            ]
+          ],
+          "lanza": "ValueError"
+        }
+      ]
+    },
+    {
+      "id": "exc-s3-1-e2",
+      "nivel": "medio",
+      "enunciado": "Escribe total_o_none(precios), que usa la misma validación (un precio negativo lanza ValueError en una función auxiliar) pero captura el error en el nivel superior y devuelve None.",
+      "funcion": "total_o_none",
+      "plantilla": "def total_o_none(precios):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            [
+              10,
+              5
+            ]
+          ],
+          "esperado": 15
+        },
+        {
+          "args": [
+            [
+              3,
+              -1
+            ]
+          ],
+          "esperado": null
+        },
+        {
+          "args": [
+            []
+          ],
+          "esperado": 0
+        },
+        {
+          "args": [
+            [
+              -2,
+              4
+            ]
+          ],
+          "esperado": null
+        },
+        {
+          "args": [
+            [
+              1.5,
+              1.5
+            ]
+          ],
+          "esperado": 3.0
+        }
+      ]
+    },
+    {
+      "id": "exc-s3-1-e3",
+      "nivel": "dificil",
+      "enunciado": "Escribe tres funciones. suma_lote(lote, i) devuelve la suma del lote y, si está vacío, lanza ValueError con el mensaje \"lote i vacio\" (con el número de posición en lugar de i). total_lotes(lotes) suma todos los lotes llamando a suma_lote y no captura nada. resumen(lotes) devuelve \"total: N\" o, si hubo un lote vacío, \"error: \" seguido del mensaje de la excepción. Cualquier otro error, como un texto dentro de un lote, debe seguir propagándose. Las pruebas llaman a resumen.",
+      "funcion": "resumen",
+      "plantilla": "def resumen(lotes):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            [
+              [
+                1,
+                2
+              ],
+              [
+                3
+              ]
+            ]
+          ],
+          "esperado": "total: 6"
+        },
+        {
+          "args": [
+            [
+              [
+                1
+              ],
+              []
+            ]
+          ],
+          "esperado": "error: lote 1 vacio"
+        },
+        {
+          "args": [
+            []
+          ],
+          "esperado": "total: 0"
+        },
+        {
+          "args": [
+            [
+              [],
+              [
+                5
+              ]
+            ]
+          ],
+          "esperado": "error: lote 0 vacio"
+        },
+        {
+          "args": [
+            [
+              [
+                1,
+                "a"
+              ]
+            ]
+          ],
+          "lanza": "TypeError"
+        }
+      ]
+    }
+  ]
+}

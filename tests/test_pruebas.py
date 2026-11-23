@@ -357,3 +357,47 @@ def test_sin_pares_el_comando_termina_bien(tmp_path):
         "--bloques", str(bloque_ajeno(tmp_path / "bloques")), stdout=salida,
     )
     assert "Sin pares sospechosos" in salida.getvalue()
+
+
+# Alarma de soluciones (D22)
+
+def test_una_solucion_con_otros_nombres_se_detecta(bancos):
+    """Cambiar nombres y literales no esconde la misma tarea."""
+    from pruebas.servicios.solapamiento import MaterialRefuerzo
+
+    referencia = bancos["A"].items[0].referencia
+    disfrazada = referencia
+    for viejo, nuevo in (("contar", "veces"), ("lista", "datos"), ("x", "buscado")):
+        disfrazada = disfrazada.replace(viejo, nuevo)
+    assert similitud_soluciones(referencia, disfrazada) == 1.0
+    pares = pares_sospechosos(bancos, [MaterialRefuerzo("b/e1", "Algo sin relación.", disfrazada)])
+    assert ("A/T1", "solucion") in [(p.item_prueba, p.motivo) for p in pares]
+
+
+def test_los_ejercicios_llevan_su_solucion_de_referencia(tmp_path):
+    from pruebas.servicios.solapamiento import soluciones_de_carpeta
+
+    (tmp_path / "recursion.py").write_text(
+        "def suma_digitos(n):\n    return 0\n\n\nclass Ayuda:\n    pass\n", encoding="utf-8",
+    )
+    soluciones = soluciones_de_carpeta(tmp_path)
+    assert set(soluciones) == {"suma_digitos", "Ayuda"}
+    material = {m.id: m for m in material_de_refuerzo(soluciones=soluciones)}
+    assert material["recursion-ejemplo/rec-facil"].codigo.startswith("def suma_digitos")
+    assert material["recursion-ejemplo/rec-medio"].codigo is None
+
+
+def test_la_ficha_para_los_jueces_tiene_una_columna_por_juez(copia_banco, tmp_path):
+    ejercicio = next(m for m in material_de_refuerzo() if m.id == "recursion-ejemplo/rec-facil")
+    modificar(copia_banco, "A", lambda d: d["items"][0].update(enunciado=ejercicio.enunciado))
+    ficha = tmp_path / "ficha.csv"
+    with pytest.raises(CommandError):
+        call_command(
+            "controlar_solapamiento", "--banco", str(copia_banco),
+            "--bloques", str(ejemplos_en(tmp_path / "bloques")), "--ficha", str(ficha),
+            stdout=io.StringIO(),
+        )
+    filas = list(csv.reader(io.StringIO(ficha.read_text(encoding="utf-8"))))
+    assert filas[0] == ["item_prueba", "material", "motivo", "similitud", "juez_1", "juez_2", "juez_3"]
+    assert ["A/T1", "recursion-ejemplo/rec-facil", "enunciado"] == filas[1][:3]
+    assert "misma_tarea" in filas[-1][0]

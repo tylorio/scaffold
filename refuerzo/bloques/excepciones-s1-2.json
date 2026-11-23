@@ -1,0 +1,208 @@
+{
+  "concepto": "excepciones",
+  "semana": 1,
+  "orden": 2,
+  "version": 1,
+  "titulo": "Varias excepciones en un mismo bloque",
+  "explicacion": "Una misma operación puede fallar por motivos distintos. Se pueden escribir varios except seguidos, uno por excepción, y Python ejecuta el primero que coincida. Si dos excepciones se tratan igual, se agrupan en una tupla: except (IndexError, TypeError):.\n\nEl orden importa cuando una excepción es un caso particular de otra. Por ejemplo, KeyError e IndexError son subclases de LookupError: si except LookupError: va primero, los except posteriores para KeyError o IndexError nunca se ejecutan.\n\nPara saber qué pasó, se puede capturar la excepción en una variable con except ValueError as e: y leer str(e), que contiene el mensaje del error.",
+  "ejemplo": {
+    "enunciado": "Leer el campo i de un registro que puede ser una lista corta o un valor que no es una lista.",
+    "codigo": "def leer_campo(registro, i):\n    try:\n        return registro[i]\n    except IndexError:\n        return \"campo inexistente\"\n    except TypeError:\n        return \"registro invalido\"\n\nleer_campo(42, 0)  # 'registro invalido'",
+    "comentario": "Un entero no se puede indexar, así que Python lanza TypeError y se ejecuta el segundo except."
+  },
+  "ejercicios": [
+    {
+      "id": "exc-s1-2-e1",
+      "nivel": "facil",
+      "enunciado": "Escribe caracter_en(texto, n), que devuelve el carácter de texto en la posición n. Si la posición no existe o n no es un entero, devuelve una cadena vacía.",
+      "funcion": "caracter_en",
+      "plantilla": "def caracter_en(texto, n):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            "hola",
+            1
+          ],
+          "esperado": "o"
+        },
+        {
+          "args": [
+            "hola",
+            9
+          ],
+          "esperado": ""
+        },
+        {
+          "args": [
+            "hola",
+            "1"
+          ],
+          "esperado": ""
+        },
+        {
+          "args": [
+            "",
+            0
+          ],
+          "esperado": ""
+        },
+        {
+          "args": [
+            "abc",
+            -1
+          ],
+          "esperado": "c"
+        }
+      ]
+    },
+    {
+      "id": "exc-s1-2-e2",
+      "nivel": "medio",
+      "enunciado": "Escribe dividir_en(a, b, i), que devuelve a[i] / b[i]. Si la posición i no existe en alguna de las listas, devuelve \"indice fuera de rango\"; si b[i] es 0, devuelve \"division por cero\".",
+      "funcion": "dividir_en",
+      "plantilla": "def dividir_en(a, b, i):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            [
+              10,
+              9
+            ],
+            [
+              2,
+              3
+            ],
+            0
+          ],
+          "esperado": 5.0
+        },
+        {
+          "args": [
+            [
+              10,
+              9
+            ],
+            [
+              2,
+              0
+            ],
+            1
+          ],
+          "esperado": "division por cero"
+        },
+        {
+          "args": [
+            [
+              10
+            ],
+            [
+              2,
+              3
+            ],
+            1
+          ],
+          "esperado": "indice fuera de rango"
+        },
+        {
+          "args": [
+            [],
+            [],
+            0
+          ],
+          "esperado": "indice fuera de rango"
+        },
+        {
+          "args": [
+            [
+              7,
+              8
+            ],
+            [
+              2,
+              4
+            ],
+            1
+          ],
+          "esperado": 2.0
+        }
+      ]
+    },
+    {
+      "id": "exc-s1-2-e3",
+      "nivel": "dificil",
+      "enunciado": "Escribe valor_anidado(datos, claves), que recorre un diccionario anidado siguiendo la lista de claves y devuelve el valor final. Ejemplo: valor_anidado({\"a\": {\"b\": 5}}, [\"a\", \"b\"]) devuelve 5. Si alguna clave no existe o un valor intermedio no es un diccionario, devuelve None.",
+      "funcion": "valor_anidado",
+      "plantilla": "def valor_anidado(datos, claves):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            {
+              "a": {
+                "b": 5
+              }
+            },
+            [
+              "a",
+              "b"
+            ]
+          ],
+          "esperado": 5
+        },
+        {
+          "args": [
+            {
+              "a": {
+                "b": 5
+              }
+            },
+            [
+              "a",
+              "x"
+            ]
+          ],
+          "esperado": null
+        },
+        {
+          "args": [
+            {
+              "a": 3
+            },
+            [
+              "a",
+              "b"
+            ]
+          ],
+          "esperado": null
+        },
+        {
+          "args": [
+            {
+              "a": 1
+            },
+            []
+          ],
+          "esperado": {
+            "a": 1
+          }
+        },
+        {
+          "args": [
+            {
+              "u": {
+                "v": {
+                  "w": "fin"
+                }
+              }
+            },
+            [
+              "u",
+              "v",
+              "w"
+            ]
+          ],
+          "esperado": "fin"
+        }
+      ]
+    }
+  ]
+}

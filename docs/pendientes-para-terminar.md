@@ -32,6 +32,16 @@ Ya está en el sistema (`docs/decisiones/orientacion-asesor-2026-11-22.md`):
 
 **Guarda bien el zip** `contenido-asesor-2026-11-22.zip`: trae el banco real de la prueba. Está excluido de Git; muévelo al almacén cuando lo crees.
 
+## Actualización del 2026-11-23 (tarde): segunda entrega del asesor
+
+| Pieza | Estado |
+|---|---|
+| 24 bloques de refuerzo | **Completos.** Las 72 soluciones pasan todos sus casos con el límite real de 5 s |
+| Alarma de soluciones (D22) | Hecha y calibrada en 0,30. Con la de enunciados marca 20 pares; `controlar_solapamiento --ficha` escribe la ficha para los jueces (D23) |
+| Enunciados de la sesión de etiquetado | En `docs/sesion-etiquetado/`. **Falta** `soluciones_sesion_etiquetado.py`: el LEEME lo anuncia, pero no venía en la entrega |
+| Consentimientos y convocatoria v1 | En `docs/consentimientos/`. Antes de enviarlos al CEI hay que corregir 3 cosas (ver la respuesta del 2026-11-23) |
+| 07 §1.3 y §1.4 | Actualizados con D24 a D27 |
+
 ---
 
 ## 1. Repositorios para SP-06

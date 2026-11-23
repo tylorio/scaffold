@@ -484,3 +484,23 @@ def test_comando_cerrar_pide_confirmar(muestra, tmp_path):
     assert Fragmento.objects.exists()
     call_command("cerrar_estudio", "--confirmo", "borrar-codigo", stdout=io.StringIO())
     assert not Fragmento.objects.exists()
+
+
+@pytest.mark.parametrize("repositorio, carpeta", [
+    ("C:/repos/P01", "C:/repos/P01"),
+    ("https://github.com/x/y.git", None),
+    ("git@github.com:x/y.git", None),
+    ("", None),
+])
+def test_el_retiro_recuerda_borrar_la_carpeta_entregada(repositorio, carpeta):
+    from analisis.participacion import carpeta_a_borrar
+    assert carpeta_a_borrar(repositorio) == carpeta
+
+
+@pytest.mark.django_db
+def test_el_comando_de_retiro_nombra_la_carpeta_pero_no_la_audita():
+    participante_con("P01")
+    salida = io.StringIO()
+    call_command("retirar_participante", "P01", "--confirmo", "P01", stdout=salida)
+    assert "C:/repos/P01-secreto" in salida.getvalue()
+    assert "secreto" not in json.dumps(list(Auditoria.objects.values("detalle")))

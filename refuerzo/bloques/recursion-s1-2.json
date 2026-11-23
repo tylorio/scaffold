@@ -1,0 +1,209 @@
+{
+  "concepto": "recursion",
+  "semana": 1,
+  "orden": 2,
+  "version": 1,
+  "titulo": "Recursión sobre listas: el primero y el resto",
+  "explicacion": "Una lista se puede ver como su primer elemento, lista[0], seguido del resto, lista[1:], que también es una lista, solo que más corta. Esa forma de mirar la lista da una receta para muchas funciones recursivas: el caso base es la lista vacía (o la de un solo elemento), y el caso recursivo combina el primer elemento con el resultado de aplicar la función al resto.\n\nPara no equivocarte, supón que la llamada sobre el resto ya devuelve la respuesta correcta y pregúntate solo qué hacer con el primer elemento. A esa suposición se le llama confiar en la recursión.\n\nlista[1:] crea una copia de la lista en cada llamada. Para listas pequeñas no importa; más adelante verás cómo evitarlo pasando un índice.",
+  "ejemplo": {
+    "enunciado": "Devolver una lista nueva con cada número multiplicado por 2.",
+    "codigo": "def duplicar(lista):\n    if not lista:\n        return []\n    return [lista[0] * 2] + duplicar(lista[1:])\n\nduplicar([1, 5, 3])  # [2, 10, 6]",
+    "comentario": "Si duplicar(lista[1:]) ya está bien, basta con poner delante el primer elemento duplicado."
+  },
+  "ejercicios": [
+    {
+      "id": "rec-s1-2-e1",
+      "nivel": "facil",
+      "enunciado": "Escribe maximo(lista), que devuelve el mayor elemento de una lista no vacía de números, de forma recursiva y sin usar max ni bucles.",
+      "funcion": "maximo",
+      "plantilla": "def maximo(lista):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            [
+              3,
+              9,
+              2
+            ]
+          ],
+          "esperado": 9
+        },
+        {
+          "args": [
+            [
+              5
+            ]
+          ],
+          "esperado": 5
+        },
+        {
+          "args": [
+            [
+              -1,
+              -7
+            ]
+          ],
+          "esperado": -1
+        },
+        {
+          "args": [
+            [
+              4,
+              4
+            ]
+          ],
+          "esperado": 4
+        },
+        {
+          "args": [
+            [
+              1,
+              2,
+              3,
+              10
+            ]
+          ],
+          "esperado": 10
+        }
+      ]
+    },
+    {
+      "id": "rec-s1-2-e2",
+      "nivel": "medio",
+      "enunciado": "Escribe contiene(lista, x), que devuelve True si x está en la lista y False si no, de forma recursiva y sin usar in ni bucles.",
+      "funcion": "contiene",
+      "plantilla": "def contiene(lista, x):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            [
+              1,
+              2,
+              3
+            ],
+            2
+          ],
+          "esperado": true
+        },
+        {
+          "args": [
+            [],
+            1
+          ],
+          "esperado": false
+        },
+        {
+          "args": [
+            [
+              "a",
+              "b"
+            ],
+            "c"
+          ],
+          "esperado": false
+        },
+        {
+          "args": [
+            [
+              [
+                1
+              ],
+              2
+            ],
+            [
+              1
+            ]
+          ],
+          "esperado": true
+        },
+        {
+          "args": [
+            [
+              0
+            ],
+            0
+          ],
+          "esperado": true
+        }
+      ]
+    },
+    {
+      "id": "rec-s1-2-e3",
+      "nivel": "dificil",
+      "enunciado": "Escribe intercalar(a, b), que devuelve una lista que alterna los elementos de a y b, empezando por a. Cuando una lista se acaba, se agregan los elementos que quedan de la otra. Ejemplo: intercalar([1, 2, 3], [\"x\", \"y\"]) devuelve [1, \"x\", 2, \"y\", 3]. Resuélvelo de forma recursiva.",
+      "funcion": "intercalar",
+      "plantilla": "def intercalar(a, b):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            [
+              1,
+              2,
+              3
+            ],
+            [
+              "x",
+              "y"
+            ]
+          ],
+          "esperado": [
+            1,
+            "x",
+            2,
+            "y",
+            3
+          ]
+        },
+        {
+          "args": [
+            [],
+            [
+              1,
+              2
+            ]
+          ],
+          "esperado": [
+            1,
+            2
+          ]
+        },
+        {
+          "args": [
+            [
+              1
+            ],
+            []
+          ],
+          "esperado": [
+            1
+          ]
+        },
+        {
+          "args": [
+            [
+              1,
+              2
+            ],
+            [
+              3,
+              4
+            ]
+          ],
+          "esperado": [
+            1,
+            3,
+            2,
+            4
+          ]
+        },
+        {
+          "args": [
+            [],
+            []
+          ],
+          "esperado": []
+        }
+      ]
+    }
+  ]
+}

@@ -5,7 +5,7 @@ total. El nombre del archivo es el `id` del bloque, por ejemplo
 `estructuras_datos-s1-1.json`. El formato está en el README, sección «Bloques de
 refuerzo».
 
-Estado: estructuras de datos, 8 de 8. Excepciones y recursión, pendientes.
+Estado: los 24 bloques escritos (8 por concepto), con sus soluciones. Falta la validación de los jueces.
 
 Antes de cargarlos:
 
