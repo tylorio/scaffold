@@ -1,0 +1,150 @@
+{
+  "concepto": "estructuras_datos",
+  "semana": 3,
+  "orden": 1,
+  "version": 1,
+  "titulo": "Pilas: el último en entrar es el primero en salir",
+  "explicacion": "Una pila guarda elementos de forma que solo se puede sacar el último que se agregó, como una pila de platos. En Python se usa una lista: append(x) apila y pop() desapila el último elemento. Para mirar el tope sin sacarlo se usa pila[-1].\n\nLas pilas aparecen cuando hay que deshacer acciones, recordar el camino de regreso o comprobar que algo se abre y se cierra en el orden correcto. Antes de hacer pop() hay que verificar que la pila no esté vacía, porque pop() sobre una lista vacía lanza IndexError.\n\nUna pila vacía es falsa en una condición, así que if not pila: sirve para comprobar si no tiene elementos.",
+  "ejemplo": {
+    "enunciado": "Simular un editor con acciones \"escribir X\" y \"deshacer\", y devolver el texto final.",
+    "codigo": "def editor(acciones):\n    pila = []\n    for a in acciones:\n        if a == \"deshacer\":\n            if pila:\n                pila.pop()\n        else:\n            pila.append(a.split(\" \", 1)[1])\n    return \"\".join(pila)\n\neditor([\"escribir ho\", \"escribir la\", \"escribir xx\", \"deshacer\"])  # 'hola'",
+    "comentario": "Deshacer quita la última escritura, que es justo el tope de la pila."
+  },
+  "ejercicios": [
+    {
+      "id": "ed-s3-1-e1",
+      "nivel": "facil",
+      "enunciado": "Escribe invertir_palabras(frase), que devuelve la frase con las palabras en orden inverso, usando una pila. Las palabras se separan por un espacio.",
+      "funcion": "invertir_palabras",
+      "plantilla": "def invertir_palabras(frase):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            "hola mundo"
+          ],
+          "esperado": "mundo hola"
+        },
+        {
+          "args": [
+            ""
+          ],
+          "esperado": ""
+        },
+        {
+          "args": [
+            "uno"
+          ],
+          "esperado": "uno"
+        },
+        {
+          "args": [
+            "a b c d"
+          ],
+          "esperado": "d c b a"
+        },
+        {
+          "args": [
+            "Python es util"
+          ],
+          "esperado": "util es Python"
+        }
+      ]
+    },
+    {
+      "id": "ed-s3-1-e2",
+      "nivel": "medio",
+      "enunciado": "Escribe balanceado(texto), que devuelve True si los símbolos (), [] y {} del texto están bien abiertos y cerrados, en el orden correcto. Los demás caracteres se ignoran.",
+      "funcion": "balanceado",
+      "plantilla": "def balanceado(texto):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            "(a[b]{c})"
+          ],
+          "esperado": true
+        },
+        {
+          "args": [
+            "(]"
+          ],
+          "esperado": false
+        },
+        {
+          "args": [
+            ""
+          ],
+          "esperado": true
+        },
+        {
+          "args": [
+            "(("
+          ],
+          "esperado": false
+        },
+        {
+          "args": [
+            "{[()()]}x)"
+          ],
+          "esperado": false
+        }
+      ]
+    },
+    {
+      "id": "ed-s3-1-e3",
+      "nivel": "dificil",
+      "enunciado": "Escribe evaluar_postfija(tokens), que evalúa una expresión en notación postfija dada como lista de cadenas, con enteros y los operadores +, - y *. Ejemplo: [\"3\", \"4\", \"+\", \"2\", \"*\"] vale (3 + 4) * 2 = 14. Si la expresión está mal formada (faltan operandos o sobran números), lanza ValueError.",
+      "funcion": "evaluar_postfija",
+      "plantilla": "def evaluar_postfija(tokens):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            [
+              "3",
+              "4",
+              "+",
+              "2",
+              "*"
+            ]
+          ],
+          "esperado": 14
+        },
+        {
+          "args": [
+            [
+              "5"
+            ]
+          ],
+          "esperado": 5
+        },
+        {
+          "args": [
+            [
+              "10",
+              "3",
+              "-"
+            ]
+          ],
+          "esperado": 7
+        },
+        {
+          "args": [
+            [
+              "1",
+              "+"
+            ]
+          ],
+          "lanza": "ValueError"
+        },
+        {
+          "args": [
+            [
+              "1",
+              "2"
+            ]
+          ],
+          "lanza": "ValueError"
+        }
+      ]
+    }
+  ]
+}

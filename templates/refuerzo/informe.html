@@ -13,7 +13,8 @@
   </p>
   <p>
     El intervalo muestra el rango donde probablemente está el valor real. Con pocas
-    funciones el intervalo es ancho y el número dice poco; en ese caso lo indicamos.
+    funciones el intervalo es ancho y el número dice poco: lo marcamos como
+    «estimación incierta» o, si es muy ancho, «estimación muy incierta».
   </p>
   {% if analisis.modelo_es_demo %}
     <p class="mensaje mensaje-warning">
@@ -33,7 +34,7 @@
     <span class="valor">{{ global.n }}</span>
   </div>
 </section>
-{% if global.ancho %}<p class="ayuda">El intervalo global es ancho: interpreta el valor con cautela.</p>{% endif %}
+{% if global.incertidumbre %}<p class="ayuda">Estimación {{ global.incertidumbre }}: interpreta el valor con cautela.</p>{% endif %}
 
 <h2>Por concepto</h2>
 <div class="tabla-scroll">
@@ -45,7 +46,7 @@
           <td>{{ c.nombre }}</td>
           <td class="num">{{ c.n }}</td>
           <td class="num">{% if c.valor is not None %}{{ c.valor|floatformat:2 }}{% else %}—{% endif %}</td>
-          <td>{% if c.intervalo %}{{ c.intervalo.0|floatformat:2 }} – {{ c.intervalo.1|floatformat:2 }}{% if c.ancho %} (ancho){% endif %}{% else %}—{% endif %}</td>
+          <td>{% if c.intervalo %}{{ c.intervalo.0|floatformat:2 }} – {{ c.intervalo.1|floatformat:2 }}{% if c.incertidumbre %} · estimación {{ c.incertidumbre }}{% endif %}{% else %}—{% endif %}</td>
           <td>{{ c.estado }}</td>
           <td>{% if c.reforzado %}Reforzado{% else %}Sin refuerzo durante el estudio{% endif %}</td>
         </tr>

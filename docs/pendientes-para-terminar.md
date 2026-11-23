@@ -16,6 +16,22 @@ El orden de F10 que fijó el asesor está construido, salvo la **pieza 7**: piez
 
 Además, el sistema ya funciona, pero **no tiene contenido real**. El banco de la prueba, los 24 bloques de refuerzo y la rúbrica Q los escribes tú (§4 a §6).
 
+## Actualización del 2026-11-23: entrega del asesor
+
+Ya está en el sistema (`docs/decisiones/orientacion-asesor-2026-11-22.md`):
+
+| Pieza | Estado |
+|---|---|
+| Banco de la prueba, formas A y B (§4) | **Listo.** En `datos/banco_prueba/`, fuera de Git; las 6 referencias pasan sus 60 casos con el corrector. Cuando crees el almacén cifrado, muévelo ahí (§8) |
+| Bloques de estructuras de datos (§5) | **8 de 8.** Las 24 soluciones pasan sus 120 casos con el ejecutor, y los ejemplos devuelven lo que muestran (`tests/test_contenido.py`) |
+| Bloques de excepciones y recursión | **Pendientes**: el asesor los manda en el próximo lote |
+| Bloques del prototipo | No se pueden validar ni cargar en el portal: se solapan con la prueba |
+| Alarma de solapamiento | Umbral calibrado a 0,2 con el banco real. Marca 3 pares con los bloques nuevos, que parecen falsas alarmas: los jueces los confirman con la pregunta 4 de su lista |
+| Decisiones abiertas (§9) | Valores provisionales del asesor: informe «incierta» (0,3–0,5) y «muy incierta» (> 0,5); ECE ≤ 0,10; LOAO ≤ 0,10; 5 s por envío |
+| Correo al CEI (§7) | Borrador en el zip del asesor: completa los campos `[COMPLETAR]` y envíalo tú |
+
+**Guarda bien el zip** `contenido-asesor-2026-11-22.zip`: trae el banco real de la prueba. Está excluido de Git; muévelo al almacén cuando lo crees.
+
 ---
 
 ## 1. Repositorios para SP-06

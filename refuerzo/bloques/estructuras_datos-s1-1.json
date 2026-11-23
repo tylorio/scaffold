@@ -1,0 +1,255 @@
+{
+  "concepto": "estructuras_datos",
+  "semana": 1,
+  "orden": 1,
+  "version": 1,
+  "titulo": "Diccionarios: guardar y consultar por clave",
+  "explicacion": "Un diccionario guarda pares clave-valor y permite encontrar un valor a partir de su clave sin recorrer toda la colección. Se crea con llaves, como en stock = {\"lapiz\": 10, \"cuaderno\": 4}, y se consulta con stock[\"lapiz\"].\n\nSi la clave no existe, stock[\"borrador\"] lanza KeyError. Para consultar con un valor por defecto se usa stock.get(\"borrador\", 0), que devuelve 0 si la clave no está. Para acumular, el patrón más común es d[clave] = d.get(clave, 0) + cantidad.\n\nRecorrer un diccionario con for clave in d da las claves; con for clave, valor in d.items() se obtienen los dos. Si una función no debe modificar el diccionario que recibe, trabaja sobre una copia: copia = dict(original).",
+  "ejemplo": {
+    "enunciado": "Dada una lista de compras como pares [producto, cantidad], calcular cuántas unidades se compraron de cada producto.",
+    "codigo": "def total_por_producto(compras):\n    totales = {}\n    for producto, cantidad in compras:\n        totales[producto] = totales.get(producto, 0) + cantidad\n    return totales\n\ntotal_por_producto([[\"pan\", 2], [\"leche\", 1], [\"pan\", 3]])\n# {'pan': 5, 'leche': 1}",
+    "comentario": "get(producto, 0) evita el KeyError la primera vez que aparece un producto."
+  },
+  "ejercicios": [
+    {
+      "id": "ed-s1-1-e1",
+      "nivel": "facil",
+      "enunciado": "Escribe stock_de(inventario, producto), que devuelve la cantidad de producto en el diccionario inventario, o 0 si el producto no está.",
+      "funcion": "stock_de",
+      "plantilla": "def stock_de(inventario, producto):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            {
+              "lapiz": 10,
+              "regla": 3
+            },
+            "lapiz"
+          ],
+          "esperado": 10
+        },
+        {
+          "args": [
+            {
+              "lapiz": 10,
+              "regla": 3
+            },
+            "goma"
+          ],
+          "esperado": 0
+        },
+        {
+          "args": [
+            {},
+            "lapiz"
+          ],
+          "esperado": 0
+        },
+        {
+          "args": [
+            {
+              "cinta": 0
+            },
+            "cinta"
+          ],
+          "esperado": 0
+        },
+        {
+          "args": [
+            {
+              "A": 1,
+              "a": 2
+            },
+            "a"
+          ],
+          "esperado": 2
+        }
+      ]
+    },
+    {
+      "id": "ed-s1-1-e2",
+      "nivel": "medio",
+      "enunciado": "Escribe sumar_por_producto(ventas), que recibe una lista de pares [producto, cantidad] y devuelve un diccionario con la cantidad total vendida de cada producto.",
+      "funcion": "sumar_por_producto",
+      "plantilla": "def sumar_por_producto(ventas):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            [
+              [
+                "pan",
+                2
+              ],
+              [
+                "leche",
+                1
+              ],
+              [
+                "pan",
+                3
+              ]
+            ]
+          ],
+          "esperado": {
+            "pan": 5,
+            "leche": 1
+          }
+        },
+        {
+          "args": [
+            []
+          ],
+          "esperado": {}
+        },
+        {
+          "args": [
+            [
+              [
+                "te",
+                0
+              ]
+            ]
+          ],
+          "esperado": {
+            "te": 0
+          }
+        },
+        {
+          "args": [
+            [
+              [
+                "a",
+                1
+              ],
+              [
+                "b",
+                2
+              ],
+              [
+                "a",
+                -1
+              ]
+            ]
+          ],
+          "esperado": {
+            "a": 0,
+            "b": 2
+          }
+        },
+        {
+          "args": [
+            [
+              [
+                "x",
+                5
+              ],
+              [
+                "x",
+                5
+              ],
+              [
+                "x",
+                5
+              ]
+            ]
+          ],
+          "esperado": {
+            "x": 15
+          }
+        }
+      ]
+    },
+    {
+      "id": "ed-s1-1-e3",
+      "nivel": "dificil",
+      "enunciado": "Escribe productos_agotados(inventario, pedidos). inventario es un diccionario producto -> cantidad y pedidos es una lista de pares [producto, cantidad]. Descuenta cada pedido del stock (un producto que no está en el inventario empieza en 0) y devuelve, en orden alfabético, los productos que terminan con stock menor o igual a 0. No modifiques el diccionario inventario original.",
+      "funcion": "productos_agotados",
+      "plantilla": "def productos_agotados(inventario, pedidos):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            {
+              "pan": 5,
+              "leche": 2
+            },
+            [
+              [
+                "pan",
+                2
+              ],
+              [
+                "leche",
+                2
+              ]
+            ]
+          ],
+          "esperado": [
+            "leche"
+          ]
+        },
+        {
+          "args": [
+            {
+              "pan": 5
+            },
+            []
+          ],
+          "esperado": []
+        },
+        {
+          "args": [
+            {},
+            [
+              [
+                "cafe",
+                1
+              ]
+            ]
+          ],
+          "esperado": [
+            "cafe"
+          ]
+        },
+        {
+          "args": [
+            {
+              "b": 1,
+              "a": 1
+            },
+            [
+              [
+                "a",
+                3
+              ],
+              [
+                "b",
+                1
+              ]
+            ]
+          ],
+          "esperado": [
+            "a",
+            "b"
+          ]
+        },
+        {
+          "args": [
+            {
+              "sal": 0,
+              "azucar": 4
+            },
+            [
+              [
+                "azucar",
+                1
+              ]
+            ]
+          ],
+          "esperado": [
+            "sal"
+          ]
+        }
+      ]
+    }
+  ]
+}

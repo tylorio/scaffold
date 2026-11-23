@@ -1,0 +1,224 @@
+{
+  "concepto": "estructuras_datos",
+  "semana": 4,
+  "orden": 1,
+  "version": 1,
+  "titulo": "Ordenar con criterio: sorted, key y mezcla de listas ordenadas",
+  "explicacion": "sorted(lista) devuelve una lista nueva ordenada y no modifica la original; lista.sort() ordena en el lugar y devuelve None. Los dos aceptan key, una función que dice qué valor usar para comparar: sorted(palabras, key=len) ordena por longitud.\n\nPara ordenar por varios criterios, key puede devolver una tupla: key=lambda p: (len(p), p) ordena por longitud y, si empatan, alfabéticamente. Con reverse=True el orden se invierte.\n\nCuando dos listas ya están ordenadas, no hace falta volver a ordenarlas para unirlas: se recorren con dos índices y en cada paso se toma el menor de los dos elementos actuales. Así se aprovecha el orden que ya tienen.",
+  "ejemplo": {
+    "enunciado": "Ordenar productos, dados como pares [nombre, precio], del más barato al más caro y, si cuestan lo mismo, por nombre.",
+    "codigo": "def ordenar_productos(productos):\n    return sorted(productos, key=lambda p: (p[1], p[0]))\n\nordenar_productos([[\"te\", 3], [\"cafe\", 5], [\"agua\", 3]])\n# [['agua', 3], ['te', 3], ['cafe', 5]]",
+    "comentario": "La tupla (precio, nombre) resuelve el empate por precio con el nombre."
+  },
+  "ejercicios": [
+    {
+      "id": "ed-s4-1-e1",
+      "nivel": "facil",
+      "enunciado": "Escribe ordenar_por_longitud(palabras), que devuelve las palabras ordenadas de la más corta a la más larga y, si tienen la misma longitud, en orden alfabético.",
+      "funcion": "ordenar_por_longitud",
+      "plantilla": "def ordenar_por_longitud(palabras):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            [
+              "pera",
+              "uva",
+              "kiwi",
+              "higo"
+            ]
+          ],
+          "esperado": [
+            "uva",
+            "higo",
+            "kiwi",
+            "pera"
+          ]
+        },
+        {
+          "args": [
+            []
+          ],
+          "esperado": []
+        },
+        {
+          "args": [
+            [
+              "a"
+            ]
+          ],
+          "esperado": [
+            "a"
+          ]
+        },
+        {
+          "args": [
+            [
+              "ccc",
+              "bb",
+              "a"
+            ]
+          ],
+          "esperado": [
+            "a",
+            "bb",
+            "ccc"
+          ]
+        },
+        {
+          "args": [
+            [
+              "sol",
+              "mar",
+              "luz"
+            ]
+          ],
+          "esperado": [
+            "luz",
+            "mar",
+            "sol"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ed-s4-1-e2",
+      "nivel": "medio",
+      "enunciado": "Escribe mediana(numeros), que devuelve la mediana de la lista: el valor central de los datos ordenados o, si la cantidad es par, el promedio de los dos centrales. Si la lista está vacía, devuelve None. No modifiques la lista original.",
+      "funcion": "mediana",
+      "plantilla": "def mediana(numeros):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            [
+              3,
+              1,
+              2
+            ]
+          ],
+          "esperado": 2
+        },
+        {
+          "args": [
+            [
+              4,
+              1,
+              3,
+              2
+            ]
+          ],
+          "esperado": 2.5
+        },
+        {
+          "args": [
+            []
+          ],
+          "esperado": null
+        },
+        {
+          "args": [
+            [
+              7
+            ]
+          ],
+          "esperado": 7
+        },
+        {
+          "args": [
+            [
+              5,
+              5,
+              1,
+              9
+            ]
+          ],
+          "esperado": 5.0
+        }
+      ]
+    },
+    {
+      "id": "ed-s4-1-e3",
+      "nivel": "dificil",
+      "enunciado": "Escribe fusionar_ordenadas(a, b), que recibe dos listas ya ordenadas de forma ascendente y devuelve una sola lista ordenada con todos sus elementos. No uses sort ni sorted: recorre las dos listas con dos índices.",
+      "funcion": "fusionar_ordenadas",
+      "plantilla": "def fusionar_ordenadas(a, b):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            [
+              1,
+              4,
+              7
+            ],
+            [
+              2,
+              3,
+              8
+            ]
+          ],
+          "esperado": [
+            1,
+            2,
+            3,
+            4,
+            7,
+            8
+          ]
+        },
+        {
+          "args": [
+            [],
+            [
+              1,
+              2
+            ]
+          ],
+          "esperado": [
+            1,
+            2
+          ]
+        },
+        {
+          "args": [
+            [],
+            []
+          ],
+          "esperado": []
+        },
+        {
+          "args": [
+            [
+              1,
+              1
+            ],
+            [
+              1
+            ]
+          ],
+          "esperado": [
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "args": [
+            [
+              5,
+              6
+            ],
+            [
+              1,
+              2
+            ]
+          ],
+          "esperado": [
+            1,
+            2,
+            5,
+            6
+          ]
+        }
+      ]
+    }
+  ]
+}

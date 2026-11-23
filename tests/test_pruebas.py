@@ -1,8 +1,10 @@
 """Prueba de desempeño: banco A/B, corrector de T1–T3 y control de solapamiento."""
+import copy
 import csv
 import io
 import json
 import shutil
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -23,6 +25,7 @@ from pruebas.servicios.corrector import (
     verificar_referencias,
 )
 from pruebas.servicios.exportacion import COLUMNAS_PUNTAJES, PROHIBIDAS
+from refuerzo.servicios.banco import bloques_de_ejemplo
 from pruebas.servicios.solapamiento import (
     material_de_refuerzo,
     pares_sospechosos,
@@ -293,21 +296,64 @@ def test_similitudes():
     assert similitud_soluciones(a, "def roto(:") == 0.0
 
 
-def test_el_banco_de_ejemplo_no_se_solapa_con_el_refuerzo(bancos):
-    assert pares_sospechosos(bancos, material_de_refuerzo()) == []
+def bloque_ajeno(carpeta):
+    """Un bloque que no se parece a nada de la prueba de ejemplo."""
+    bloque = copy.deepcopy(bloques_de_ejemplo()[0])
+    bloque.update(id="ajeno-s1-1")
+    bloque["ejemplos"] = [{
+        "titulo": "", "enunciado": "Calcula el área de un rectángulo.",
+        "codigo": "def area(b, h):\n    return b * h\n", "salida": "", "explicacion": "",
+    }]
+    for n, ejercicio in enumerate(bloque["ejercicios"]):
+        ejercicio["enunciado"] = ("Convierte grados Celsius a Kelvin.", "Indica si un año es bisiesto.",
+                                  "Calcula el perímetro de un polígono regular.")[n]
+        ejercicio["titulo"] = ""
+    carpeta.mkdir(exist_ok=True)
+    (carpeta / "ajeno.json").write_text(json.dumps(bloque), encoding="utf-8")
+    return carpeta
 
 
-def test_un_item_copiado_del_refuerzo_se_detecta(copia_banco):
+def ejemplos_en(carpeta):
+    carpeta.mkdir(exist_ok=True)
+    for bloque in bloques_de_ejemplo():
+        (carpeta / f"{bloque['id']}.json").write_text(json.dumps(bloque), encoding="utf-8")
+    return carpeta
+
+
+def test_un_item_copiado_del_refuerzo_se_detecta(copia_banco, tmp_path):
     ejercicio = next(m for m in material_de_refuerzo() if m.id == "recursion-ejemplo/rec-facil")
     modificar(copia_banco, "A", lambda d: d["items"][0].update(enunciado=ejercicio.enunciado))
     salida = io.StringIO()
     with pytest.raises(CommandError) as error:
-        call_command("controlar_solapamiento", "--banco", str(copia_banco), stdout=salida)
+        call_command(
+            "controlar_solapamiento", "--banco", str(copia_banco),
+            "--bloques", str(ejemplos_en(tmp_path / "bloques")), stdout=salida,
+        )
     assert error.value.returncode == 12
     assert "A/T1 ~ recursion-ejemplo/rec-facil  (enunciado" in salida.getvalue()
 
 
-def test_sin_pares_el_comando_termina_bien():
+def test_una_parafrasis_del_refuerzo_se_detecta(bancos):
+    """El umbral calibrado (0,2) atrapa una reescritura, no solo una copia."""
+    ejercicio = next(m for m in material_de_refuerzo() if m.id == "estructuras_datos-ejemplo/est-medio")
+    item = bancos["A"].items[1]
+    parafrasis = replace(item, enunciado=(
+        "Implementa palabra_top(textos): retorna la palabra repetida más veces; si hay "
+        "empate gana la que apareció primero; si está vacía, None."
+    ))
+    banco = replace(bancos["A"], items=(bancos["A"].items[0], parafrasis, bancos["A"].items[2]))
+    pares = pares_sospechosos({"A": banco}, [ejercicio])
+    assert ("A/T2", "enunciado") in [(p.item_prueba, p.motivo) for p in pares]
+    # Con el umbral anterior (0,5) la paráfrasis pasaba sin alarma.
+    assert "A/T2" not in [
+        p.item_prueba for p in pares_sospechosos({"A": banco}, [ejercicio], umbral_enunciado=0.5)
+    ]
+
+
+def test_sin_pares_el_comando_termina_bien(tmp_path):
     salida = io.StringIO()
-    call_command("controlar_solapamiento", "--banco", str(EJEMPLO), stdout=salida)
+    call_command(
+        "controlar_solapamiento", "--banco", str(EJEMPLO),
+        "--bloques", str(bloque_ajeno(tmp_path / "bloques")), stdout=salida,
+    )
     assert "Sin pares sospechosos" in salida.getvalue()

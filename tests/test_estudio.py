@@ -347,7 +347,7 @@ def test_el_informe_solo_se_abre_tras_el_postest(cliente_anonimo):
     html = cliente_anonimo.get(reverse("estudiante:informe")).content.decode()
     assert "estimación probabilística, no una prueba" in html
     assert "0.67" in html or "0,67" in html
-    assert "(ancho)" in html  # 2 de 3 funciones: intervalo poco informativo
+    assert "estimación muy incierta" in html  # 2 de 3 funciones: intervalo muy ancho
     assert "modelo de demostración" in html
     assert "Ver mi informe" in cliente_anonimo.get(reverse("estudiante:inicio")).content.decode()
 

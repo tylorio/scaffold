@@ -186,11 +186,11 @@ def test_cambiar_el_contenido_sin_subir_la_version_se_rechaza():
 
 @pytest.mark.django_db
 def test_una_version_nueva_pierde_la_validacion():
-    cargar_bloques([ejemplo()], "investigador")
-    validar_bloque("recursion-ejemplo", 1, 3, "investigador")
-    nueva = copy.deepcopy(ejemplo())
-    nueva.update(titulo="Corregido", version=2)
-    assert cargar_bloques([nueva], "investigador").actualizados == ["recursion-ejemplo"]
+    cargar_bloques([otro_bloque(2)], "investigador")
+    validar_bloque("recursion-s2-1", 1, 3, "investigador")
+    nueva = otro_bloque(2, version=2)
+    nueva.update(titulo="Corregido")
+    assert cargar_bloques([nueva], "investigador").actualizados == ["recursion-s2-1"]
     bloque = BloqueRefuerzo.objects.get()
     assert (bloque.version, bloque.validado, bloque.n_jueces) == (2, False, None)
 
@@ -204,14 +204,32 @@ def test_dos_bloques_no_comparten_semana_y_orden():
 
 @pytest.mark.django_db
 def test_validar_exige_la_version_vista_y_los_jueces():
-    cargar_bloques([ejemplo()], "investigador")
+    cargar_bloques([otro_bloque(2)], "investigador")
     with pytest.raises(AccionNoPermitida, match="versión 1"):
-        validar_bloque("recursion-ejemplo", 2, 3, "investigador")
+        validar_bloque("recursion-s2-1", 2, 3, "investigador")
     with pytest.raises(AccionNoPermitida, match="jueces"):
-        validar_bloque("recursion-ejemplo", 1, 0, "investigador")
-    validar_bloque("recursion-ejemplo", 1, 3, "investigador")
+        validar_bloque("recursion-s2-1", 1, 0, "investigador")
+    validar_bloque("recursion-s2-1", 1, 3, "investigador")
     registro = Auditoria.objects.get(accion=Auditoria.VALIDAR_BLOQUE)
-    assert registro.detalle["n_jueces"] == 3 and registro.objeto == "recursion-ejemplo"
+    assert registro.detalle["n_jueces"] == 3 and registro.objeto == "recursion-s2-1"
+
+
+@pytest.mark.django_db
+def test_los_bloques_de_ejemplo_no_se_pueden_validar():
+    """Se solapan con la prueba real (orientación del asesor, 2026-11-22)."""
+    cargar_bloques([ejemplo()], "investigador")
+    with pytest.raises(AccionNoPermitida, match="bloque de ejemplo"):
+        validar_bloque("recursion-ejemplo", 1, 3, "investigador")
+    assert not BloqueRefuerzo.objects.get().validado
+
+
+@pytest.mark.django_db
+def test_los_bloques_de_ejemplo_no_se_cargan_en_el_portal(settings):
+    settings.PERFIL = "nube"
+    with pytest.raises(CommandError) as error:
+        call_command("cargar_bloques", "--ejemplo")
+    assert error.value.returncode == 17
+    assert not BloqueRefuerzo.objects.exists()
 
 
 @pytest.mark.django_db
@@ -398,11 +416,11 @@ def test_gestion_libera_solo_con_confirmacion(client):
 def test_gestion_fija_el_inicio_y_valida_bloques(client):
     client.post(reverse("gestion:inicio_intervencion"), {"fecha": "2026-12-07"})
     assert Configuracion.obtener().inicio_intervencion == HOY
-    cargar_bloques([ejemplo()], "investigador")
+    cargar_bloques([otro_bloque(2)], "investigador")
     html = client.get(reverse("gestion:panel")).content.decode()
     assert "Registrar validación" in html and "faltan 7 de 8" in html
     client.post(
-        reverse("gestion:validar_bloque", args=["recursion-ejemplo"]),
+        reverse("gestion:validar_bloque", args=["recursion-s2-1"]),
         {"version": "1", "n_jueces": "3"},
     )
     bloque = BloqueRefuerzo.objects.get()

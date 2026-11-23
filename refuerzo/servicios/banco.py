@@ -29,6 +29,16 @@ class BloqueInvalido(Exception):
     pass
 
 
+# Los bloques de ejemplo salen de las plantillas del prototipo, y varios de sus
+# ejercicios se solapan con la prueba real. Sirven para desarrollo y pruebas, nunca
+# para los estudiantes (orientación del asesor, 2026-11-22).
+SUFIJO_EJEMPLO = "-ejemplo"
+
+
+def es_de_ejemplo(bloque_id: str) -> bool:
+    return bloque_id.endswith(SUFIJO_EJEMPLO)
+
+
 def introduccion(concepto: str) -> str:
     """Igual para todos: no cita el análisis ni el IDC del estudiante (D11)."""
     return (
@@ -92,6 +102,52 @@ def huella(contenido: dict) -> str:
     ).hexdigest()
 
 
+# Nivel de cada ejercicio, en el orden en que deben aparecer (D20).
+NIVELES = ("Fácil", "Medio", "Difícil")
+_NIVEL = {"facil": "Fácil", "fácil": "Fácil", "medio": "Medio", "dificil": "Difícil",
+          "difícil": "Difícil"}
+EJERCICIOS_POR_BLOQUE = 3
+
+
+def normalizar(contenido: Any, id_archivo: str | None = None) -> Any:
+    """Lleva un bloque al formato interno. Acepta también el formato de autoría.
+
+    En el formato de autoría (el de los bloques del asesor) el `id` sale del nombre
+    del archivo, la explicación es un texto con párrafos separados por una línea en
+    blanco, hay un solo `ejemplo` con `comentario`, y los ejercicios no tienen
+    título. El contenido no cambia: solo su forma.
+    """
+    if not isinstance(contenido, dict):
+        return contenido
+    bloque = dict(contenido)
+    if "id" not in bloque and id_archivo:
+        bloque["id"] = id_archivo
+    if isinstance(bloque.get("explicacion"), str):
+        bloque["explicacion"] = [
+            p.strip() for p in bloque["explicacion"].split("\n\n") if p.strip()
+        ]
+    if "ejemplos" not in bloque and isinstance(bloque.get("ejemplo"), dict):
+        bloque["ejemplos"] = [bloque.pop("ejemplo")]
+    if isinstance(bloque.get("ejemplos"), list):
+        bloque["ejemplos"] = [
+            {
+                "titulo": e.get("titulo", ""), "enunciado": e.get("enunciado", ""),
+                "codigo": e.get("codigo", ""), "salida": e.get("salida", ""),
+                "explicacion": e.get("explicacion", e.get("comentario", "")),
+            } if isinstance(e, dict) else e
+            for e in bloque["ejemplos"]
+        ]
+    if isinstance(bloque.get("ejercicios"), list):
+        bloque["ejercicios"] = [
+            {
+                **e, "titulo": e.get("titulo", ""),
+                "nivel": _NIVEL.get(str(e.get("nivel", "")).strip().lower(), e.get("nivel")),
+            } if isinstance(e, dict) else e
+            for e in bloque["ejercicios"]
+        ]
+    return bloque
+
+
 def validar(contenido: Any) -> list[str]:
     if not isinstance(contenido, dict):
         return ["El bloque debe ser un objeto JSON."]
@@ -112,14 +168,32 @@ def validar(contenido: Any) -> list[str]:
     if not contenido["ejemplos"]:
         errores.append(f"{ident}: falta el ejemplo resuelto.")
     ejercicios = contenido["ejercicios"]
-    if not ejercicios:
-        errores.append(f"{ident}: no tiene ejercicios.")
+    if len(ejercicios) != EJERCICIOS_POR_BLOQUE:
+        errores.append(f"{ident}: debe tener {EJERCICIOS_POR_BLOQUE} ejercicios (D20).")
     ids = [e.get("id") for e in ejercicios if isinstance(e, dict)]
     if len(ids) != len(set(ids)) or len(ids) != len(ejercicios):
         errores.append(f"{ident}: los ejercicios deben tener id distintos.")
+    elif [e.get("nivel") for e in ejercicios] != list(NIVELES)[:len(ejercicios)]:
+        errores.append(f"{ident}: los niveles van en orden: fácil, medio y difícil.")
     for e in ejercicios:
-        if isinstance(e, dict) and not e.get("casos"):
-            errores.append(f"{ident}/{e.get('id')}: sin casos de prueba.")
+        if not isinstance(e, dict):
+            continue
+        ruta = f"{ident}/{e.get('id')}"
+        sin = {"id", "nivel", "enunciado", "funcion", "plantilla", "casos"} - e.keys()
+        if sin:
+            errores.append(f"{ruta}: faltan {', '.join(sorted(sin))}.")
+            continue
+        if not str(e["id"]) or len(str(e["id"])) > 20:
+            errores.append(f"{ruta}: el id debe tener entre 1 y 20 caracteres.")
+        if not str(e["funcion"]).isidentifier():
+            errores.append(f"{ruta}: el nombre de la función no es válido.")
+        if not e["casos"]:
+            errores.append(f"{ruta}: sin casos de prueba.")
+        for n, caso in enumerate(e["casos"], 1):
+            if not isinstance(caso, dict) or not isinstance(caso.get("args"), list):
+                errores.append(f"{ruta}, caso {n}: args debe ser una lista.")
+            elif "esperado" not in caso and not caso.get("lanza"):
+                errores.append(f"{ruta}, caso {n}: falta esperado o lanza.")
     return errores
 
 
@@ -135,7 +209,8 @@ def desde_json(contenido: dict) -> Bloque:
         ejemplos=tuple(Ejemplo(**e) for e in contenido["ejemplos"]),
         ejercicios=tuple(
             Ejercicio(
-                id=e["id"], nivel=e["nivel"], titulo=e["titulo"], enunciado=e["enunciado"],
+                id=e["id"], nivel=e["nivel"], titulo=e.get("titulo", ""),
+                enunciado=e["enunciado"],
                 plantilla=e["plantilla"], funcion=e["funcion"],
                 casos=tuple(
                     CasoPrueba(tuple(c["args"]), c.get("esperado"), c.get("lanza"))
@@ -156,6 +231,7 @@ def cargar_carpeta(carpeta: Path) -> list[dict]:
         except ValueError as error:
             errores.append(f"{ruta.name}: no es JSON válido ({error}).")
             continue
+        contenido = normalizar(contenido, ruta.stem)
         errores.extend(validar(contenido))
         bloques.append(contenido)
     ids = [b.get("id") for b in bloques if isinstance(b, dict)]
@@ -171,7 +247,7 @@ def bloques_de_ejemplo() -> list[dict]:
     bloques = []
     for concepto, plantilla in PLANTILLAS.items():
         bloques.append({
-            "id": f"{concepto}-ejemplo",
+            "id": f"{concepto}{SUFIJO_EJEMPLO}",
             "concepto": concepto,
             "semana": 1,
             "orden": 1,

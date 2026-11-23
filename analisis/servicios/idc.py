@@ -20,9 +20,22 @@ ETIQUETAS_ESTADO = {
 }
 
 MAXIMO_REFORZADOS = 2
-# RF-34: un intervalo más ancho que esto se señala como poco informativo.
-# [PENDIENTE] Valor provisional: confirmarlo con el asesor antes del informe final.
-ANCHO_INTERPRETABLE = 0.5
+# RF-34: cómo se señala un intervalo de Wilson ancho en el informe personal.
+# Valores provisionales propuestos por el asesor (orientación del 2026-11-22): con
+# m = 5 casi todos los intervalos por concepto superan 0,5, y el informe debe decirlo
+# en vez de ocultarlo. Se confirman con los datos de SP-03 y de la pieza 7.
+ANCHO_INCIERTO = 0.3
+ANCHO_MUY_INCIERTO = 0.5
+
+
+def incertidumbre(intervalo: tuple[float, float] | None) -> str:
+    """'', 'incierta' o 'muy incierta', según el ancho del intervalo."""
+    if intervalo is None:
+        return ""
+    ancho = intervalo[1] - intervalo[0]
+    if ancho > ANCHO_MUY_INCIERTO:
+        return "muy incierta"
+    return "incierta" if ancho > ANCHO_INCIERTO else ""
 Z_95 = 1.959964
 
 # Casos de la asignación escalonada (D2, ADR-004)

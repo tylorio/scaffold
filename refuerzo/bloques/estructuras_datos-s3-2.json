@@ -1,0 +1,221 @@
+{
+  "concepto": "estructuras_datos",
+  "semana": 3,
+  "orden": 2,
+  "version": 1,
+  "titulo": "Colas con deque: el primero en entrar es el primero en salir",
+  "explicacion": "Una cola atiende los elementos en el orden en que llegaron, como una fila en el banco. Con una lista, sacar el primer elemento con pop(0) obliga a mover todos los demás, y se vuelve lento con muchos datos. Por eso se usa collections.deque: append(x) agrega al final y popleft() saca del inicio, ambos rápidos.\n\nUn deque también puede tener tamaño máximo: deque(maxlen=3) conserva solo los tres últimos elementos y descarta los más antiguos automáticamente. El método rotate(n) mueve los elementos n posiciones, lo que sirve para turnos rotativos.\n\nPara usarlo: from collections import deque.",
+  "ejemplo": {
+    "enunciado": "Atender una fila: devolver el orden en que se atiende a las personas si cada una que no tiene su documento vuelve al final una sola vez.",
+    "codigo": "from collections import deque\n\ndef orden_de_atencion(fila, sin_documento):\n    cola = deque(fila)\n    reenviados = set()\n    atendidos = []\n    while cola:\n        p = cola.popleft()\n        if p in sin_documento and p not in reenviados:\n            reenviados.add(p)\n            cola.append(p)\n        else:\n            atendidos.append(p)\n    return atendidos\n\norden_de_atencion([\"Ana\", \"Luis\", \"Rosa\"], {\"Luis\"})  # ['Ana', 'Rosa', 'Luis']",
+    "comentario": "popleft saca al primero de la fila y append lo devuelve al final."
+  },
+  "ejercicios": [
+    {
+      "id": "ed-s3-2-e1",
+      "nivel": "facil",
+      "enunciado": "Escribe ultimos_k(flujo, k), que recorre la lista flujo y devuelve una lista con sus últimos k elementos, usando un deque con maxlen. Si k es 0, devuelve una lista vacía.",
+      "funcion": "ultimos_k",
+      "plantilla": "def ultimos_k(flujo, k):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            [
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            2
+          ],
+          "esperado": [
+            4,
+            5
+          ]
+        },
+        {
+          "args": [
+            [
+              1,
+              2
+            ],
+            5
+          ],
+          "esperado": [
+            1,
+            2
+          ]
+        },
+        {
+          "args": [
+            [],
+            3
+          ],
+          "esperado": []
+        },
+        {
+          "args": [
+            [
+              1,
+              2,
+              3
+            ],
+            0
+          ],
+          "esperado": []
+        },
+        {
+          "args": [
+            [
+              "a",
+              "b",
+              "c"
+            ],
+            3
+          ],
+          "esperado": [
+            "a",
+            "b",
+            "c"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ed-s3-2-e2",
+      "nivel": "medio",
+      "enunciado": "Escribe turnos_rotativos(nombres, turnos), que devuelve quién tiene cada turno si las personas se turnan en círculo empezando por la primera de la lista. Ejemplo: ([\"a\", \"b\", \"c\"], 5) devuelve [\"a\", \"b\", \"c\", \"a\", \"b\"]. Si no hay nombres, devuelve una lista vacía.",
+      "funcion": "turnos_rotativos",
+      "plantilla": "def turnos_rotativos(nombres, turnos):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            [
+              "a",
+              "b",
+              "c"
+            ],
+            5
+          ],
+          "esperado": [
+            "a",
+            "b",
+            "c",
+            "a",
+            "b"
+          ]
+        },
+        {
+          "args": [
+            [],
+            3
+          ],
+          "esperado": []
+        },
+        {
+          "args": [
+            [
+              "x"
+            ],
+            3
+          ],
+          "esperado": [
+            "x",
+            "x",
+            "x"
+          ]
+        },
+        {
+          "args": [
+            [
+              "a",
+              "b"
+            ],
+            0
+          ],
+          "esperado": []
+        },
+        {
+          "args": [
+            [
+              "p",
+              "q"
+            ],
+            4
+          ],
+          "esperado": [
+            "p",
+            "q",
+            "p",
+            "q"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ed-s3-2-e3",
+      "nivel": "dificil",
+      "enunciado": "Escribe eliminacion_circular(n, k). n personas, numeradas de 1 a n, forman un círculo. Empezando a contar desde la persona 1, se elimina a cada k-ésima persona hasta que no quede nadie. Devuelve la lista con el orden de eliminación. Ejemplo: (5, 2) devuelve [2, 4, 1, 5, 3].",
+      "funcion": "eliminacion_circular",
+      "plantilla": "def eliminacion_circular(n, k):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            5,
+            2
+          ],
+          "esperado": [
+            2,
+            4,
+            1,
+            5,
+            3
+          ]
+        },
+        {
+          "args": [
+            1,
+            3
+          ],
+          "esperado": [
+            1
+          ]
+        },
+        {
+          "args": [
+            0,
+            2
+          ],
+          "esperado": []
+        },
+        {
+          "args": [
+            4,
+            1
+          ],
+          "esperado": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        {
+          "args": [
+            6,
+            3
+          ],
+          "esperado": [
+            3,
+            6,
+            4,
+            2,
+            5,
+            1
+          ]
+        }
+      ]
+    }
+  ]
+}

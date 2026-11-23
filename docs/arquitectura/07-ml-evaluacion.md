@@ -196,8 +196,8 @@ Reglas duras: ningún fragmento de un autor en dos lados; `insercion_commit` se 
 | **Tasa de falsos positivos a θ** | Humanos clasificados como IA / humanos | Validación y prueba; **por tercil de calidad de estilo** (RV-02; obligatorio por D10) | **≤ 0,15** (D10) |
 | Especificidad | 1 − FP | Igual | — |
 | Brier | Error cuadrático de la probabilidad | Validación y prueba | Informativo |
-| Error de calibración esperado (ECE, 10 intervalos) y curva de confiabilidad | ¿P(IA) = 0,7 ⇒ ≈ 70 % IA? | Antes y después de calibrar | ECE ≤ [PENDIENTE: 0,10; SP-03] |
-| Caída de F1 en LOAO | F1 con todos − F1 dejando fuera el asistente peor | Nivel 4 | ≤ [PENDIENTE: 0,10; ESC-03] |
+| Error de calibración esperado (ECE, 10 intervalos) y curva de confiabilidad | ¿P(IA) = 0,7 ⇒ ≈ 70 % IA? | Antes y después de calibrar | ECE ≤ 0,10 en prueba (propuesta provisional del asesor, 2026-11-22; se confirma con SP-03) |
+| Caída de F1 en LOAO | F1 con todos − F1 dejando fuera el asistente peor | Nivel 4 | ≤ 0,10 respecto al promedio (propuesta provisional del asesor, 2026-11-22); si baja más, se declara que no generaliza a asistentes no vistos |
 | Caída de F1 por tarea | Nivel 2 − nivel 3 | — | Informativo; si > 0,15 se declara |
 | **Por concepto** | Todas las anteriores sobre los fragmentos de recursión / estructuras / excepciones | Validación y prueba | El F1 de ningún concepto queda por debajo de [PENDIENTE: 0,60] |
 | **Por longitud** | Intervalos: ≤ 5, 6–15, 16–40, > 40 líneas | Validación | Los fragmentos muy cortos son casi inclasificables; justifica la definición de "trivial" (A3) |
@@ -247,7 +247,7 @@ Fecha límite: final de la **semana 7** (plan 9.4: "si no se alcanza en la seman
 
 | Resultado en el conjunto de prueba (una sola evaluación) | Decisión | Qué pasa |
 | --- | --- | --- |
-| F1 ≥ 0,70 **y** FP ≤ 0,15 **y** sensibilidad ≥ 0,60 (D10), con ECE ≤ [PENDIENTE] y (si hay ≥ 3 asistentes) caída LOAO ≤ [PENDIENTE] | **GO** | IDC operativo; conceptos débiles por IDC y λ; asignación escalonada (ADR-004) |
+| F1 ≥ 0,70 **y** FP ≤ 0,15 **y** sensibilidad ≥ 0,60 (D10), con ECE ≤ 0,10 y (si hay ≥ 3 asistentes) caída LOAO ≤ 0,10 (provisionales, orientación del asesor del 2026-11-22) | **GO** | IDC operativo; conceptos débiles por IDC y λ; asignación escalonada (ADR-004) |
 | F1 ≥ 0,70, pero ningún θ da FP ≤ 0,15 con sensibilidad ≥ 0,60, o el ECE es alto | **Consulta al asesor** | Se le lleva la curva FP–sensibilidad. Los umbrales de D10 no se relajan por cuenta propia |
 | F1 ≥ 0,70 pero caída LOAO > umbral | **GO con advertencia** | IDC operativo; en la tesis se declara que no generaliza a asistentes no vistos y se recomienda interpretar HE1 con cautela |
 | F1 < 0,70 tras un ajuste (rasgos o modelo) dentro de la semana 7 | **NO-GO** → plan B | Ver abajo |

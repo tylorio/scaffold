@@ -1,0 +1,218 @@
+{
+  "concepto": "estructuras_datos",
+  "semana": 2,
+  "orden": 2,
+  "version": 1,
+  "titulo": "Listas con índices: recorridos, desplazamientos y dos punteros",
+  "explicacion": "En una lista, cada elemento tiene una posición: lista[0] es el primero y lista[-1] el último. Muchos problemas se resuelven comparando posiciones vecinas, como lista[i] y lista[i + 1]; en ese caso el recorrido va hasta len(lista) - 1 para no salirse del rango.\n\nLa técnica de dos punteros usa dos índices que avanzan hacia el centro: i empieza en 0 y j en len(lista) - 1. Sirve para invertir una lista en su lugar o para buscar pares en una lista ordenada sin probar todas las combinaciones.\n\nPara intercambiar dos elementos en Python basta con lista[i], lista[j] = lista[j], lista[i]. Para desplazar elementos conviene usar el resto de la división (%), que da una posición válida aunque el desplazamiento sea mayor que la longitud de la lista.",
+  "ejemplo": {
+    "enunciado": "Invertir una lista en su lugar, sin crear otra, con dos punteros.",
+    "codigo": "def invertir_en_lugar(lista):\n    i, j = 0, len(lista) - 1\n    while i < j:\n        lista[i], lista[j] = lista[j], lista[i]\n        i += 1\n        j -= 1\n    return lista\n\ninvertir_en_lugar([1, 2, 3, 4])  # [4, 3, 2, 1]",
+    "comentario": "Los punteros se cruzan en el centro, así que cada elemento se mueve una sola vez."
+  },
+  "ejercicios": [
+    {
+      "id": "ed-s2-2-e1",
+      "nivel": "facil",
+      "enunciado": "Escribe es_creciente(lista), que devuelve True si cada elemento es menor o igual que el siguiente. Una lista vacía o de un elemento es creciente.",
+      "funcion": "es_creciente",
+      "plantilla": "def es_creciente(lista):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            [
+              1,
+              2,
+              2,
+              5
+            ]
+          ],
+          "esperado": true
+        },
+        {
+          "args": [
+            [
+              3,
+              1
+            ]
+          ],
+          "esperado": false
+        },
+        {
+          "args": [
+            []
+          ],
+          "esperado": true
+        },
+        {
+          "args": [
+            [
+              9
+            ]
+          ],
+          "esperado": true
+        },
+        {
+          "args": [
+            [
+              1,
+              3,
+              2,
+              4
+            ]
+          ],
+          "esperado": false
+        }
+      ]
+    },
+    {
+      "id": "ed-s2-2-e2",
+      "nivel": "medio",
+      "enunciado": "Escribe rotar_derecha(lista, k), que devuelve una lista nueva con los elementos desplazados k posiciones a la derecha; los que salen por el final entran por el inicio. k puede ser mayor que la longitud de la lista.",
+      "funcion": "rotar_derecha",
+      "plantilla": "def rotar_derecha(lista, k):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            [
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            2
+          ],
+          "esperado": [
+            4,
+            5,
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "args": [
+            [],
+            3
+          ],
+          "esperado": []
+        },
+        {
+          "args": [
+            [
+              1,
+              2,
+              3
+            ],
+            0
+          ],
+          "esperado": [
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "args": [
+            [
+              1,
+              2,
+              3
+            ],
+            4
+          ],
+          "esperado": [
+            3,
+            1,
+            2
+          ]
+        },
+        {
+          "args": [
+            [
+              "a",
+              "b"
+            ],
+            2
+          ],
+          "esperado": [
+            "a",
+            "b"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ed-s2-2-e3",
+      "nivel": "dificil",
+      "enunciado": "Escribe par_con_suma(ordenada, objetivo). ordenada es una lista de enteros en orden ascendente. Usa dos punteros, uno al inicio (i) y otro al final (j): si la suma es menor que el objetivo avanza i; si es mayor, retrocede j. Devuelve [i, j] con las posiciones del primer par que sume objetivo, o None si no hay ninguno.",
+      "funcion": "par_con_suma",
+      "plantilla": "def par_con_suma(ordenada, objetivo):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            [
+              1,
+              2,
+              3,
+              4,
+              6
+            ],
+            6
+          ],
+          "esperado": [
+            1,
+            3
+          ]
+        },
+        {
+          "args": [
+            [
+              1,
+              2,
+              3
+            ],
+            10
+          ],
+          "esperado": null
+        },
+        {
+          "args": [
+            [],
+            5
+          ],
+          "esperado": null
+        },
+        {
+          "args": [
+            [
+              2,
+              2
+            ],
+            4
+          ],
+          "esperado": [
+            0,
+            1
+          ]
+        },
+        {
+          "args": [
+            [
+              -3,
+              0,
+              1,
+              5
+            ],
+            2
+          ],
+          "esperado": [
+            0,
+            3
+          ]
+        }
+      ]
+    }
+  ]
+}

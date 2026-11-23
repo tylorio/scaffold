@@ -16,7 +16,7 @@ from django.utils import timezone
 from analisis.models import Auditoria, Configuracion
 
 from .models import BloqueRefuerzo
-from .servicios.banco import BloqueInvalido, huella, validar
+from .servicios.banco import BloqueInvalido, es_de_ejemplo, huella, normalizar, validar
 
 
 class AccionNoPermitida(Exception):
@@ -33,6 +33,7 @@ class ResumenCarga:
 @transaction.atomic
 def cargar_bloques(contenidos: list[dict], usuario: str) -> ResumenCarga:
     """Carga todos o ninguno. Un contenido distinto exige una versión mayor."""
+    contenidos = [normalizar(c) for c in contenidos]
     errores = [e for c in contenidos for e in validar(c)]
     if errores:
         raise BloqueInvalido(" ".join(errores))
@@ -79,6 +80,11 @@ def validar_bloque(bloque_id: str, version: int, n_jueces: int, usuario: str):
         bloque = BloqueRefuerzo.objects.select_for_update().filter(pk=bloque_id).first()
         if bloque is None:
             raise AccionNoPermitida("El bloque no existe.")
+        if es_de_ejemplo(bloque.id):
+            raise AccionNoPermitida(
+                f"{bloque.id} es un bloque de ejemplo: se solapa con la prueba y no se "
+                "entrega a los estudiantes."
+            )
         if bloque.version != version:
             raise AccionNoPermitida(
                 f"{bloque.id} cambió a la versión {bloque.version}: revísala antes de validarla."

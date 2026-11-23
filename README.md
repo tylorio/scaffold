@@ -215,32 +215,69 @@ python manage.py controlar_solapamiento
 Compara la prueba con los bloques de `refuerzo/bloques/` (o los de `--bloques`). Si
 todavía no hay bloques reales, usa los de ejemplo y lo avisa.
 
+El umbral de parecido de enunciados es **0,2**. Se calibró con el primer banco real,
+como pidió el asesor en P10: los tres solapamientos que él identificó con las
+plantillas del prototipo dan entre 0,20 y 0,29, y los demás pares, 0,15 como
+máximo. Queda bajo a propósito: marca de más y la decisión la toman los jueces. Con
+los 8 bloques de estructuras de datos marca 3 pares para revisar a mano.
+
 ## Bloques de refuerzo (D20)
 
 El material son 24 bloques: 8 por concepto, 2 por semana durante 4 semanas. Cada
-bloque es un archivo JSON en `refuerzo/bloques/` (sí va en Git, para que cada
-versión quede trazable):
+bloque es un archivo JSON en `refuerzo/bloques/`, que sí va en Git para que cada
+versión quede trazable. El nombre del archivo es su `id`, por ejemplo
+`estructuras_datos-s1-1.json` (concepto, semana y orden).
+
+Estado: los 8 de **estructuras de datos** están escritos (entrega del asesor del
+2026-11-22). Faltan los de excepciones y los de recursión.
+
+Formato (el mismo que usa el asesor):
 
 ```json
 {
-  "id": "recursion-s1-1", "concepto": "recursion", "semana": 1, "orden": 1,
-  "version": 1, "titulo": "El caso base",
-  "explicacion": ["Párrafo 1", "Párrafo 2"],
-  "ejemplos": [{"titulo": "...", "enunciado": "...", "codigo": "...",
-                "salida": "...", "explicacion": "..."}],
-  "ejercicios": [{"id": "rec-s1-1-a", "nivel": "Fácil", "titulo": "...",
-                  "enunciado": "...", "plantilla": "def f(n):\n    pass\n",
-                  "funcion": "f",
-                  "casos": [{"args": [3], "esperado": 6},
-                            {"args": [-1], "lanza": "ValueError"}]}]
+  "concepto": "estructuras_datos", "semana": 1, "orden": 1, "version": 1,
+  "titulo": "Diccionarios: guardar y consultar por clave",
+  "explicacion": "Párrafo 1.\n\nPárrafo 2.",
+  "ejemplo": {"enunciado": "...",
+              "codigo": "def f(x):\n    ...\n\nf([1, 2])  # [2, 1]",
+              "comentario": "Por qué funciona."},
+  "ejercicios": [
+    {"id": "ed-s1-1-e1", "nivel": "facil", "enunciado": "...", "funcion": "stock_de",
+     "plantilla": "def stock_de(inventario, producto):\n    pass\n",
+     "casos": [{"args": [{"lapiz": 10}, "lapiz"], "esperado": 10},
+               {"args": [[]], "lanza": "ValueError"}]}
+  ]
 }
 ```
 
-`concepto` es `recursion`, `estructuras_datos` o `excepciones`.
+- `concepto` es `recursion`, `estructuras_datos` o `excepciones`; `semana` va de 1
+  a 4, y `orden` es 1 o 2.
+- Cada bloque lleva **3 ejercicios**, en este orden: `facil`, `medio` y `dificil`.
+  El `id` de cada ejercicio tiene hasta 20 caracteres y no se repite entre bloques.
+- La explicación separa los párrafos con una línea en blanco.
+- El código del ejemplo termina con la llamada que muestra y su resultado en un
+  comentario. Las pruebas comprueban que ese resultado sea el real.
+- Un caso que espera una excepción usa `"lanza"` en lugar de `"esperado"`.
+- No uses diccionarios con claves numéricas en los casos: JSON las convierte en
+  texto y haría fallar soluciones correctas.
+- El sistema también lee su formato interno (`id`, `explicacion` como lista,
+  `ejemplos` con `titulo` y `salida`), que es el de los bloques de ejemplo.
+
+**Solución de referencia.** Cada ejercicio necesita su solución en
+`tests/soluciones_bloques/<concepto>.py`, que el portal no muestra.
+`tests/test_contenido.py` corre cada solución contra sus casos con el mismo ejecutor
+de los estudiantes. Así, un caso mal escrito se descubre antes de que llegue a
+alguien.
+
+**No solapar con la prueba (D21).** Los temas que los bloques no pueden tocar
+están en la copia completa de la orientación del asesor del 2026-11-22, que vive
+junto al banco en el almacén y no en Git. Además, corre `controlar_solapamiento`
+antes de cargar.
 
 ```powershell
+python -m pytest tests/test_contenido.py   # valida los bloques y sus soluciones
+python manage.py controlar_solapamiento    # contra la prueba real
 python manage.py cargar_bloques            # carga refuerzo/bloques/
-python manage.py cargar_bloques --ejemplo  # un bloque de ejemplo por concepto
 ```
 
 - Se cargan todos o ninguno. Si un bloque cambió, exige una `version` mayor.
@@ -250,6 +287,9 @@ python manage.py cargar_bloques --ejemplo  # un bloque de ejemplo por concepto
 - Los bloques de la semana *n* se abren el día 7 × (*n* − 1) contado desde el inicio
   de la intervención, y siguen abiertos después.
 - Gestión avisa cuántos bloques faltan por concepto.
+- `cargar_bloques --ejemplo` carga los bloques del prototipo, solo para desarrollo.
+  Se solapan con la prueba real, así que no se pueden validar ni cargar en el
+  portal.
 
 Las cargas, validaciones, el inicio de la intervención y la liberación quedan en la
 auditoría.
@@ -541,9 +581,10 @@ Por eso `db.sqlite3` y `datos/` están en `.gitignore`.
 - La adherencia cuenta como liberados los bloques validados hoy. Si un bloque se
   valida tarde, o pierde la validación por una versión nueva, el denominador cambia
   retroactivamente: conviene cerrar la validación antes de la semana 9.
-- La plataforma no comprueba que los casos de prueba de un bloque sean correctos:
-  eso lo revisan los jueces. Las plantillas de ejemplo sí tienen soluciones de
-  referencia en las pruebas.
+- La plataforma no comprueba sola que los casos de un bloque sean correctos: lo
+  hace `tests/test_contenido.py` con las soluciones de referencia, así que cada
+  ejercicio necesita la suya. Los jueces revisan además que los casos midan lo que
+  dice el enunciado.
 - Al enviar, la página se vuelve a dibujar con la respuesta; recargarla reenvía la
   solución (el navegador pregunta antes).
 - El informe personal señala un intervalo como «ancho» cuando mide más de 0,5.

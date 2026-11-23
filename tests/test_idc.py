@@ -330,3 +330,15 @@ def test_resultado_lista_los_conceptos_debiles():
         + fragmentos_de(EXCEPCIONES, 2, 0)
     )
     assert resultado.debiles == [RECURSION]
+
+
+@pytest.mark.parametrize("intervalo, esperado", [
+    (None, ""),
+    ((0.40, 0.60), ""),
+    ((0.30, 0.65), "incierta"),
+    ((0.20, 0.70), "incierta"),  # 0,5 justo: todavía incierta
+    ((0.10, 0.90), "muy incierta"),
+])
+def test_incertidumbre_del_intervalo(intervalo, esperado):
+    from analisis.servicios.idc import incertidumbre
+    assert incertidumbre(intervalo) == esperado

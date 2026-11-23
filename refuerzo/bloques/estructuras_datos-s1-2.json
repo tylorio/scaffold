@@ -1,0 +1,265 @@
+{
+  "concepto": "estructuras_datos",
+  "semana": 1,
+  "orden": 2,
+  "version": 1,
+  "titulo": "Diccionarios como índice: agrupar e invertir",
+  "explicacion": "Un diccionario también sirve para agrupar: la clave es el criterio y el valor es una lista con los elementos que cumplen ese criterio. El patrón es grupos.setdefault(clave, []).append(elemento), que crea la lista vacía la primera vez que aparece la clave.\n\nOtra operación frecuente es invertir un diccionario, es decir, que los valores pasen a ser claves. Solo funciona sin pérdida si los valores no se repiten; si se repiten, cada clave nueva debe guardar una lista o un conjunto con todas las claves originales.\n\nCuando el resultado debe ser reproducible, ordena las listas al final con sorted(): el orden de inserción depende del orden de los datos de entrada.",
+  "ejemplo": {
+    "enunciado": "Agrupar alumnos por sección a partir de pares [nombre, seccion].",
+    "codigo": "def por_seccion(alumnos):\n    grupos = {}\n    for nombre, seccion in alumnos:\n        grupos.setdefault(seccion, []).append(nombre)\n    return grupos\n\npor_seccion([[\"Ana\", \"A\"], [\"Luis\", \"B\"], [\"Rosa\", \"A\"]])\n# {'A': ['Ana', 'Rosa'], 'B': ['Luis']}",
+    "comentario": "setdefault devuelve la lista existente o crea una nueva, y sobre ella se hace append."
+  },
+  "ejercicios": [
+    {
+      "id": "ed-s1-2-e1",
+      "nivel": "facil",
+      "enunciado": "Escribe invertir(d), que devuelve un diccionario nuevo donde cada valor de d pasa a ser clave y cada clave pasa a ser valor. Puedes suponer que los valores de d no se repiten.",
+      "funcion": "invertir",
+      "plantilla": "def invertir(d):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            {
+              "uno": "one",
+              "dos": "two"
+            }
+          ],
+          "esperado": {
+            "one": "uno",
+            "two": "dos"
+          }
+        },
+        {
+          "args": [
+            {}
+          ],
+          "esperado": {}
+        },
+        {
+          "args": [
+            {
+              "a": "x"
+            }
+          ],
+          "esperado": {
+            "x": "a"
+          }
+        },
+        {
+          "args": [
+            {
+              "rojo": "red",
+              "azul": "blue"
+            }
+          ],
+          "esperado": {
+            "red": "rojo",
+            "blue": "azul"
+          }
+        },
+        {
+          "args": [
+            {
+              "k1": "v1",
+              "k2": "v2",
+              "k3": "v3"
+            }
+          ],
+          "esperado": {
+            "v1": "k1",
+            "v2": "k2",
+            "v3": "k3"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ed-s1-2-e2",
+      "nivel": "medio",
+      "enunciado": "Escribe indice_por_curso(matriculas), que recibe pares [alumno, curso] y devuelve un diccionario curso -> lista de alumnos de ese curso, sin repetidos y en orden alfabético.",
+      "funcion": "indice_por_curso",
+      "plantilla": "def indice_por_curso(matriculas):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            [
+              [
+                "Ana",
+                "Mat"
+              ],
+              [
+                "Luis",
+                "Fis"
+              ],
+              [
+                "Rosa",
+                "Mat"
+              ]
+            ]
+          ],
+          "esperado": {
+            "Mat": [
+              "Ana",
+              "Rosa"
+            ],
+            "Fis": [
+              "Luis"
+            ]
+          }
+        },
+        {
+          "args": [
+            []
+          ],
+          "esperado": {}
+        },
+        {
+          "args": [
+            [
+              [
+                "Ana",
+                "Mat"
+              ],
+              [
+                "Ana",
+                "Mat"
+              ]
+            ]
+          ],
+          "esperado": {
+            "Mat": [
+              "Ana"
+            ]
+          }
+        },
+        {
+          "args": [
+            [
+              [
+                "Zoe",
+                "Pro"
+              ],
+              [
+                "Ana",
+                "Pro"
+              ],
+              [
+                "Mia",
+                "Pro"
+              ]
+            ]
+          ],
+          "esperado": {
+            "Pro": [
+              "Ana",
+              "Mia",
+              "Zoe"
+            ]
+          }
+        },
+        {
+          "args": [
+            [
+              [
+                "Ana",
+                "A"
+              ],
+              [
+                "Ana",
+                "B"
+              ]
+            ]
+          ],
+          "esperado": {
+            "A": [
+              "Ana"
+            ],
+            "B": [
+              "Ana"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "ed-s1-2-e3",
+      "nivel": "dificil",
+      "enunciado": "Escribe agrupar_por_valor(d), que recibe un diccionario cuyos valores pueden repetirse y devuelve un diccionario valor -> lista ordenada de las claves que tenían ese valor. Los valores son cadenas. Ejemplo: {\"a\": \"si\", \"b\": \"no\", \"c\": \"si\"} devuelve {\"si\": [\"a\", \"c\"], \"no\": [\"b\"]}.",
+      "funcion": "agrupar_por_valor",
+      "plantilla": "def agrupar_por_valor(d):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            {
+              "a": "si",
+              "b": "no",
+              "c": "si"
+            }
+          ],
+          "esperado": {
+            "si": [
+              "a",
+              "c"
+            ],
+            "no": [
+              "b"
+            ]
+          }
+        },
+        {
+          "args": [
+            {}
+          ],
+          "esperado": {}
+        },
+        {
+          "args": [
+            {
+              "x": "si",
+              "y": "si",
+              "z": "si"
+            }
+          ],
+          "esperado": {
+            "si": [
+              "x",
+              "y",
+              "z"
+            ]
+          }
+        },
+        {
+          "args": [
+            {
+              "q": "no"
+            }
+          ],
+          "esperado": {
+            "no": [
+              "q"
+            ]
+          }
+        },
+        {
+          "args": [
+            {
+              "b": "m",
+              "a": "m",
+              "c": "n"
+            }
+          ],
+          "esperado": {
+            "m": [
+              "a",
+              "b"
+            ],
+            "n": [
+              "c"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

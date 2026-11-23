@@ -1,9 +1,18 @@
 # Bloques de refuerzo (D20)
 
-Un archivo JSON por bloque: 8 por concepto (2 por semana durante 4 semanas), 24 en total.
-Se cargan con `python manage.py cargar_bloques` y se entregan solo después de registrar
-en Gestión que los jueces los validaron (HE3). El formato está en el README, sección
-"Bloques de refuerzo".
+Un archivo JSON por bloque: 8 por concepto (2 por semana durante 4 semanas), 24 en
+total. El nombre del archivo es el `id` del bloque, por ejemplo
+`estructuras_datos-s1-1.json`. El formato está en el README, sección «Bloques de
+refuerzo».
 
-Cambiar un bloque ya cargado exige subir su `version`; la versión nueva vuelve a
-quedar sin validar.
+Estado: estructuras de datos, 8 de 8. Excepciones y recursión, pendientes.
+
+Antes de cargarlos:
+
+1. Agrega la solución de cada ejercicio en `tests/soluciones_bloques/<concepto>.py`.
+2. Corre `python -m pytest tests/test_contenido.py`.
+3. Corre `python manage.py controlar_solapamiento` contra la prueba real.
+
+Después, carga con `python manage.py cargar_bloques`. Los bloques se entregan solo
+cuando registras en Gestión que los jueces los validaron (HE3). Cambiar un bloque ya
+cargado exige subir su `version`, y la versión nueva vuelve a quedar sin validar.

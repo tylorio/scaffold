@@ -10,12 +10,14 @@
 <h2>Ejemplo{{ bloque.ejemplos|pluralize }} resuelto{{ bloque.ejemplos|pluralize }}</h2>
 {% for ejemplo in bloque.ejemplos %}
   <article class="tarjeta">
-    <h3>{{ ejemplo.titulo }}</h3>
+    {% if ejemplo.titulo %}<h3>{{ ejemplo.titulo }}</h3>{% endif %}
     <p>{{ ejemplo.enunciado }}</p>
     <pre><code>{{ ejemplo.codigo }}</code></pre>
-    <p class="ayuda">Salida:</p>
-    <pre class="salida"><code>{{ ejemplo.salida }}</code></pre>
-    <p>{{ ejemplo.explicacion }}</p>
+    {% if ejemplo.salida %}
+      <p class="ayuda">Salida:</p>
+      <pre class="salida"><code>{{ ejemplo.salida }}</code></pre>
+    {% endif %}
+    {% if ejemplo.explicacion %}<p>{{ ejemplo.explicacion }}</p>{% endif %}
   </article>
 {% endfor %}
 
@@ -27,7 +29,7 @@
 {% for item in ejercicios %}
   {% with ejercicio=item.datos intento=item.intento %}
     <article class="tarjeta" id="{{ ejercicio.id }}">
-      <h3><span class="nivel">{{ ejercicio.nivel }}</span> {{ ejercicio.titulo }}</h3>
+      <h3><span class="nivel">{{ ejercicio.nivel }}</span> {% if ejercicio.titulo %}{{ ejercicio.titulo }}{% else %}Ejercicio {{ forloop.counter }}{% endif %}</h3>
       <p>{{ ejercicio.enunciado }}</p>
       <form method="post" action="#{{ ejercicio.id }}" class="envio">
         {% csrf_token %}

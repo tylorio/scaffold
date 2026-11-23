@@ -8,7 +8,7 @@ from django.views.decorators.http import require_POST
 
 from analisis.http import respuesta_csv
 from analisis.servicios.conceptos import NOMBRES_CONCEPTOS
-from analisis.servicios.idc import ANCHO_INTERPRETABLE, ETIQUETAS_ESTADO, intervalo_wilson
+from analisis.servicios.idc import ETIQUETAS_ESTADO, incertidumbre, intervalo_wilson
 
 from .acceso import (
     SESION_ESTUDIANTE,
@@ -209,7 +209,7 @@ def _estimacion(n_ia, n, valor):
         "n": n,
         "n_ia": n_ia,
         "intervalo": intervalo,
-        "ancho": intervalo is not None and intervalo[1] - intervalo[0] > ANCHO_INTERPRETABLE,
+        "incertidumbre": incertidumbre(intervalo),
     }
 
 

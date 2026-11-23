@@ -7,3 +7,5 @@ __pycache__/
 # Contienen datos de participantes o se regeneran con los scripts
 db.sqlite3
 datos/
+# Entregas del asesor: traen el banco real de la prueba, que nunca va a Git (D21)
+contenido-asesor-*.zip

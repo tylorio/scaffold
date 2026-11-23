@@ -1,0 +1,212 @@
+{
+  "concepto": "estructuras_datos",
+  "semana": 2,
+  "orden": 1,
+  "version": 1,
+  "titulo": "Conjuntos: pertenencia rápida y elementos sin repetir",
+  "explicacion": "Un conjunto (set) guarda elementos sin repetir y responde muy rápido si un elemento está o no: x in conjunto tarda en promedio lo mismo con 10 elementos que con 100 000. En una lista, x in lista tiene que recorrerla.\n\nSe crea con set(lista) o con llaves, {1, 2, 3}. El conjunto vacío es set(), porque {} crea un diccionario. Los conjuntos no tienen orden: si necesitas un resultado ordenado, usa sorted(conjunto).\n\nUn patrón muy útil es el conjunto de \"vistos\": recorres una lista, consultas si el elemento ya está en el conjunto y luego lo agregas con vistos.add(x). Las operaciones a | b (unión), a & b (intersección) y a - b (diferencia) combinan conjuntos.",
+  "ejemplo": {
+    "enunciado": "Encontrar el primer código que aparece repetido en una lista, o None si no hay repetidos.",
+    "codigo": "def primer_repetido(codigos):\n    vistos = set()\n    for c in codigos:\n        if c in vistos:\n            return c\n        vistos.add(c)\n    return None\n\nprimer_repetido([\"A1\", \"B2\", \"C3\", \"B2\", \"A1\"])  # 'B2'",
+    "comentario": "Cada consulta c in vistos es rápida, así que la función recorre la lista una sola vez."
+  },
+  "ejercicios": [
+    {
+      "id": "ed-s2-1-e1",
+      "nivel": "facil",
+      "enunciado": "Escribe tiene_duplicados(lista), que devuelve True si algún elemento aparece más de una vez y False en caso contrario.",
+      "funcion": "tiene_duplicados",
+      "plantilla": "def tiene_duplicados(lista):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "esperado": false
+        },
+        {
+          "args": [
+            [
+              1,
+              2,
+              1
+            ]
+          ],
+          "esperado": true
+        },
+        {
+          "args": [
+            []
+          ],
+          "esperado": false
+        },
+        {
+          "args": [
+            [
+              "a",
+              "A"
+            ]
+          ],
+          "esperado": false
+        },
+        {
+          "args": [
+            [
+              7,
+              7
+            ]
+          ],
+          "esperado": true
+        }
+      ]
+    },
+    {
+      "id": "ed-s2-1-e2",
+      "nivel": "medio",
+      "enunciado": "Escribe sin_repetir_en_orden(lista), que devuelve una lista nueva con cada elemento una sola vez, en el orden en que aparece por primera vez.",
+      "funcion": "sin_repetir_en_orden",
+      "plantilla": "def sin_repetir_en_orden(lista):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            [
+              3,
+              1,
+              3,
+              2,
+              1
+            ]
+          ],
+          "esperado": [
+            3,
+            1,
+            2
+          ]
+        },
+        {
+          "args": [
+            []
+          ],
+          "esperado": []
+        },
+        {
+          "args": [
+            [
+              "b",
+              "a",
+              "b"
+            ]
+          ],
+          "esperado": [
+            "b",
+            "a"
+          ]
+        },
+        {
+          "args": [
+            [
+              5,
+              5,
+              5
+            ]
+          ],
+          "esperado": [
+            5
+          ]
+        },
+        {
+          "args": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "esperado": [
+            1,
+            2,
+            3
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ed-s2-1-e3",
+      "nivel": "dificil",
+      "enunciado": "Escribe faltantes(n, recibidos), que devuelve en orden ascendente los números de 1 a n que no aparecen en la lista recibidos. recibidos puede tener repetidos y números fuera de ese rango, que se ignoran.",
+      "funcion": "faltantes",
+      "plantilla": "def faltantes(n, recibidos):\n    # Escribe tu solución aquí\n    pass\n",
+      "casos": [
+        {
+          "args": [
+            5,
+            [
+              1,
+              2,
+              4
+            ]
+          ],
+          "esperado": [
+            3,
+            5
+          ]
+        },
+        {
+          "args": [
+            3,
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "esperado": []
+        },
+        {
+          "args": [
+            4,
+            []
+          ],
+          "esperado": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        {
+          "args": [
+            0,
+            [
+              1,
+              2
+            ]
+          ],
+          "esperado": []
+        },
+        {
+          "args": [
+            6,
+            [
+              6,
+              6,
+              9,
+              -1,
+              2
+            ]
+          ],
+          "esperado": [
+            1,
+            3,
+            4,
+            5
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -82,6 +82,12 @@ Nota: la versión original de este archivo proponía FastAPI + Pydantic + SQLAlc
     - P10: el índice por historial usa dos medidas continuas y un umbral de 30 *a priori*, con sensibilidad a 15 y 60.
 
     P7 y P8 entran en `conceptos-v1` y se congelan a partir de SP-06. La autorización escrita de Azure la emite el CEI-USIL, no el asesor.
+16. (2026-11-22) **Orientación y contenido del asesor** en `docs/decisiones/orientacion-asesor-2026-11-22.md`. Ese archivo no se edita. Trae el banco real de la prueba (va a `datos/banco_prueba/`, nunca a Git), los 8 bloques de estructuras de datos y sus soluciones (en `tests/soluciones_bloques/`). Fija, como valores **provisionales**:
+    - intervalo del informe: "incierta" con un ancho entre 0,3 y 0,5, y "muy incierta" sobre 0,5;
+    - ECE ≤ 0,10 y caída LOAO ≤ 0,10;
+    - 5 s por envío.
+
+    Los bloques del prototipo se solapan con la prueba: no se validan ni se cargan en el portal. Los temas que los bloques de recursión y de excepciones no pueden tocar (isomorfos de la prueba) están en la copia completa de la orientación, junto al banco en el almacén: por D21 no se describen en Git. El umbral de enunciado de la alarma de solapamiento quedó en 0,2, calibrado con el primer banco real (P10).
 
 ## Estado del repositorio (léelo antes de cualquier fase)
 - Existe un **prototipo funcional en Django** construido antes de adoptar este protocolo (commits del 2026-11-05). Cubre parte del módulo 1 y del módulo 2; el detalle está en `docs/arquitectura/00-estado-actual.md`.

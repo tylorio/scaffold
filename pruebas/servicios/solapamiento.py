@@ -15,8 +15,15 @@ from typing import Iterable
 
 from .banco import Banco
 
-# [PENDIENTE] Provisionales: ajustarlos con los primeros bancos reales.
-UMBRAL_ENUNCIADO = 0.5
+# Calibrado con el primer banco real (2026-11-23), como pidió el asesor en P10: los
+# tres solapamientos que él identificó entre la prueba y las plantillas del
+# prototipo dan entre 0,20 y 0,29 de parecido de enunciado, y el resto de los pares,
+# 0,15 como máximo. Con 0,5 no se detectaba ninguno. Queda bajo a propósito: marca
+# de más y la decisión la toman los jueces. Revisarlo con los bloques de recursión
+# y excepciones.
+UMBRAL_ENUNCIADO = 0.2
+# El parecido de las soluciones no separó los casos (pares sin solapamiento llegan a
+# 0,74): se mantiene alto, como señal secundaria.
 UMBRAL_SOLUCION = 0.8
 
 
