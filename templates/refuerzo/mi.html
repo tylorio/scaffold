@@ -34,9 +34,13 @@
       </tbody>
     </table>
   </div>
-  <p class="ayuda">
-    Al terminar el estudio recibirás tu informe personal. El material de los demás
-    conceptos se abre después de la prueba final.
-  </p>
+  {% if estado.liberado %}
+    <p><a href="{% url 'estudiante:informe' %}">Ver mi informe personal</a></p>
+  {% else %}
+    <p class="ayuda">
+      Al terminar el estudio recibirás tu informe personal. El material de los demás
+      conceptos se abre después de la prueba final.
+    </p>
+  {% endif %}
 {% endif %}
 {% endblock %}

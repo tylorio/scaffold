@@ -174,11 +174,11 @@ Los pasos están en `docs/almacen-cifrado.md`. Si `IDC_ALMACEN` está definido y
 | Control | Cómo se cumple | Estado |
 | --- | --- | --- |
 | El IDC siempre se muestra con su incertidumbre | Intervalo de Wilson en la interfaz, el CSV y el informe (RF-34) | Hecho |
-| El estudiante no ve su IDC durante la intervención | Oculto en las semanas 9–12 (hecho); aparece en el informe tras el postest (D11) | hecho; informe en la pieza 10 |
+| El estudiante no ve su IDC durante la intervención | Oculto en las semanas 9–12; aparece en el informe tras el postest (D11) | hecho |
 | No hay vistas con nombres reales | El sistema no guarda nombres; la tabla de identidades vive fuera (D14) | Hecho |
 | No hay reportes disciplinarios ni de plagio | No existe ninguna vista ni exportación por estudiante con fines de sanción. El IDC se presenta como estimación (RF-32) | Hecho |
-| El participante puede ver sus datos | Informe personal al final (RF-31); consulta al investigador | 10 |
-| El participante puede retirarse | Borrado en el portal y en el almacén, sin consecuencias (RF-30, D13) | 10 |
+| El participante puede ver sus datos | Informe personal al final (RF-31, `/mi/informe/`); consulta al investigador | hecho |
+| El participante puede retirarse | Borrado en el portal y en el almacén, sin consecuencias (RF-30, D13); `retirar_participante` o Gestión, en las dos bases | hecho |
 | Solo se analiza a quien consintió | Filtro por autor (D19); sin consentimiento registrado no se analiza (RF-29) | D19 hecho; consentimiento en 10 |
 | Lista de espera para el control | El material del concepto de control se desbloquea tras el postest (D4) | hecho |
 | Los calificadores no conocen la asignación | El CSV de puntajes no lleva asignación (D3) | Hecho |

@@ -21,13 +21,24 @@ class ParticipanteForm(forms.ModelForm):
 
     class Meta:
         model = Participante
-        fields = ["codigo", "repositorio"]
+        fields = ["codigo", "repositorio", "consentimiento_en", "consentimiento_version"]
+        help_texts = {
+            "consentimiento_en": "Fecha en que firmó el consentimiento informado.",
+            "consentimiento_version": "Versión del formulario aprobada por el CEI, p. ej. v1.",
+        }
         widgets = {
+            "consentimiento_en": forms.DateInput(attrs={"type": "date"}),
             "codigo": forms.TextInput(attrs={"placeholder": "P01"}),
             "repositorio": forms.TextInput(
                 attrs={"placeholder": "demo_repo o https://..."}
             ),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Sin consentimiento no se registra a nadie.
+        self.fields["consentimiento_en"].required = True
+        self.fields["consentimiento_version"].required = True
 
     def clean_repositorio(self):
         origen = self.cleaned_data["repositorio"].strip()

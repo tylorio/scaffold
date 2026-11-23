@@ -4,12 +4,17 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from .forms import ConfiguracionForm, ParticipanteForm
+from .participacion import CambioNoPermitido
+from .participacion import excluir as excluir_participante
+from .participacion import incluir as incluir_participante
 from .http import respuesta_csv
 from .models import Configuracion, Participante
 from .persistencia import (
     AsignacionCongelada,
+    FueraDeLaMuestra,
     NoSePuedeCongelar,
     RepositorioSinFunciones,
+    SinConsentimiento,
     SinCorreosDeclarados,
     congelacion,
     congelar_asignacion,
@@ -53,7 +58,7 @@ def analizar(request, codigo):
         analisis = ejecutar_analisis(participante, usuario=_usuario(request))
     except (
         OrigenInvalido, ErrorRepositorio, ModeloNoDisponible, RepositorioSinFunciones,
-        SinCorreosDeclarados, AsignacionCongelada,
+        SinCorreosDeclarados, AsignacionCongelada, SinConsentimiento, FueraDeLaMuestra,
     ) as error:
         messages.error(request, str(error))
         return redirect("analisis:lista")
@@ -80,6 +85,7 @@ def detalle_participante(request, codigo):
         "analisis": analisis,
         "asignacion": getattr(participante, "asignacion", None),
         "congelada": congelacion() is not None,
+        "motivos_exclusion": Participante.MOTIVOS_EXCLUSION,
     }
     if analisis is not None:
         conceptos = list(analisis.conceptos.all())
@@ -89,6 +95,32 @@ def detalle_participante(request, codigo):
             "fragmentos": analisis.fragmentos.all(),
         })
     return render(request, "analisis/detalle.html", contexto)
+
+
+@login_required
+@require_POST
+def excluir(request, codigo):
+    participante = get_object_or_404(Participante, codigo=codigo)
+    try:
+        excluir_participante(participante, request.POST.get("motivo", ""), _usuario(request))
+    except CambioNoPermitido as error:
+        messages.error(request, str(error))
+    else:
+        messages.success(request, f"{codigo} quedó fuera de la muestra.")
+    return redirect("analisis:detalle", codigo=codigo)
+
+
+@login_required
+@require_POST
+def incluir(request, codigo):
+    participante = get_object_or_404(Participante, codigo=codigo)
+    try:
+        incluir_participante(participante, _usuario(request))
+    except CambioNoPermitido as error:
+        messages.error(request, str(error))
+    else:
+        messages.success(request, f"{codigo} volvió a la muestra.")
+    return redirect("analisis:detalle", codigo=codigo)
 
 
 @login_required

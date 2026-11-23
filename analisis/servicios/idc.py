@@ -20,6 +20,9 @@ ETIQUETAS_ESTADO = {
 }
 
 MAXIMO_REFORZADOS = 2
+# RF-34: un intervalo más ancho que esto se señala como poco informativo.
+# [PENDIENTE] Valor provisional: confirmarlo con el asesor antes del informe final.
+ANCHO_INTERPRETABLE = 0.5
 Z_95 = 1.959964
 
 # Casos de la asignación escalonada (D2, ADR-004)

@@ -102,27 +102,40 @@
   <p>No hay bloques cargados.</p>
 {% endif %}
 
-<h2>Códigos de acceso</h2>
+<h2>Participantes</h2>
 <p class="ayuda">
-  Cada código se muestra <strong>una sola vez</strong>, para imprimirlo y entregarlo en
-  persona. Generar uno nuevo invalida el anterior.
+  Cada código de acceso se muestra <strong>una sola vez</strong>, para imprimirlo y
+  entregarlo en persona. Generar uno nuevo invalida el anterior. El retiro borra todos
+  los datos del participante en esta base y no se deshace: hazlo también en la otra.
 </p>
 {% if participantes %}
   <div class="tabla-scroll">
     <table>
-      <thead><tr><th>Código</th><th>Asignación</th><th>Acceso</th><th></th></tr></thead>
+      <thead><tr><th>Código</th><th>Asignación</th><th>Acceso</th><th></th><th>Retiro</th></tr></thead>
       <tbody>
         {% for p in participantes %}
           {% with asignacion=p.asignacion %}
             <tr>
               <td>{{ p.codigo }}</td>
-              <td>{% if asignacion %}Caso {{ asignacion.caso }} · {{ asignacion.orden }}{% else %}—{% endif %}</td>
+              <td>{% if p.retirado_en %}Retirado el {{ p.retirado_en|date:"d/m/Y" }}{% elif asignacion %}Caso {{ asignacion.caso }} · {{ asignacion.orden }}{% if p.excluido %} · excluido{% endif %}{% elif p.excluido %}Excluido{% else %}—{% endif %}</td>
               <td>{% if p.codigo_acceso %}Entregado{% else %}Sin código{% endif %}</td>
               <td class="acciones">
-                <form method="post" action="{% url 'gestion:codigo_acceso' p.codigo %}">
-                  {% csrf_token %}
-                  <button type="submit">{% if p.codigo_acceso %}Generar otro{% else %}Generar código{% endif %}</button>
-                </form>
+                {% if not p.retirado_en %}
+                  <form method="post" action="{% url 'gestion:codigo_acceso' p.codigo %}">
+                    {% csrf_token %}
+                    <button type="submit">{% if p.codigo_acceso %}Generar otro{% else %}Generar código{% endif %}</button>
+                  </form>
+                {% endif %}
+              </td>
+              <td class="acciones">
+                {% if not p.retirado_en %}
+                  <form method="post" action="{% url 'gestion:retiro' p.codigo %}" class="en-linea">
+                    {% csrf_token %}
+                    <label for="retiro-{{ p.codigo }}">Escribe {{ p.codigo }}</label>
+                    <input id="retiro-{{ p.codigo }}" name="confirmo" size="6" autocomplete="off" required>
+                    <button type="submit">Borrar datos</button>
+                  </form>
+                {% endif %}
               </td>
             </tr>
           {% endwith %}

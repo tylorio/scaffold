@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block titulo %}Mi informe · Refuerzo de programación{% endblock %}
+{% block contenido %}
+<h1>Mi informe</h1>
+
+<section class="tarjeta">
+  <h2>Cómo leer este informe</h2>
+  <p>
+    El índice de dependencia (IDC) estima qué parte de las funciones de tu
+    repositorio tiene un estilo parecido al del código generado con ayuda de
+    inteligencia artificial. Es una <strong>estimación probabilística, no una prueba</strong>:
+    no dice que hayas usado IA, no mide si aprendiste y no sirve para calificarte.
+  </p>
+  <p>
+    El intervalo muestra el rango donde probablemente está el valor real. Con pocas
+    funciones el intervalo es ancho y el número dice poco; en ese caso lo indicamos.
+  </p>
+  {% if analisis.modelo_es_demo %}
+    <p class="mensaje mensaje-warning">
+      Este análisis usó un modelo de demostración: los valores no describen tu código.
+    </p>
+  {% endif %}
+</section>
+
+<section class="indicadores">
+  <div>
+    <span class="etiqueta">IDC global</span>
+    <span class="valor">{% if global.valor is not None %}{{ global.valor|floatformat:2 }}{% else %}—{% endif %}</span>
+    {% if global.intervalo %}<span class="etiqueta">Intervalo 95 %: {{ global.intervalo.0|floatformat:2 }} – {{ global.intervalo.1|floatformat:2 }}</span>{% endif %}
+  </div>
+  <div>
+    <span class="etiqueta">Funciones analizadas</span>
+    <span class="valor">{{ global.n }}</span>
+  </div>
+</section>
+{% if global.ancho %}<p class="ayuda">El intervalo global es ancho: interpreta el valor con cautela.</p>{% endif %}
+
+<h2>Por concepto</h2>
+<div class="tabla-scroll">
+  <table>
+    <thead><tr><th>Concepto</th><th class="num">Funciones</th><th class="num">IDC</th><th>Intervalo 95 %</th><th>Estado</th><th>En el refuerzo</th></tr></thead>
+    <tbody>
+      {% for c in conceptos %}
+        <tr>
+          <td>{{ c.nombre }}</td>
+          <td class="num">{{ c.n }}</td>
+          <td class="num">{% if c.valor is not None %}{{ c.valor|floatformat:2 }}{% else %}—{% endif %}</td>
+          <td>{% if c.intervalo %}{{ c.intervalo.0|floatformat:2 }} – {{ c.intervalo.1|floatformat:2 }}{% if c.ancho %} (ancho){% endif %}{% else %}—{% endif %}</td>
+          <td>{{ c.estado }}</td>
+          <td>{% if c.reforzado %}Reforzado{% else %}Sin refuerzo durante el estudio{% endif %}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="ayuda">
+  Los conceptos reforzados se eligieron por sorteo entre los que el análisis permitía.
+  «Datos insuficientes» significa que había muy pocas funciones de ese concepto para
+  estimar algo.
+</p>
+
+<h2>Tu práctica</h2>
+<p>Practicaste {{ practica.ejercicios }} ejercicio{{ practica.ejercicios|pluralize }} y resolviste {{ practica.resueltos }}.
+  El material de los tres conceptos sigue abierto.</p>
+<p><a href="{% url 'estudiante:inicio' %}">Volver a mis conceptos</a></p>
+{% endblock %}

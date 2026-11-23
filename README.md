@@ -58,8 +58,9 @@ y el modo **confirmatorio**. Con el valor por defecto (m = 5), recursión y
 excepciones quedarían como «datos insuficientes», porque solo tienen 4 fragmentos.
 Con λ = 0,5, estructuras de datos no llegaría a débil y el sorteo iría al caso B.
 
-1. En **Participantes**, registra el código `P01` con el repositorio `demo_repo` y el
-   correo de commit `demo@example.invalid`. Es el autor que usa
+1. En **Participantes**, registra el código `P01` con el repositorio `demo_repo`, el
+   correo de commit `demo@example.invalid` y una fecha y versión de consentimiento
+   (sin consentimiento no se analiza). Es el autor que usa
    `preparar_demo_repo.py`; con otro correo no se analizaría ninguna función (D19).
 2. Pulsa **Analizar**. El diagnóstico calcula el IDC, pero **no sortea**. Puedes
    repetirlo con **Volver a analizar**: reemplaza al anterior.
@@ -122,7 +123,8 @@ Con λ = 0,5, estructuras de datos no llegaría a débil y el sorteo iría al ca
 8. Descarga los datos con los enlaces **CSV** del menú.
 9. Para cerrar la intervención, en **Gestión** pulsa **Liberar el material de todos
    los conceptos** (lista de espera, D4). Hazlo solo después del postest: no se
-   deshace.
+   deshace. Desde ese momento el estudiante ve **Mi informe**, con su IDC y su
+   intervalo (D11).
 
 Para repetir la demostración desde cero (por ejemplo, con λ = 0 para ver 3 débiles),
 borra `db.sqlite3` y vuelve a ejecutar `python manage.py migrate`: la congelación no
@@ -153,7 +155,7 @@ El mismo proyecto corre en dos perfiles, que se eligen con `IDC_PERFIL`:
 | Tiene | Repositorios, código de los fragmentos, modelo, banco de la prueba | Códigos anónimos, IDC agregado, asignación, uso del refuerzo |
 | No carga | — | Git, GitPython, scikit-learn ni el modelo |
 | Exige | `IDC_SAL_CORREOS` | `IDC_EJECUTOR_URL` e `IDC_EJECUTOR_TOKEN` (el ejecutor aislado) |
-| Comandos | Analizar, congelar, corregir la prueba, `exportar_resultados` | `importar_resultados` |
+| Comandos | Analizar, congelar, corregir la prueba, `exportar_resultados`, `exportar_estudio`, `cerrar_estudio` | `importar_resultados` |
 
 Lo único que viaja de un perfil al otro es el archivo `resultados-v1`, que **no lleva código, rutas, URLs, correos ni hashes**:
 
@@ -252,6 +254,67 @@ python manage.py cargar_bloques --ejemplo  # un bloque de ejemplo por concepto
 Las cargas, validaciones, el inicio de la intervención y la liberación quedan en la
 auditoría.
 
+## Muestra: consentimiento, exclusión y retiro
+
+- **Consentimiento:** el registro pide la fecha y la versión del consentimiento
+  firmado. Sin él, el repositorio no se analiza.
+- **Exclusión (D15):** en el detalle del participante, elige el motivo (sesión de
+  etiquetado, piloto o no cumple los criterios). Un excluido no se analiza ni entra
+  al sorteo. Tras congelar, quien quedó fuera del sorteo ya no puede volver.
+- **Retiro (D13):** en **Gestión**, escribe el código del participante y pulsa
+  **Borrar datos**, o usa `python manage.py retirar_participante P01 --confirmo P01`.
+  Se borran su análisis, su código, su asignación, sus puntajes y su uso del
+  refuerzo; queda solo el código, para el diagrama de flujo. **Hazlo en local y en
+  el portal**, que tienen bases distintas, y borra su fila de la tabla de
+  correspondencia. El portal no vuelve a cargarlo aunque reimportes el archivo.
+
+## Base para el análisis (D17)
+
+Después del postest, y una vez calificada la rúbrica Q:
+
+```powershell
+python manage.py exportar_estudio --calificaciones datos\calificaciones_q.csv --convocados 40
+```
+
+Escribe en `datos/estudio/<fecha>/` (o en `--salida`):
+
+| Archivo | Contenido |
+| --- | --- |
+| `largo.csv` | Una fila por participante × concepto × momento: forma, orden, T_pct, Q (promedio), Q_cal1 y Q_cal2 (para el ICC), métricas de calidad, reforzado, caso, IDC del concepto con su intervalo y la trazabilidad del análisis |
+| `participantes.csv` | Una fila por participante incluido: IDC global con intervalo (HE2b), índice por historial (HE1), estado del pretest y del postest, y `en_HG`, `en_HE1`, `en_HE2a`, `en_HE2b`, `en_HE4`, `en_HE4_casoA` y `en_HE5` |
+| `flujo.csv` | Etapas del diagrama de flujo: convocados → registrados → incluidos → con pretest → con postest, con los motivos de pérdida |
+| `LEEME.txt` | Qué es cada columna y las reglas de inclusión |
+
+El CSV de calificaciones tiene las columnas `participante,concepto,momento,calificador,Q`,
+con calificador 1 o 2 y Q de 0 a 20.
+
+Reglas de inclusión (P5), sin imputar:
+- quien falta al pretest solo queda en HE1;
+- quien falta al postest conserva HE1 y HE2;
+- `ausente` y `sin_corregir` son datos faltantes, nunca cero.
+
+La dependencia autorreportada (HE2a) y el cuestionario de HE1 vienen de fuera del
+sistema: se unen por el código del participante. La adherencia sale del portal
+(**CSV adherencia**).
+
+## Cierre del estudio (D13)
+
+Al terminar el análisis de datos:
+
+```powershell
+python manage.py exportar_estudio
+python manage.py cerrar_estudio --confirmo borrar-codigo
+```
+
+Borra los fragmentos (el código), las rutas de los repositorios, los hashes de
+correo, los códigos de acceso y los clones que hayan quedado. Se conservan los
+agregados, que son los mismos de la base exportada. Exige haber exportado antes y no
+se deshace. Después:
+- borra también las carpetas de entregas de la prueba y la tabla de correspondencia;
+- en el portal, descarga los CSV y elimina el recurso de Azure.
+
+Los CSV agregados se conservan por el plazo que fije el CEI-USIL. [PENDIENTE: plazo]
+
 ## Pruebas
 
 ```powershell
@@ -298,7 +361,10 @@ analisis/
     repositorio.py     Lectura con PyDriller y GitPython
     flujo.py           Orquestación del análisis
     exportacion.py     CSV
+    estudio.py         Reglas de inclusión (P5), rúbrica Q y diagrama de flujo
   persistencia.py    Une los servicios con la base de datos, y hace el sorteo
+  participacion.py   Exclusión (D15) y retiro con borrado (D13)
+  estudio.py         Base para el análisis (D17) y cierre del estudio
 refuerzo/
   bloques/           Los 24 bloques de refuerzo en JSON (D20)
   liberacion.py      Qué bloques ve cada participante y desde cuándo (D4, D20)
@@ -480,4 +546,7 @@ Por eso `db.sqlite3` y `datos/` están en `.gitignore`.
   referencia en las pruebas.
 - Al enviar, la página se vuelve a dibujar con la respuesta; recargarla reenvía la
   solución (el navegador pregunta antes).
+- El informe personal señala un intervalo como «ancho» cuando mide más de 0,5.
+  [PENDIENTE: confirmar el valor con el asesor]
+- El informe del portal no trae los puntajes de la prueba, que viven solo en local.
 - Las pruebas corren en Windows. Se probó con Python 3.12 y 3.13, no con 3.11.

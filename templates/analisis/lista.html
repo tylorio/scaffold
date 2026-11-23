@@ -40,9 +40,9 @@
               <td>{% if analisis %}{{ analisis.fecha|date:"d/m/Y H:i" }}{% else %}Sin analizar{% endif %}</td>
               <td class="num">{% if analisis %}{{ analisis.n_fragmentos }}{% else %}—{% endif %}</td>
               <td class="num">{% if analisis and analisis.idc_global is not None %}{{ analisis.idc_global|floatformat:2 }}{% else %}—{% endif %}</td>
-              <td>{% if asignacion %}Caso {{ asignacion.caso }} · {{ asignacion.orden }}{% else %}—{% endif %}</td>
+              <td>{% if participante.retirado_en %}Retirado{% elif participante.excluido %}Excluido{% elif asignacion %}Caso {{ asignacion.caso }} · {{ asignacion.orden }}{% else %}—{% endif %}</td>
               <td class="acciones">
-                {% if not estado.congelada %}
+                {% if not estado.congelada and participante.en_muestra %}
                   <form method="post" action="{% url 'analisis:analizar' participante.codigo %}">
                     {% csrf_token %}
                     <button type="submit">{% if analisis %}Volver a analizar{% else %}Analizar{% endif %}</button>

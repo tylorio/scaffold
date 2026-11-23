@@ -13,7 +13,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
-from refuerzo.acceso import generar_codigo_acceso
+from refuerzo.acceso import ParticipanteRetirado, generar_codigo_acceso
 from refuerzo.administracion import (
     AccionNoPermitida,
     fijar_inicio,
@@ -25,6 +25,7 @@ from refuerzo.models import BloqueRefuerzo
 from refuerzo.servicios.banco import ranuras_faltantes
 
 from .models import Configuracion, Congelacion, Importacion, Participante
+from .participacion import CambioNoPermitido, retirar
 from .servicios.conceptos import NOMBRES_CONCEPTOS
 from .resultados import ArchivoInvalido, importar_resultados
 
@@ -109,10 +110,33 @@ def validar(request, bloque_id):
 @require_POST
 def codigo_acceso(request, codigo):
     participante = get_object_or_404(Participante, codigo=codigo)
-    nuevo = generar_codigo_acceso(participante, _usuario(request))
+    try:
+        nuevo = generar_codigo_acceso(participante, _usuario(request))
+    except ParticipanteRetirado as error:
+        messages.error(request, str(error))
+        return redirect("gestion:panel")
     return render(request, "analisis/codigo_acceso.html", {
         "participante": participante, "codigo_acceso": nuevo,
     })
+
+
+@login_required
+@require_POST
+def retiro(request, codigo):
+    participante = get_object_or_404(Participante, codigo=codigo)
+    if request.POST.get("confirmo", "").strip() != codigo:
+        messages.error(request, f"Para borrar los datos de {codigo}, escribe su código.")
+        return redirect("gestion:panel")
+    try:
+        retirar(participante, _usuario(request))
+    except CambioNoPermitido as error:
+        messages.error(request, str(error))
+    else:
+        otro = "el portal" if settings.LOCAL else "el núcleo local"
+        messages.success(
+            request, f"Datos de {codigo} borrados. Haz el mismo retiro en {otro}.",
+        )
+    return redirect("gestion:panel")
 
 
 @login_required

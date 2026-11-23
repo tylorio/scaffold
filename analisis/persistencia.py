@@ -46,6 +46,14 @@ class SinCorreosDeclarados(Exception):
     """Sin correos de commit no se puede aplicar el filtro por autor (D19)."""
 
 
+class SinConsentimiento(Exception):
+    """Sin consentimiento registrado no se lee el repositorio (D15, 9.6 del plan)."""
+
+
+class FueraDeLaMuestra(Exception):
+    """Un participante excluido o retirado no se analiza."""
+
+
 class AsignacionCongelada(Exception):
     """Después de congelar ya no se puede reanalizar ni volver a sortear (D3, R5)."""
 
@@ -162,6 +170,17 @@ def ejecutar_analisis(participante: Participante, usuario: str = "web") -> Anali
             "La asignación ya está congelada: no se puede volver a analizar a "
             f"{participante.codigo}."
         )
+    if not participante.en_muestra:
+        raise FueraDeLaMuestra(
+            f"{participante.codigo} está "
+            + ("retirado" if participante.retirado_en else "excluido de la muestra")
+            + ": no se analiza su repositorio."
+        )
+    if participante.consentimiento_en is None:
+        raise SinConsentimiento(
+            f"{participante.codigo} no tiene consentimiento registrado: regístralo "
+            "antes de analizar su repositorio."
+        )
     if not participante.hashes_correos:
         raise SinCorreosDeclarados(
             f"{participante.codigo} no tiene correos de commit declarados: sin ellos no "
@@ -235,9 +254,14 @@ class EstadoCongelacion:
         return self.n_participantes // 2, self.n_participantes % 2
 
 
+def en_muestra():
+    """Participantes que entran al sorteo y al análisis: ni excluidos ni retirados."""
+    return Participante.objects.filter(motivo_exclusion="", retirado_en__isnull=True)
+
+
 def estado_congelacion() -> EstadoCongelacion:
     modo = Configuracion.obtener().modo
-    participantes = list(Participante.objects.prefetch_related("analisis__conceptos"))
+    participantes = list(en_muestra().prefetch_related("analisis__conceptos"))
     sin_diagnostico, casos = [], Counter()
     for participante in participantes:
         analisis = participante.ultimo_analisis
@@ -271,7 +295,7 @@ def congelar_asignacion(
 
         base = secrets.randbelow(2**62) if semilla_base is None else semilla_base
         participantes = list(
-            Participante.objects.order_by("codigo").prefetch_related("analisis__conceptos")
+            en_muestra().order_by("codigo").prefetch_related("analisis__conceptos")
         )
         ordenes = sortear_orden([p.codigo for p in participantes], base, tamano_bloque)
         for participante in participantes:

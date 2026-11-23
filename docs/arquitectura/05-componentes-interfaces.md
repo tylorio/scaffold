@@ -62,7 +62,7 @@ Cada componente tiene una responsabilidad y un archivo previsto. "Existe" indica
 | P1 | Participantes y acceso | Participante por código anónimo; código de acceso del estudiante; sesión de estudiante; investigador con autenticación de Django; sin rol experto (RF-01, RF-28) | `plataforma/models.py`, `plataforma/acceso.py` | Ambos | Parcial (sin acceso) |
 | P2 | Importador de resultados | Validar el archivo contra el esquema, rechazar campos prohibidos, crear o actualizar participantes y asignaciones de forma idempotente, registrar auditoría (ESC-18) | `plataforma/servicios/importacion.py` | Nube | No |
 | P3 | Exportador CSV | Tablas por código anónimo: participantes, análisis por concepto, intentos, aperturas (RF-27) | `plataforma/servicios/exportacion.py` | Nube | Sí (en `analisis`) |
-| P4 | Informe personal | Página imprimible por participante con su IDC por concepto, intervalos, conceptos trabajados y uso del refuerzo (RF-31) | `plataforma/servicios/informe.py` | Nube | No |
+| P4 | Informe personal | Página imprimible por participante con su IDC por concepto, intervalos, conceptos trabajados y uso del refuerzo (RF-31) | `refuerzo/views.py` (`informe`), `templates/refuerzo/informe.html` | Nube | Hecho (pieza 10); sin los puntajes de la prueba, que viven en local |
 | P5 | Borrado | Eliminar todo lo de un participante (portal) y guía para el almacén local; borrado total al concluir (RF-30) | `plataforma/servicios/borrado.py` | Ambos | No |
 | P6 | Auditoría | Registro inmutable de importaciones, liberaciones del control, borrados y rehechos de asignación | `plataforma/models.py` (`Auditoria`) | Nube | No |
 | P7 | Configuración y perfil | θ, λ, m vigentes (local); bandera `PERFIL = local | nube` que activa o desactiva apps y comandos | `config/settings.py`, `config/perfiles.py` | Ambos | Parcial |
@@ -345,7 +345,7 @@ Autenticación: estudiante por **código de acceso** (distinto del código anón
 | POST | `/gestion/intervencion/inicio/` | Investigador | `fecha` | Inicio de la intervención; auditoría | Mensaje si la fecha no es válida o el control ya se liberó |
 | POST | `/gestion/intervencion/liberar/` | Investigador | `confirmo=si` | Abre los tres conceptos para todos (D4); fecha de liberación = ahora; auditoría | Mensaje si falta confirmar, si no hay inicio o si ya está liberado |
 | GET | `/gestion/exportar/<tabla>.csv` | Investigador | `tabla ∈ {participantes, analisis, intentos, aperturas, adherencia}` | CSV por código anónimo | 404 |
-| POST | `/gestion/participantes/<codigo>/borrar/` | Investigador | confirmación | Borra todo lo del participante en el portal; auditoría; recuerda borrar en local | 404 |
+| POST | `/gestion/participantes/<codigo>/retiro/` | Investigador | `confirmo` = el código | Borra todo lo del participante en esta base y deja solo el código; auditoría; recuerda hacerlo en la otra base | 404; mensaje si la confirmación no coincide o ya se retiró |
 | GET | `/gestion/auditoria/` | Investigador | — | Registro de importaciones, liberaciones, borrados, rehechos | — |
 
 Nota sobre `/mi/`, decidida por el asesor (D11): el estudiante **no ve su IDC en las semanas 9–12**, solo los conceptos que trabaja. El IDC con su intervalo aparece en el informe personal (RF-31, RF-34), con el texto de interpretación, **después del postest**. El portal no muestra el IDC hasta que se registra la liberación.

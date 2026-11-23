@@ -30,12 +30,18 @@ RETENCION = timedelta(hours=24)
 SESION_ESTUDIANTE = "participante_id"
 
 
+class ParticipanteRetirado(Exception):
+    pass
+
+
 class AccesoBloqueado(Exception):
     pass
 
 
 def generar_codigo_acceso(participante: Participante, usuario: str) -> str:
     """Devuelve el código en claro, para entregarlo; reemplaza al anterior."""
+    if participante.retirado_en is not None:
+        raise ParticipanteRetirado(f"{participante.codigo} se retiró del estudio.")
     codigo = "".join(secrets.choice(ALFABETO) for _ in range(LARGO))
     participante.codigo_acceso = make_password(codigo)
     participante.save(update_fields=["codigo_acceso"])
@@ -79,7 +85,7 @@ def estudiante_requerido(vista):
     @wraps(vista)
     def envoltura(request, *args, **kwargs):
         participante = Participante.objects.filter(
-            pk=request.session.get(SESION_ESTUDIANTE),
+            pk=request.session.get(SESION_ESTUDIANTE), retirado_en__isnull=True,
         ).first()
         if participante is None:
             return redirect("estudiante:acceso")

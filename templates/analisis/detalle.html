@@ -3,7 +3,36 @@
 {% block contenido %}
 <h1>Participante {{ participante.codigo }}</h1>
 
-{% if congelada %}
+{% if participante.retirado_en %}
+  <p class="mensaje mensaje-warning">Se retiró el {{ participante.retirado_en|date:"d/m/Y" }}: sus datos se borraron.</p>
+{% else %}
+  <p class="ayuda">
+    {% if participante.consentimiento_en %}Consentimiento {{ participante.consentimiento_version }} del {{ participante.consentimiento_en|date:"d/m/Y" }}.{% else %}Sin consentimiento registrado: no se puede analizar.{% endif %}
+  </p>
+  <section class="tarjeta">
+    <h2>Muestra</h2>
+    {% if participante.excluido %}
+      <p><strong>Excluido:</strong> {{ participante.get_motivo_exclusion_display }}. No entra al sorteo ni a la base del análisis.</p>
+      <form method="post" action="{% url 'analisis:incluir' participante.codigo %}">
+        {% csrf_token %}
+        <button type="submit">Quitar la exclusión</button>
+      </form>
+    {% else %}
+      <form method="post" action="{% url 'analisis:excluir' participante.codigo %}">
+        {% csrf_token %}
+        <label for="motivo">Excluir de la muestra (D15)</label>
+        <select id="motivo" name="motivo" required>
+          <option value="">Elige el motivo</option>
+          {% for valor, texto in motivos_exclusion %}<option value="{{ valor }}">{{ texto }}</option>{% endfor %}
+        </select>
+        <button type="submit">Excluir</button>
+      </form>
+    {% endif %}
+  </section>
+{% endif %}
+
+{% if participante.retirado_en or participante.excluido %}
+{% elif congelada %}
   <p class="ayuda">La asignación está congelada: este diagnóstico ya no se puede repetir.</p>
 {% else %}
   <form method="post" action="{% url 'analisis:analizar' participante.codigo %}">

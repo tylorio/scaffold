@@ -150,6 +150,8 @@ def importar_resultados(texto: str, usuario: str) -> tuple[Importacion, int]:
         nuevos = 0
         for p in documento["participantes"]:
             existente = Participante.objects.filter(codigo=p["codigo"]).first()
+            if existente is not None and existente.retirado_en is not None:
+                continue  # se retiró en el portal: no se vuelven a cargar sus datos
             if existente is not None:
                 analisis = existente.ultimo_analisis
                 if analisis is None or str(analisis.analisis_id) != p["analisis_id"]:

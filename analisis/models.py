@@ -61,6 +61,17 @@ class Configuracion(models.Model):
 
 
 class Participante(models.Model):
+    # Motivos para dejar a alguien fuera de la muestra (D15). Sin texto libre: un
+    # comentario podría llevar un nombre.
+    ETIQUETADO = "etiquetado"
+    PILOTO = "piloto"
+    NO_CUMPLE = "no_cumple"
+    MOTIVOS_EXCLUSION = [
+        (ETIQUETADO, "Participó en la sesión de etiquetado"),
+        (PILOTO, "Participó en el piloto"),
+        (NO_CUMPLE, "No cumple los criterios de inclusión"),
+    ]
+
     codigo = models.CharField(
         "código anónimo", max_length=8, unique=True, validators=[CODIGO_ANONIMO],
     )
@@ -69,10 +80,31 @@ class Participante(models.Model):
     hashes_correos = models.JSONField(default=list)
     # Hash del código de acceso del estudiante al portal (08 §3.2). El código no se guarda.
     codigo_acceso = models.CharField(max_length=128, blank=True)
+    # Consentimiento informado firmado (en papel o en el formulario del CEI). Sin
+    # él no se analiza el repositorio.
+    consentimiento_en = models.DateField("fecha del consentimiento", null=True, blank=True)
+    consentimiento_version = models.CharField(
+        "versión del consentimiento", max_length=20, blank=True,
+    )
+    motivo_exclusion = models.CharField(
+        "motivo de exclusión", max_length=12, choices=MOTIVOS_EXCLUSION, blank=True,
+    )
+    excluido_en = models.DateTimeField(null=True, blank=True)
+    # Retiro voluntario (D13): se borran sus datos y queda solo el código, para el
+    # diagrama de flujo de participantes.
+    retirado_en = models.DateTimeField(null=True, blank=True)
     creado = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ["codigo"]
+
+    @property
+    def excluido(self):
+        return bool(self.motivo_exclusion)
+
+    @property
+    def en_muestra(self):
+        return not self.excluido and self.retirado_en is None
 
     def __str__(self):
         return self.codigo
@@ -145,6 +177,11 @@ class Auditoria(models.Model):
     LIBERAR_CONTROL = "liberar_control"
     CARGAR_BLOQUE = "cargar_bloque"
     VALIDAR_BLOQUE = "validar_bloque"
+    EXCLUIR = "excluir"
+    INCLUIR = "incluir"
+    RETIRO = "retiro"
+    EXPORTAR_ESTUDIO = "exportar_estudio"
+    CIERRE = "cierre"
     ACCIONES = [
         (CONGELAR, "Congelar la asignación"),
         (REANALIZAR, "Reemplazar un diagnóstico"),
@@ -155,6 +192,11 @@ class Auditoria(models.Model):
         (LIBERAR_CONTROL, "Liberar el material tras el postest"),
         (CARGAR_BLOQUE, "Cargar un bloque de refuerzo"),
         (VALIDAR_BLOQUE, "Validar un bloque de refuerzo"),
+        (EXCLUIR, "Excluir a un participante de la muestra"),
+        (INCLUIR, "Quitar una exclusión"),
+        (RETIRO, "Retiro de un participante y borrado de sus datos"),
+        (EXPORTAR_ESTUDIO, "Exportar la base para el análisis"),
+        (CIERRE, "Cierre del estudio y borrado del código"),
     ]
 
     fecha = models.DateTimeField(auto_now_add=True)

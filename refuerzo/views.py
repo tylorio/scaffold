@@ -8,6 +8,7 @@ from django.views.decorators.http import require_POST
 
 from analisis.http import respuesta_csv
 from analisis.servicios.conceptos import NOMBRES_CONCEPTOS
+from analisis.servicios.idc import ANCHO_INTERPRETABLE, ETIQUETAS_ESTADO, intervalo_wilson
 
 from .acceso import (
     SESION_ESTUDIANTE,
@@ -196,6 +197,50 @@ def ver_bloque(request, participante, concepto, bloque_id):
             }
             for ejercicio in bloque.ejercicios
         ],
+    })
+
+
+# Informe personal (RF-31, RF-34, D11)
+
+def _estimacion(n_ia, n, valor):
+    intervalo = intervalo_wilson(n_ia, n) if n and valor is not None else None
+    return {
+        "valor": valor,
+        "n": n,
+        "n_ia": n_ia,
+        "intervalo": intervalo,
+        "ancho": intervalo is not None and intervalo[1] - intervalo[0] > ANCHO_INTERPRETABLE,
+    }
+
+
+@estudiante_requerido
+def informe(request, participante):
+    """Solo al final: durante la intervención el estudiante no ve su IDC (D11)."""
+    estado = intervencion()
+    analisis = participante.ultimo_analisis
+    if not estado.liberado or analisis is None:
+        return render(request, "refuerzo/informe_no_disponible.html", status=403)
+    asignacion = getattr(participante, "asignacion", None)
+    intentos = IntentoEjercicio.objects.filter(analisis__participante=participante, ejecutado=True)
+    return render(request, "refuerzo/informe.html", {
+        "participante": participante,
+        "analisis": analisis,
+        "global": _estimacion(analisis.n_ia, analisis.n_fragmentos, analisis.idc_global),
+        "conceptos": [
+            {
+                "nombre": NOMBRES_CONCEPTOS[c.concepto],
+                "estado": ETIQUETAS_ESTADO.get(c.estado, c.estado),
+                "reforzado": asignacion is not None and c.concepto in asignacion.reforzados,
+                **_estimacion(c.n_ia, c.n_fragmentos, c.idc),
+            }
+            for c in analisis.conceptos.all()
+        ],
+        "practica": {
+            "ejercicios": intentos.values("bloque_id", "ejercicio").distinct().count(),
+            "resueltos": sum(
+                1 for _ in {(i.bloque_id, i.ejercicio) for i in intentos if i.resuelto}
+            ),
+        },
     })
 
 

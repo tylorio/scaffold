@@ -2,6 +2,7 @@
 import csv
 import io
 import math
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -89,6 +90,7 @@ def crear_participante(codigo, repositorio, correos=(CORREO,)):
     return Participante.objects.create(
         codigo=codigo, repositorio=repositorio,
         hashes_correos=hashes_de_correos(correos, ajustes.SAL_CORREOS),
+        consentimiento_en=date(2026, 11, 20), consentimiento_version="v1",
     )
 
 
@@ -134,6 +136,7 @@ def test_registra_participante(client, repositorio):
     respuesta = client.post(reverse("analisis:lista"), {
         "codigo": "P02", "repositorio": str(repositorio),
         "correos": "Persona@Example.invalid, segundo@example.invalid",
+        "consentimiento_en": "2026-11-20", "consentimiento_version": "v1",
     })
     assert respuesta.status_code == 302
     participante = Participante.objects.get(codigo="P02")
@@ -555,7 +558,9 @@ def test_no_se_guardan_correos_de_terceros_ni_sus_hashes(
 
 
 def test_participante_sin_correos_declarados_no_se_analiza(client, repositorio):
-    Participante.objects.create(codigo="P05", repositorio=str(repositorio))
+    Participante.objects.create(
+        codigo="P05", repositorio=str(repositorio), consentimiento_en=date(2026, 11, 20),
+    )
     html = analizar(client, "P05").content.decode()
     assert "no tiene correos de commit declarados" in html
     assert not Analisis.objects.exists()
