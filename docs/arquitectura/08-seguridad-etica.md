@@ -47,7 +47,7 @@ Prioridad: **A** = alta, **M** = media, **B** = baja. Estado: **hecho** = implem
 | Un estudiante ve el material o los datos de otro | I | C3 | A | La sesión queda ligada a un código; ninguna vista recibe el código por la URL | Prueba: un estudiante no puede abrir `/mi/` de otro | 8c |
 | Alguien sin cuenta abre las vistas del investigador | S/I | C1 y C3 | A | Todas exigen iniciar sesión como investigador. Hoy no hay control de acceso | Prueba por cada ruta de gestión: sin sesión, redirige al login | 8c |
 | El código de los estudiantes llega a la nube | I | C3 | A | El portal solo recibe `resultados-v1`. El exportador y el importador rechazan código, rutas, URLs, correos y hashes (ESC-06) | Pruebas del exportador y del importador con campos prohibidos | 8b |
-| Roban el equipo del investigador o una copia de sus datos | I | C2 | A | Disco virtual con BitLocker y contraseña propia, desmontado cuando no se usa. El respaldo es el mismo archivo cifrado | Procedimiento escrito (§3.4) y lista de cierre | 8d |
+| Roban el equipo del investigador o una copia de sus datos | I | C2 | A | Disco virtual con BitLocker y contraseña propia, desmontado cuando no se usa. El respaldo es el mismo archivo cifrado | Procedimiento escrito (`docs/almacen-cifrado.md`), `manage.py verificar_almacen` y negativa a arrancar con el almacén desmontado | Hecho |
 | Se filtra el banco de la prueba | I | C1 | A | Fuera de Git, solo en el almacén local y nunca en el portal (D21) | Prueba de que `datos/` está en `.gitignore` y de que el portal no tiene ruta al banco | Hecho / 8b |
 | Se altera la asignación después de congelarla | T | C1 y C3 | M | Congelación única, admin de solo lectura, el portal importa la asignación inmutable (D3) | Pruebas de congelación (pieza 5) | Hecho |
 | Se altera el archivo de resultados entre el núcleo y el portal | T | F2 | M | El importador valida el esquema y registra el hash del archivo; reimportar exige el mismo `analisis_id` | Prueba: un archivo modificado queda registrado con otro hash | 8b |
@@ -161,7 +161,7 @@ Si falta un secreto, el sistema no arranca (`ImproperlyConfigured`). Así nunca 
 - **Respaldo:** copiar el `.vhdx` desmontado, que ya está cifrado, a un medio externo.
 - **Borrado final (D13):** destruir el `.vhdx` y sus copias, y conservar solo los CSV agregados.
 
-Los pasos para crearlo van en el README (pieza 8d). Riesgo residual: mientras está montado, cualquier programa que corra en la sesión del investigador puede leerlo.
+Los pasos están en `docs/almacen-cifrado.md`. Si `IDC_ALMACEN` está definido y el disco no está montado, el sistema no arranca. Los clones temporales de los repositorios también van al almacén y no a la carpeta temporal del sistema. `manage.py verificar_almacen` revisa que todo esté en su sitio y que no queden restos sin cifrar en el proyecto. Riesgo residual: mientras está montado, cualquier programa que corra en la sesión del investigador puede leerlo.
 
 ### 3.5 Registro de accesos y acciones
 

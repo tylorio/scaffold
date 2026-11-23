@@ -117,6 +117,21 @@ Para repetir la demostración desde cero (por ejemplo, con λ = 0 para ver 3 dé
 borra `db.sqlite3` y vuelve a ejecutar `python manage.py migrate`: la congelación no
 se puede deshacer desde la interfaz.
 
+## Almacén local cifrado
+
+Con datos reales de participantes, la base, `datos/`, los clones temporales de los
+repositorios y la sal **no** pueden quedar en la carpeta del proyecto. Van en un disco
+virtual cifrado con BitLocker, que se monta para trabajar. Los pasos para crearlo,
+montarlo, respaldarlo y borrarlo al final están en
+[docs/almacen-cifrado.md](docs/almacen-cifrado.md). Para revisar que todo esté en su
+sitio:
+
+```powershell
+python manage.py verificar_almacen
+```
+
+Para la demostración con `demo_repo/` no hace falta.
+
 ## Perfiles: núcleo local y portal en la nube (ADR-001)
 
 El mismo proyecto corre en dos perfiles, que se eligen con `IDC_PERFIL`:

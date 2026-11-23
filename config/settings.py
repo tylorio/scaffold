@@ -19,19 +19,46 @@ from django.core.exceptions import ImproperlyConfigured
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-def _cargar_env(ruta: Path) -> None:
-    """Lee CLAVE=VALOR de un .env local sin pisar las variables ya definidas."""
-    if not ruta.is_file():
-        return
-    for linea in ruta.read_text(encoding="utf-8").splitlines():
-        linea = linea.strip()
-        if not linea or linea.startswith("#") or "=" not in linea:
-            continue
-        clave, valor = linea.split("=", 1)
-        os.environ.setdefault(clave.strip(), valor.strip().strip("\"'"))
+def _leer_env(ruta: Path) -> dict[str, str]:
+    """CLAVE=VALOR de un archivo .env, sin aplicarlos."""
+    valores = {}
+    if ruta.is_file():
+        for linea in ruta.read_text(encoding="utf-8").splitlines():
+            linea = linea.strip()
+            if linea and not linea.startswith("#") and "=" in linea:
+                clave, valor = linea.split("=", 1)
+                valores[clave.strip()] = valor.strip().strip("\"'")
+    return valores
 
 
-_cargar_env(BASE_DIR / ".env")
+_env_proyecto = _leer_env(BASE_DIR / ".env")
+
+
+def _variable(clave: str, defecto: str = "") -> str:
+    return os.environ.get(clave) or _env_proyecto.get(clave, defecto)
+
+
+# Almacén local cifrado (08 §3.4): un disco virtual con BitLocker que se monta para
+# trabajar. Ahí van la base, datos/, los clones temporales y el .env con la sal.
+# Si está configurado pero no montado, el sistema no arranca: así nunca crea una
+# base sin cifrar en otro lugar. Su .env manda sobre el del proyecto, que no está
+# cifrado; el entorno del proceso manda sobre los dos.
+ALMACEN = None
+if os.environ.get("IDC_ALMACEN", _env_proyecto.get("IDC_ALMACEN")) and (
+    _variable("IDC_PERFIL", "local") == "local"
+):
+    ALMACEN = Path(os.environ.get("IDC_ALMACEN", _env_proyecto.get("IDC_ALMACEN")))
+    if not ALMACEN.is_dir():
+        raise ImproperlyConfigured(
+            f"El almacén {ALMACEN} no está montado. Monta el disco cifrado "
+            "(docs/almacen-cifrado.md) y vuelve a intentarlo."
+        )
+    for clave, valor in _leer_env(ALMACEN / ".env").items():
+        os.environ.setdefault(clave, valor)
+for clave, valor in _env_proyecto.items():
+    os.environ.setdefault(clave, valor)
+DATOS_DIR = (ALMACEN or BASE_DIR) / "datos"
+CARPETA_TEMPORAL = ALMACEN / "tmp" if ALMACEN else None
 
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "")
 if not SECRET_KEY:
@@ -120,7 +147,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': (ALMACEN or BASE_DIR) / 'db.sqlite3',
     }
 }
 
@@ -168,7 +195,7 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Parámetros del prototipo
-RUTA_MODELO = BASE_DIR / 'datos' / 'modelos' / 'modelo_demo.joblib'
+RUTA_MODELO = DATOS_DIR / 'modelos' / 'modelo_demo.joblib'
 TIEMPO_LIMITE_EJERCICIO = 5.0  # segundos por envío
 
 # Ejecutor aislado (ADR-005). Sin URL, las soluciones corren en un subproceso local,
@@ -182,4 +209,4 @@ if not LOCAL and not EJECUTOR_URL:
         "El perfil nube exige el ejecutor aislado: define IDC_EJECUTOR_URL e IDC_EJECUTOR_TOKEN."
     )
 # Banco real de la prueba (formas A y B): fuera de Git y nunca en el portal (D21).
-BANCO_PRUEBA_DIR = BASE_DIR / 'datos' / 'banco_prueba'
+BANCO_PRUEBA_DIR = DATOS_DIR / 'banco_prueba'

@@ -172,7 +172,7 @@ def ejecutar_analisis(participante: Participante, usuario: str = "web") -> Anali
     modelo = cargar_modelo(settings.RUTA_MODELO)
     datos = analizar_repositorio(
         participante.repositorio, modelo, parametros, base=settings.BASE_DIR,
-        filtro=filtro,
+        filtro=filtro, temporal=settings.CARPETA_TEMPORAL,
     )
     # Un análisis vacío no reemplaza a uno válido anterior.
     if not datos.fragmentos:

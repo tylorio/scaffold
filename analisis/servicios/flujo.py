@@ -42,6 +42,7 @@ def analizar_repositorio(
     parametros: Parametros = Parametros(),
     base: Path | None = None,
     filtro: FiltroAutor | None = None,
+    temporal: Path | None = None,
 ) -> ResultadoAnalisis:
     """Analiza el repositorio una sola vez, en el diagnóstico (no hay análisis post, R5).
 
@@ -49,7 +50,7 @@ def analizar_repositorio(
     declarado por el participante (D19). Sin historial Git no hay autoría que
     comprobar, así que el análisis se rechaza.
     """
-    with abrir_repositorio(origen, base) as repositorio:
+    with abrir_repositorio(origen, base, temporal) as repositorio:
         extraidos: list[Fragmento] = []
         con_error: list[str] = []
         for archivo in repositorio.archivos():

@@ -7,7 +7,7 @@ Uso:
 """
 import argparse
 
-from _ruta import RAIZ
+from _ruta import DATOS
 from analisis.servicios.entrenamiento import (
     cargar_corpus,
     entrenar_modelo,
@@ -17,10 +17,8 @@ from analisis.servicios.entrenamiento import (
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Entrena el clasificador P(IA).")
-    parser.add_argument("--corpus", default=RAIZ / "datos" / "corpus_demo.jsonl")
-    parser.add_argument(
-        "--salida", default=RAIZ / "datos" / "modelos" / "modelo_demo.joblib"
-    )
+    parser.add_argument("--corpus", default=DATOS / "corpus_demo.jsonl")
+    parser.add_argument("--salida", default=DATOS / "modelos" / "modelo_demo.joblib")
     parser.add_argument("--version", default="demo-v1")
     parser.add_argument(
         "--real", action="store_true",

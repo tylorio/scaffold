@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from string import Template
 
-RAIZ = Path(__file__).resolve().parent.parent
+from _ruta import DATOS
 
 MUESTRAS_POR_CLASE = 150
 SEMILLA = 42
@@ -258,7 +258,7 @@ def generar_corpus(semilla: int = SEMILLA, por_clase: int = MUESTRAS_POR_CLASE) 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Genera el corpus sintético de demo.")
-    parser.add_argument("--salida", default=RAIZ / "datos" / "corpus_demo.jsonl")
+    parser.add_argument("--salida", default=DATOS / "corpus_demo.jsonl")
     args = parser.parse_args()
 
     salida = Path(args.salida)

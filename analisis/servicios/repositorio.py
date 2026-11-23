@@ -251,9 +251,13 @@ def _abrir_local(ruta: Path) -> tuple[CarpetaLocal | RepositorioGit, Repo | None
 
 @contextmanager
 def abrir_repositorio(
-    origen: str, base: Path | None = None
+    origen: str, base: Path | None = None, temporal: Path | None = None,
 ) -> Iterator[CarpetaLocal | RepositorioGit]:
-    """Abre una ruta o clona una URL. Los clones desaparecen al salir del `with`."""
+    """Abre una ruta o clona una URL. Los clones desaparecen al salir del `with`.
+
+    `temporal` es dónde se clona: el almacén cifrado, para que el código de los
+    estudiantes no pase por la carpeta temporal del sistema, que no está cifrada.
+    """
     origen = origen.strip()
     validar_origen(origen, base)
 
@@ -266,10 +270,12 @@ def abrir_repositorio(
                 repo.close()
         return
 
+    if temporal is not None:
+        Path(temporal).mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(
-        prefix="idc_clon_", ignore_cleanup_errors=True
-    ) as temporal:
-        destino = Path(temporal) / "repo"
+        prefix="idc_clon_", dir=temporal, ignore_cleanup_errors=True
+    ) as carpeta:
+        destino = Path(carpeta) / "repo"
         try:
             Repo.clone_from(
                 origen, destino, env={"GIT_TERMINAL_PROMPT": "0"}
