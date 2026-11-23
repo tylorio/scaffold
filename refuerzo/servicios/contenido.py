@@ -1,19 +1,17 @@
-"""Material de refuerzo generado a partir de plantillas, sin modelos de lenguaje.
+"""Tipos del material de refuerzo y el material de ejemplo, escrito a mano.
 
-Cada concepto tiene una plantilla con explicación, dos ejemplos resueltos y tres
-ejercicios graduados. La personalización se limita a la introducción, que cita
-los datos del propio análisis del estudiante.
+El material real son los bloques de `banco.py` (D20). Estas plantillas, una por
+concepto, solo sirven como banco de ejemplo para desarrollo y pruebas. Nada aquí
+cita el análisis del estudiante: durante la intervención no ve su IDC (D11).
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
-from string import Template
 from typing import Any
 
 from analisis.servicios.conceptos import (
     ESTRUCTURAS,
     EXCEPCIONES,
-    NOMBRES_CONCEPTOS,
     RECURSION,
 )
 
@@ -48,35 +46,14 @@ class Ejercicio:
 @dataclass(frozen=True)
 class Plantilla:
     concepto: str
-    introduccion: Template
     explicacion: tuple[str, ...]
     ejemplos: tuple[Ejemplo, ...]
     ejercicios: tuple[Ejercicio, ...]
 
-
-@dataclass(frozen=True)
-class Recurso:
-    concepto: str
-    nombre: str
-    introduccion: str
-    explicacion: tuple[str, ...]
-    ejemplos: tuple[Ejemplo, ...]
-    ejercicios: tuple[Ejercicio, ...]
-
-    def ejercicio(self, ejercicio_id: str) -> Ejercicio | None:
-        return next((e for e in self.ejercicios if e.id == ejercicio_id), None)
-
-
-_INTRODUCCION = Template(
-    "En tu repositorio se analizaron $n_fragmentos funciones de $tema "
-    "y $n_ia parecen haber sido generadas con ayuda de IA (IDC = $idc). "
-    "Este material te ayuda a practicarlo por tu cuenta."
-)
 
 PLANTILLAS = {
     RECURSION: Plantilla(
         concepto=RECURSION,
-        introduccion=_INTRODUCCION,
         explicacion=(
             "Una función es recursiva cuando se llama a sí misma para resolver "
             "una versión más pequeña del mismo problema.",
@@ -196,7 +173,6 @@ PLANTILLAS = {
     ),
     ESTRUCTURAS: Plantilla(
         concepto=ESTRUCTURAS,
-        introduccion=_INTRODUCCION,
         explicacion=(
             "Una estructura de datos organiza información para que ciertas "
             "operaciones sean simples y rápidas. Elegir bien la estructura suele "
@@ -315,7 +291,6 @@ PLANTILLAS = {
     ),
     EXCEPCIONES: Plantilla(
         concepto=EXCEPCIONES,
-        introduccion=_INTRODUCCION,
         explicacion=(
             "Una excepción es la señal de que algo impidió continuar: dividir "
             "entre cero, convertir un texto que no es un número, abrir un archivo "
@@ -444,24 +419,3 @@ PLANTILLAS = {
     ),
 }
 
-
-def generar_recurso(
-    concepto: str, *, n_fragmentos: int, n_ia: int, idc: float | None
-) -> Recurso:
-    """Rellena la plantilla del concepto con los datos del análisis."""
-    plantilla = PLANTILLAS[concepto]
-    nombre = NOMBRES_CONCEPTOS[concepto]
-    introduccion = plantilla.introduccion.substitute(
-        n_fragmentos=n_fragmentos,
-        n_ia=n_ia,
-        idc="sin datos" if idc is None else f"{idc:.2f}".replace(".", ","),
-        tema=nombre.lower(),
-    )
-    return Recurso(
-        concepto=concepto,
-        nombre=nombre,
-        introduccion=introduccion,
-        explicacion=plantilla.explicacion,
-        ejemplos=plantilla.ejemplos,
-        ejercicios=plantilla.ejercicios,
-    )

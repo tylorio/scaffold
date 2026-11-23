@@ -80,18 +80,24 @@ def pares_sospechosos(
     return sorted(pares, key=lambda p: -p.similitud)
 
 
-def material_de_refuerzo() -> list[MaterialRefuerzo]:
-    """El banco de refuerzo actual: ejemplos resueltos y ejercicios de cada concepto."""
-    from refuerzo.servicios.contenido import PLANTILLAS
+def material_de_refuerzo(bloques: list[dict] | None = None) -> list[MaterialRefuerzo]:
+    """Ejemplos resueltos y ejercicios de los bloques de refuerzo (D20).
+
+    Sin bloques, usa los de ejemplo. Cada pieza se nombra `bloque/ejemplo-n` o
+    `bloque/ejercicio`.
+    """
+    from refuerzo.servicios.banco import bloques_de_ejemplo
 
     material = []
-    for concepto, plantilla in PLANTILLAS.items():
-        for n, ejemplo in enumerate(plantilla.ejemplos, 1):
+    for bloque in bloques if bloques is not None else bloques_de_ejemplo():
+        for n, ejemplo in enumerate(bloque["ejemplos"], 1):
             material.append(MaterialRefuerzo(
-                f"{concepto}/ejemplo-{n}", f"{ejemplo.titulo}. {ejemplo.enunciado}", ejemplo.codigo,
+                f"{bloque['id']}/ejemplo-{n}", f"{ejemplo['titulo']}. {ejemplo['enunciado']}",
+                ejemplo["codigo"],
             ))
-        for ejercicio in plantilla.ejercicios:
+        for ejercicio in bloque["ejercicios"]:
             material.append(MaterialRefuerzo(
-                ejercicio.id, f"{ejercicio.titulo}. {ejercicio.enunciado}",
+                f"{bloque['id']}/{ejercicio['id']}",
+                f"{ejercicio['titulo']}. {ejercicio['enunciado']}",
             ))
     return material

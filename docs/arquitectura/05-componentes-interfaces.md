@@ -39,7 +39,7 @@ Cada componente tiene una responsabilidad y un archivo previsto. "Existe" indica
 
 | ID | Componente | Responsabilidad única | Archivo previsto | Existe |
 | --- | --- | --- | --- | --- |
-| R1 | Banco de refuerzo por bloques | 8 bloques por concepto (24 en total). Cada bloque: explicación breve, 1 ejemplo resuelto y 3 ejercicios graduados con casos de prueba; con `concepto`, `semana`, `orden` y `version` (D20, RF-37). Se carga desde archivos del repositorio y no se edita en línea. **Separado del banco de la prueba**, que no sale del perfil local (D21) | `refuerzo/banco/<concepto>/bloque_NN.json` | Parcial (1 bloque por concepto, en código Python) |
+| R1 | Banco de refuerzo por bloques | 8 bloques por concepto (24 en total). Cada bloque: explicación breve, 1 ejemplo resuelto y 3 ejercicios graduados con casos de prueba; con `concepto`, `semana`, `orden` y `version` (D20, RF-37). Se carga desde archivos del repositorio y no se edita en línea. **Separado del banco de la prueba**, que no sale del perfil local (D21) | `refuerzo/bloques/*.json`, `refuerzo/servicios/banco.py`, `manage.py cargar_bloques` | Hecho (pieza 9); el contenido de los 24 bloques está pendiente de autoría. Hay 1 bloque de ejemplo por concepto (`--ejemplo`) |
 | R2 | Validación y liberación | Registrar por bloque si los expertos lo validaron (RF-20). Entregar solo los bloques validados y ya liberados: 2 por semana, contados desde la fecha de inicio de la intervención (RF-22, RF-37) | `refuerzo/models.py` (`Bloque`), `refuerzo/servicios/liberacion.py` | No |
 | R3 | Control de acceso al refuerzo | Decidir, para participante y concepto, si el material está disponible: reforzado, control (bloqueado), liberado tras el postest, sin asignar (RF-19) | `refuerzo/servicios/acceso.py` | Parcial (403 para control) |
 | R4 | Cliente del ejecutor | Enviar código y casos al Ejecutor y traducir su respuesta; aplicar tiempo límite del lado del portal | `refuerzo/servicios/ejecutor.py` | Parcial (subproceso local) |
@@ -335,14 +335,16 @@ Autenticación: estudiante por **código de acceso** (distinto del código anón
 | --- | --- | --- | --- | --- | --- |
 | GET/POST | `/acceso/` | Público | código de acceso | Sesión de estudiante; redirige a `/mi/` | 400 código inválido; 429 tras N intentos [PENDIENTE] |
 | GET | `/mi/` | Estudiante | — | Sus conceptos: reforzado / control (bloqueado) / liberado; sin IDC numérico [decisión: RF-32, ver nota] | 403 |
-| GET | `/mi/refuerzo/<concepto>/` | Estudiante | — | Bloques validados y ya liberados del concepto (2 por semana, D20); registra la apertura con `bloque_id` y versión | 403 control no liberado o sin asignar (se registra el intento); 404 sin bloques liberados |
-| POST | `/mi/refuerzo/<concepto>/ejercicio/<ejercicio_id>/` | Estudiante | `codigo` (texto, ≤ 20 KB) | Resultado por caso, pasados/total, aviso si no usa el concepto | 400 vacío o demasiado largo; 403; 503 ejecutor no disponible; 504 tiempo excedido |
+| GET | `/mi/refuerzo/<concepto>/` | Estudiante | — | Lista de los bloques validados y ya liberados del concepto (2 por semana, D20) | 403 concepto no reforzado antes de liberar el control (se registra como apertura no permitida) |
+| GET | `/mi/refuerzo/<concepto>/<bloque_id>/` | Estudiante | — | El bloque; registra la apertura con `bloque_id` y versión | 403 concepto no reforzado o semana futura (se registra el intento); 404 bloque inexistente o sin validar |
+| POST | `/mi/refuerzo/<concepto>/<bloque_id>/` | Estudiante | `ejercicio`, `codigo` (≤ 20 000 caracteres) | Resultado por caso, pasados/total, aviso si no usa el concepto. Se guardan la longitud y el SHA-256 del código, no el código | 403 como en GET; 404 ejercicio desconocido. Ejecutor caído: mensaje en la página y el envío no cuenta como intentado |
 | GET | `/mi/informe/` | Estudiante | — | Informe personal (solo tras liberar, al final del estudio) | 403 antes de la liberación |
 | GET/POST | `/gestion/participantes/` | Investigador | código anónimo, código de acceso | Lista y alta | 400 código no cumple patrón |
 | POST | `/gestion/importar/` | Investigador | archivo de resultados JSON | Resumen: creados, actualizados, rechazados; registro en auditoría | 400 esquema inválido; 409 intento de cambiar una asignación ya importada sin `rehacer`; 422 datos prohibidos detectados |
-| POST | `/gestion/bloques/<bloque_id>/validar/` | Investigador | `validado: bool`, `n_jueces`, `fecha` | Estado del bloque | 404 |
-| POST | `/gestion/liberar-control/` | Investigador | fecha de liberación | Habilita el material de control para todos; auditoría | 409 ya liberado |
-| GET | `/gestion/exportar/<tabla>.csv` | Investigador | `tabla ∈ {participantes, analisis, intentos, aperturas}` | CSV por código anónimo | 404 |
+| POST | `/gestion/bloques/<bloque_id>/validar/` | Investigador | `version` (la que vio), `n_jueces` | Bloque validado; auditoría | Mensaje si la versión cambió, si faltan jueces o si ya estaba validado |
+| POST | `/gestion/intervencion/inicio/` | Investigador | `fecha` | Inicio de la intervención; auditoría | Mensaje si la fecha no es válida o el control ya se liberó |
+| POST | `/gestion/intervencion/liberar/` | Investigador | `confirmo=si` | Abre los tres conceptos para todos (D4); fecha de liberación = ahora; auditoría | Mensaje si falta confirmar, si no hay inicio o si ya está liberado |
+| GET | `/gestion/exportar/<tabla>.csv` | Investigador | `tabla ∈ {participantes, analisis, intentos, aperturas, adherencia}` | CSV por código anónimo | 404 |
 | POST | `/gestion/participantes/<codigo>/borrar/` | Investigador | confirmación | Borra todo lo del participante en el portal; auditoría; recuerda borrar en local | 404 |
 | GET | `/gestion/auditoria/` | Investigador | — | Registro de importaciones, liberaciones, borrados, rehechos | — |
 

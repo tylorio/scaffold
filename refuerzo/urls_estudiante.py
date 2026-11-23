@@ -10,4 +10,5 @@ urlpatterns = [
     path("salir/", views.salir, name="salir"),
     path("mi/", views.inicio, name="inicio"),
     path("mi/refuerzo/<str:concepto>/", views.ver_concepto, name="concepto"),
+    path("mi/refuerzo/<str:concepto>/<str:bloque_id>/", views.ver_bloque, name="bloque"),
 ]

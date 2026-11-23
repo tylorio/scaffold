@@ -79,10 +79,17 @@ Con λ = 0,5, estructuras de datos no llegaría a débil y el sorteo iría al ca
    confirmar. Al confirmar se sortea quién se refuerza y quién queda de control, y el
    orden de las formas. Desde ahí ya no se puede reanalizar. Lo mismo hace
    `python manage.py congelar_asignacion`.
-5. Entra como el estudiante:
+5. Prepara la intervención:
+   - carga los bloques de ejemplo con `python manage.py cargar_bloques --ejemplo`
+     (un bloque por concepto, en la semana 1);
+   - en **Gestión**, registra la validación de cada bloque con el número de jueces
+     y fija el **inicio de la intervención** en la fecha de hoy.
+
+   Sin validar o sin fecha de inicio, el estudiante no ve ningún bloque.
+6. Entra como el estudiante:
    - en **Gestión**, pulsa **Generar código** para `P01` y anota el código (se muestra una sola vez);
    - en una **ventana privada** del navegador, abre <http://127.0.0.1:8000/acceso/> y entra con `P01` y ese código;
-   - en **Mis conceptos**, abre el material del concepto reforzado y pega su solución.
+   - en **Mis conceptos**, abre el concepto reforzado, entra a su bloque y pega su solución.
 
    Debe mostrar **4 de 4 pruebas pasadas**.
 
@@ -107,11 +114,15 @@ Con λ = 0,5, estructuras de datos no llegaría a débil y el sorteo iría al ca
                resultado.append(x)
        return resultado
    ```
-6. Prueba el control: con la sesión del estudiante abre `/mi/refuerzo/recursion/` o
+7. Prueba el control: con la sesión del estudiante abre `/mi/refuerzo/recursion/` o
    `/mi/refuerzo/estructuras_datos/`, según cuál quedó de control. Debe responder
-   «Refuerzo no disponible». La dirección no lleva el código del participante: cada
+   «Material no disponible», y el intento queda en el CSV aperturas con
+   `permitida = 0`. La dirección no lleva el código del participante: cada
    estudiante solo ve lo suyo.
-7. Descarga los datos con los enlaces **CSV** del menú.
+8. Descarga los datos con los enlaces **CSV** del menú.
+9. Para cerrar la intervención, en **Gestión** pulsa **Liberar el material de todos
+   los conceptos** (lista de espera, D4). Hazlo solo después del postest: no se
+   deshace.
 
 Para repetir la demostración desde cero (por ejemplo, con λ = 0 para ver 3 débiles),
 borra `db.sqlite3` y vuelve a ejecutar `python manage.py migrate`: la congelación no
@@ -199,6 +210,48 @@ Antes de entregar el material de refuerzo, revisa que no se parezca a la prueba:
 python manage.py controlar_solapamiento
 ```
 
+Compara la prueba con los bloques de `refuerzo/bloques/` (o los de `--bloques`). Si
+todavía no hay bloques reales, usa los de ejemplo y lo avisa.
+
+## Bloques de refuerzo (D20)
+
+El material son 24 bloques: 8 por concepto, 2 por semana durante 4 semanas. Cada
+bloque es un archivo JSON en `refuerzo/bloques/` (sí va en Git, para que cada
+versión quede trazable):
+
+```json
+{
+  "id": "recursion-s1-1", "concepto": "recursion", "semana": 1, "orden": 1,
+  "version": 1, "titulo": "El caso base",
+  "explicacion": ["Párrafo 1", "Párrafo 2"],
+  "ejemplos": [{"titulo": "...", "enunciado": "...", "codigo": "...",
+                "salida": "...", "explicacion": "..."}],
+  "ejercicios": [{"id": "rec-s1-1-a", "nivel": "Fácil", "titulo": "...",
+                  "enunciado": "...", "plantilla": "def f(n):\n    pass\n",
+                  "funcion": "f",
+                  "casos": [{"args": [3], "esperado": 6},
+                            {"args": [-1], "lanza": "ValueError"}]}]
+}
+```
+
+`concepto` es `recursion`, `estructuras_datos` o `excepciones`.
+
+```powershell
+python manage.py cargar_bloques            # carga refuerzo/bloques/
+python manage.py cargar_bloques --ejemplo  # un bloque de ejemplo por concepto
+```
+
+- Se cargan todos o ninguno. Si un bloque cambió, exige una `version` mayor.
+- Un bloque nuevo, o una versión nueva, queda **sin validar** y el estudiante no lo
+  ve. Cuando los jueces lo aprueben (HE3), regístralo en **Gestión** con el número
+  de jueces. Se valida la versión que muestra la tabla, no una más nueva.
+- Los bloques de la semana *n* se abren el día 7 × (*n* − 1) contado desde el inicio
+  de la intervención, y siguen abiertos después.
+- Gestión avisa cuántos bloques faltan por concepto.
+
+Las cargas, validaciones, el inicio de la intervención y la liberación quedan en la
+auditoría.
+
 ## Pruebas
 
 ```powershell
@@ -247,9 +300,14 @@ analisis/
     exportacion.py     CSV
   persistencia.py    Une los servicios con la base de datos, y hace el sorteo
 refuerzo/
-  persistencia.py    Exporta intentos y aperturas
+  bloques/           Los 24 bloques de refuerzo en JSON (D20)
+  liberacion.py      Qué bloques ve cada participante y desde cuándo (D4, D20)
+  administracion.py  Cargar y validar bloques, inicio y fin de la intervención
+  persistencia.py    Exporta intentos, aperturas y adherencia
   servicios/
-    contenido.py       Plantillas: explicaciones, ejemplos y ejercicios
+    banco.py           Formato, validación y semanas de los bloques
+    adherencia.py      Intentados y resueltos ÷ liberados (P6)
+    contenido.py       Tipos del material y plantillas de ejemplo
     ejecutor.py        Lanza el subproceso con tiempo límite
     corredor.py        Proceso hijo que corre la solución
 pruebas/
@@ -297,14 +355,27 @@ tests/               Pruebas con pytest
 
   Después no se puede reanalizar, ni cambiar el modo, ni editar o borrar la
   asignación desde el admin.
-- **Control:** la página de refuerzo de un concepto no reforzado responde 403. Antes
-  de congelar no hay ningún concepto reforzado.
+- **Control:** la página de refuerzo de un concepto no reforzado responde 403 y
+  registra el intento como apertura no permitida. Antes de congelar no hay ningún
+  concepto reforzado. Tras **liberar el control** (D4), todos ven los tres
+  conceptos.
+- **IDC oculto (D11):** el portal del estudiante no muestra el IDC ni los datos de
+  su análisis. La introducción del material es igual para todos.
+- **Soluciones sin código:** de cada envío se guardan la longitud y el SHA-256 del
+  código, nunca el código. El estudiante lo ve en la respuesta a su envío para
+  seguir corrigiéndolo; al volver a abrir el bloque aparece la plantilla.
 - **Cada análisis guarda** θ, λ, m y las versiones del modelo, las reglas y las
   características.
 - **Datos para el estudio:** el **CSV análisis** trae una fila por participante y
-  concepto, con su condición, caso, orden y modo. El **CSV
-  intentos** trae cada envío numerado y el **CSV aperturas**, cada vez que se abrió
-  el material. No incluyen código, rutas, URLs ni hashes de commit.
+  concepto, con su condición, caso, orden y modo. El **CSV intentos** trae cada
+  envío numerado, con su bloque y versión, si se ejecutó, si repite el envío
+  anterior y si fue después del postest. El **CSV aperturas** trae cada apertura,
+  también las bloqueadas. No incluyen código, hashes, rutas, URLs ni commits.
+- **Adherencia (P6):** el **CSV adherencia** trae una fila por participante y
+  concepto reforzado. La principal es ejercicios **intentados** ÷ liberados, y la
+  secundaria, **resueltos** ÷ liberados. Intentado = al menos un envío ejecutado;
+  varios envíos al mismo ejercicio cuentan como uno y abrir el bloque no cuenta. El
+  corte es la liberación del control o, antes de ella, el día de la descarga.
 - **Sin funciones:** si el repositorio no tiene funciones Python se avisa y no se
   guarda nada, para no ocultar un análisis válido anterior.
 - **Tamaño de inserción:** cuenta las líneas `.py` añadidas en el commit, sin las
@@ -401,4 +472,12 @@ Por eso `db.sqlite3` y `datos/` están en `.gitignore`.
 - Una función con el mismo commit de otras recibe el mismo tamaño de inserción.
 - La congelación no se puede deshacer desde la interfaz. Corregir un error después
   exige restaurar un respaldo de la base.
+- La adherencia cuenta como liberados los bloques validados hoy. Si un bloque se
+  valida tarde, o pierde la validación por una versión nueva, el denominador cambia
+  retroactivamente: conviene cerrar la validación antes de la semana 9.
+- La plataforma no comprueba que los casos de prueba de un bloque sean correctos:
+  eso lo revisan los jueces. Las plantillas de ejemplo sí tienen soluciones de
+  referencia en las pruebas.
+- Al enviar, la página se vuelve a dibujar con la respuesta; recargarla reenvía la
+  solución (el navegador pregunta antes).
 - Las pruebas corren en Windows. Se probó con Python 3.12 y 3.13, no con 3.11.

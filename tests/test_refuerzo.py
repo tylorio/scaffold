@@ -9,7 +9,7 @@ from analisis.servicios.conceptos import (
     EXCEPCIONES,
     RECURSION,
 )
-from refuerzo.servicios.contenido import PLANTILLAS, generar_recurso
+from refuerzo.servicios.contenido import PLANTILLAS
 from refuerzo.servicios.ejecutor import ejecutar_solucion, usa_concepto
 
 SOLUCIONES = {
@@ -106,18 +106,12 @@ def test_hay_material_para_los_tres_conceptos():
 
 
 @pytest.mark.parametrize("concepto", CONCEPTOS)
-def test_cada_recurso_tiene_la_estructura_pedida(concepto):
-    recurso = generar_recurso(concepto, n_fragmentos=4, n_ia=3, idc=0.75)
-    assert recurso.explicacion
-    assert len(recurso.ejemplos) == 2
-    assert [e.nivel for e in recurso.ejercicios] == ["Fácil", "Medio", "Difícil"]
-    assert all(len(e.casos) >= 3 for e in recurso.ejercicios)
-
-
-def test_la_introduccion_usa_los_datos_del_analisis():
-    recurso = generar_recurso(RECURSION, n_fragmentos=4, n_ia=3, idc=0.75)
-    assert "4 funciones" in recurso.introduccion
-    assert "0,75" in recurso.introduccion
+def test_cada_plantilla_tiene_la_estructura_pedida(concepto):
+    plantilla = PLANTILLAS[concepto]
+    assert plantilla.explicacion
+    assert len(plantilla.ejemplos) == 2
+    assert [e.nivel for e in plantilla.ejercicios] == ["Fácil", "Medio", "Difícil"]
+    assert all(len(e.casos) >= 3 for e in plantilla.ejercicios)
 
 
 @pytest.mark.parametrize(

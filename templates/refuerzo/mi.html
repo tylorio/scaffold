@@ -2,9 +2,18 @@
 {% block titulo %}Mis conceptos · Refuerzo de programación{% endblock %}
 {% block contenido %}
 <h1>Mis conceptos</h1>
-{% if not asignacion %}
+{% if not conceptos %}
   <p>Tu refuerzo todavía no está listo. Empieza cuando termine el diagnóstico.</p>
 {% else %}
+  {% if not estado.liberado %}
+    {% if not estado.inicio %}
+      <p>El material se abrirá cuando empiece el refuerzo.</p>
+    {% elif not estado.semana %}
+      <p>El refuerzo empieza el {{ estado.inicio|date:"d/m/Y" }}.</p>
+    {% elif estado.proxima_liberacion %}
+      <p class="ayuda">Los próximos bloques se abren el {{ estado.proxima_liberacion|date:"d/m/Y" }}.</p>
+    {% endif %}
+  {% endif %}
   <div class="tabla-scroll">
     <table>
       <thead><tr><th>Concepto</th><th>Material</th></tr></thead>
@@ -13,8 +22,9 @@
           <tr>
             <td>{{ c.nombre }}</td>
             <td>
-              {% if c.condicion == "reforzado" %}
+              {% if c.abierto %}
                 <a href="{% url 'estudiante:concepto' c.concepto %}">Abrir material</a>
+                <span class="ayuda">({{ c.n_bloques }} bloque{{ c.n_bloques|pluralize }})</span>
               {% else %}
                 Disponible después de la prueba final
               {% endif %}

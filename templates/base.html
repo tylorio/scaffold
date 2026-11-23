@@ -20,6 +20,7 @@
         <a href="{% url 'gestion:panel' %}">Gestión</a>
         <a href="{% url 'refuerzo:exportar_intentos' %}">CSV intentos</a>
         <a href="{% url 'refuerzo:exportar_aperturas' %}">CSV aperturas</a>
+        <a href="{% url 'refuerzo:exportar_adherencia' %}">CSV adherencia</a>
         <form method="post" action="{% url 'salir' %}" class="en-linea">{% csrf_token %}<button type="submit" class="enlace">Salir</button></form>
       </nav>
     {% else %}

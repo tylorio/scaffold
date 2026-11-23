@@ -21,10 +21,18 @@ COLUMNAS_ANALISIS = (
     "version_reglas",
 )
 COLUMNAS_INTENTOS = (
-    "codigo", "concepto", "condicion", "ejercicio", "intento", "fecha", "pasados",
-    "total", "usa_concepto", "tuvo_error",
+    "codigo", "concepto", "condicion", "bloque", "version", "ejercicio", "intento",
+    "fecha", "ejecutado", "pasados", "total", "resuelto", "usa_concepto", "tuvo_error",
+    "longitud_codigo", "igual_al_anterior", "tras_postest",
 )
-COLUMNAS_APERTURAS = ("codigo", "concepto", "condicion", "fecha")
+COLUMNAS_APERTURAS = (
+    "codigo", "concepto", "condicion", "bloque", "version", "permitida", "motivo",
+    "fecha", "tras_postest",
+)
+COLUMNAS_ADHERENCIA = (
+    "codigo", "concepto", "condicion", "corte", "semana", "liberados", "intentados",
+    "resueltos", "adherencia", "adherencia_resueltos",
+)
 
 
 @dataclass(frozen=True)

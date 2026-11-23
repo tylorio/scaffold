@@ -298,13 +298,13 @@ def test_el_banco_de_ejemplo_no_se_solapa_con_el_refuerzo(bancos):
 
 
 def test_un_item_copiado_del_refuerzo_se_detecta(copia_banco):
-    ejercicio = next(m for m in material_de_refuerzo() if m.id == "rec-facil")
+    ejercicio = next(m for m in material_de_refuerzo() if m.id == "recursion-ejemplo/rec-facil")
     modificar(copia_banco, "A", lambda d: d["items"][0].update(enunciado=ejercicio.enunciado))
     salida = io.StringIO()
     with pytest.raises(CommandError) as error:
         call_command("controlar_solapamiento", "--banco", str(copia_banco), stdout=salida)
     assert error.value.returncode == 12
-    assert "A/T1 ~ rec-facil  (enunciado" in salida.getvalue()
+    assert "A/T1 ~ recursion-ejemplo/rec-facil  (enunciado" in salida.getvalue()
 
 
 def test_sin_pares_el_comando_termina_bien():

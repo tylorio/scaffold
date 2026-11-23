@@ -56,7 +56,7 @@ Prioridad: **A** = alta, **M** = media, **B** = baja. Estado: **hecho** = implem
 | CSRF en los formularios | T | C3 | M | Protección CSRF de Django en todos los POST | Prueba con un cliente que exige el token CSRF | 8c |
 | Secretos en el repositorio | I | Todos | A | Clave, sal y token del ejecutor solo en el entorno o en `.env`, fuera de Git (S1) | `.env` en `.gitignore`; arranque falla si falta un secreto | Hecho / 8a |
 | Se identifica a terceros por los commits | I | C1 | A | Filtro por autor: los correos de otros autores solo se hashean en memoria (D19) | Pruebas de la pieza 3 | Hecho |
-| El estudiante ve su IDC durante la intervención | I (ética) | C3 | M | El portal no muestra el IDC hasta el postest (D11) | Prueba de la vista del estudiante | 9 |
+| El estudiante ve su IDC durante la intervención | I (ética) | C3 | M | El portal no muestra el IDC hasta el postest (D11) | Prueba de la vista del estudiante | hecho |
 | Los registros guardan datos personales | I | C3 | M | Se registran códigos anónimos, nunca nombres ni correos. La IP se guarda solo como hash, para el bloqueo de intentos, y se borra a las 24 h | Prueba: la tabla de intentos no contiene la IP en claro | 8c |
 | Una dependencia tiene una vulnerabilidad conocida | E | Todos | B | Versiones acotadas en `requirements.txt`; revisión antes de desplegar [VERIFICAR: herramienta de auditoría de dependencias en F9] | Revisión en F9 | F9 |
 
@@ -174,13 +174,13 @@ Los pasos están en `docs/almacen-cifrado.md`. Si `IDC_ALMACEN` está definido y
 | Control | Cómo se cumple | Estado |
 | --- | --- | --- |
 | El IDC siempre se muestra con su incertidumbre | Intervalo de Wilson en la interfaz, el CSV y el informe (RF-34) | Hecho |
-| El estudiante no ve su IDC durante la intervención | Oculto en las semanas 9–12; aparece en el informe tras el postest (D11) | 9 |
+| El estudiante no ve su IDC durante la intervención | Oculto en las semanas 9–12 (hecho); aparece en el informe tras el postest (D11) | hecho; informe en la pieza 10 |
 | No hay vistas con nombres reales | El sistema no guarda nombres; la tabla de identidades vive fuera (D14) | Hecho |
 | No hay reportes disciplinarios ni de plagio | No existe ninguna vista ni exportación por estudiante con fines de sanción. El IDC se presenta como estimación (RF-32) | Hecho |
 | El participante puede ver sus datos | Informe personal al final (RF-31); consulta al investigador | 10 |
 | El participante puede retirarse | Borrado en el portal y en el almacén, sin consecuencias (RF-30, D13) | 10 |
 | Solo se analiza a quien consintió | Filtro por autor (D19); sin consentimiento registrado no se analiza (RF-29) | D19 hecho; consentimiento en 10 |
-| Lista de espera para el control | El material del concepto de control se desbloquea tras el postest (D4) | 9 |
+| Lista de espera para el control | El material del concepto de control se desbloquea tras el postest (D4) | hecho |
 | Los calificadores no conocen la asignación | El CSV de puntajes no lleva asignación (D3) | Hecho |
 | El código de los estudiantes no sale de la máquina del investigador | ADR-001; exportador e importador sin código | 8b |
 

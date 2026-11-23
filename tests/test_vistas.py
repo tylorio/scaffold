@@ -637,10 +637,14 @@ def test_volver_tras_enviar_no_cuenta_como_apertura(client, participante, settin
     assert not AperturaRefuerzo.objects.exists()
 
 
-def test_el_control_bloqueado_no_registra_apertura(client, participante):
+def test_el_intento_de_abrir_el_control_queda_registrado_como_bloqueado(client, participante):
     analisis_con(participante, {RECURSION})
     client.get(material(client, EXCEPCIONES))
-    assert not AperturaRefuerzo.objects.exists()
+    apertura = AperturaRefuerzo.objects.get()
+    assert (apertura.concepto, apertura.permitida, apertura.motivo) == (
+        EXCEPCIONES, False, AperturaRefuerzo.CONCEPTO_BLOQUEADO,
+    )
+    assert apertura.bloque_id == f"{EXCEPCIONES}-ejemplo"
 
 
 # Exportación

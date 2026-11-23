@@ -47,6 +47,10 @@ class Configuracion(models.Model):
     )
     # Se fija tras el go/no-go del clasificador (semana 7) y no cambia después de congelar (R3).
     modo = models.CharField(max_length=13, choices=MODOS, blank=True)
+    # Intervención (D20): los bloques se liberan por semana contada desde esta fecha.
+    inicio_intervencion = models.DateField("inicio de la intervención", null=True, blank=True)
+    # Lista de espera (D4): tras el postest se abre el material de todos los conceptos.
+    control_liberado_en = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         verbose_name = "configuración"
@@ -137,12 +141,20 @@ class Auditoria(models.Model):
     EXPORTAR = "exportar_resultados"
     IMPORTAR = "importar_resultados"
     CODIGO_ACCESO = "codigo_acceso"
+    INICIO_INTERVENCION = "inicio_intervencion"
+    LIBERAR_CONTROL = "liberar_control"
+    CARGAR_BLOQUE = "cargar_bloque"
+    VALIDAR_BLOQUE = "validar_bloque"
     ACCIONES = [
         (CONGELAR, "Congelar la asignación"),
         (REANALIZAR, "Reemplazar un diagnóstico"),
         (EXPORTAR, "Exportar resultados"),
         (IMPORTAR, "Importar resultados"),
         (CODIGO_ACCESO, "Generar un código de acceso"),
+        (INICIO_INTERVENCION, "Fijar el inicio de la intervención"),
+        (LIBERAR_CONTROL, "Liberar el material tras el postest"),
+        (CARGAR_BLOQUE, "Cargar un bloque de refuerzo"),
+        (VALIDAR_BLOQUE, "Validar un bloque de refuerzo"),
     ]
 
     fecha = models.DateTimeField(auto_now_add=True)

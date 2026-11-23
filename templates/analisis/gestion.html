@@ -23,6 +23,85 @@
   </section>
 {% endif %}
 
+<section class="tarjeta">
+  <h2>Intervención</h2>
+  {% if intervencion.liberado %}
+    <p>Terminó: el material de los tres conceptos está abierto para todos desde el
+      {{ configuracion.control_liberado_en|date:"d/m/Y H:i" }} (lista de espera, D4).</p>
+  {% else %}
+    <p>
+      {% if intervencion.inicio %}
+        Empieza el {{ intervencion.inicio|date:"d/m/Y" }}.
+        {% if intervencion.semana %}Semana en curso: {{ intervencion.semana }}.{% else %}Todavía no empieza.{% endif %}
+      {% else %}
+        Sin fecha de inicio: ningún bloque se libera hasta fijarla.
+      {% endif %}
+    </p>
+    <form method="post" action="{% url 'gestion:inicio_intervencion' %}">
+      {% csrf_token %}
+      <label for="fecha-inicio">Inicio de la intervención</label>
+      <input type="date" id="fecha-inicio" name="fecha" value="{{ intervencion.inicio|date:'Y-m-d' }}" required>
+      <button type="submit">Guardar fecha</button>
+    </form>
+    {% if intervencion.inicio %}
+      <form method="post" action="{% url 'gestion:liberar' %}">
+        {% csrf_token %}
+        <p class="ayuda">
+          Hazlo solo cuando todos hayan rendido el postest. Abre el concepto de control
+          y todos los bloques, y no se puede deshacer.
+        </p>
+        <label><input type="checkbox" name="confirmo" value="si" required>
+          Todos los participantes ya rindieron el postest</label>
+        <p><button type="submit">Liberar el material de todos los conceptos</button></p>
+      </form>
+    {% endif %}
+  {% endif %}
+</section>
+
+<h2>Bloques de refuerzo</h2>
+<p class="ayuda">
+  Se cargan con <code>manage.py cargar_bloques</code>. Un bloque nuevo, o una versión
+  nueva, no se entrega hasta registrar aquí que los jueces lo validaron.
+</p>
+{% if faltantes %}
+  <ul class="ayuda">
+    {% for f in faltantes %}<li>{{ f.nombre }}: faltan {{ f.ranuras|length }} de 8 bloques.</li>{% endfor %}
+  </ul>
+{% endif %}
+{% if bloques %}
+  <div class="tabla-scroll">
+    <table>
+      <thead><tr><th>Bloque</th><th>Concepto</th><th>Semana</th><th>Versión</th><th>Ejercicios</th><th>Validación</th></tr></thead>
+      <tbody>
+        {% for b in bloques %}
+          <tr>
+            <td>{{ b.id }}</td>
+            <td>{{ b.get_concepto_display }}</td>
+            <td class="num">{{ b.semana }}.{{ b.orden }}</td>
+            <td class="num">{{ b.version }}</td>
+            <td class="num">{{ b.n_ejercicios }}</td>
+            <td>
+              {% if b.validado %}
+                Validado · {{ b.n_jueces }} jueces · {{ b.validado_en|date:"d/m/Y" }}
+              {% else %}
+                <form method="post" action="{% url 'gestion:validar_bloque' b.id %}" class="en-linea">
+                  {% csrf_token %}
+                  <input type="hidden" name="version" value="{{ b.version }}">
+                  <label for="jueces-{{ b.id }}">Jueces</label>
+                  <input type="number" id="jueces-{{ b.id }}" name="n_jueces" min="1" max="20" required>
+                  <button type="submit">Registrar validación</button>
+                </form>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <p>No hay bloques cargados.</p>
+{% endif %}
+
 <h2>Códigos de acceso</h2>
 <p class="ayuda">
   Cada código se muestra <strong>una sola vez</strong>, para imprimirlo y entregarlo en

@@ -75,7 +75,7 @@ if PERFIL not in ("local", "nube"):
     raise ImproperlyConfigured("IDC_PERFIL debe ser 'local' o 'nube'.")
 LOCAL = PERFIL == "local"
 
-VERSION_SISTEMA = "0.8.0"
+VERSION_SISTEMA = "0.9.0"
 
 # Sal del HMAC de los correos de commit (D19), solo en local. Si se pierde, no se
 # puede repetir el filtro por autor: se respalda junto con la clave del almacén.
@@ -210,3 +210,5 @@ if not LOCAL and not EJECUTOR_URL:
     )
 # Banco real de la prueba (formas A y B): fuera de Git y nunca en el portal (D21).
 BANCO_PRUEBA_DIR = DATOS_DIR / 'banco_prueba'
+# Bloques de refuerzo (D20): sí van en Git, para que cada versión quede trazable.
+BLOQUES_REFUERZO_DIR = BASE_DIR / 'refuerzo' / 'bloques'

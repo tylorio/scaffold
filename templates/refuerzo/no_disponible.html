@@ -1,6 +1,12 @@
 {% extends "base.html" %}
-{% block titulo %}Refuerzo no disponible{% endblock %}
+{% block titulo %}Material no disponible{% endblock %}
 {% block contenido %}
-<h1>Refuerzo no disponible</h1>
-<p>«{{ nombre }}» no forma parte del refuerzo asignado a {{ participante.codigo }}.</p>
+<h1>Material no disponible</h1>
+{% if motivo == "semana" %}
+  <p>Este bloque de «{{ nombre }}» todavía no se abre.
+    {% if estado.proxima_liberacion %}Los próximos bloques se abren el {{ estado.proxima_liberacion|date:"d/m/Y" }}.{% endif %}</p>
+{% else %}
+  <p>El material de «{{ nombre }}» se abre después de la prueba final.</p>
+{% endif %}
+<p><a href="{% url 'estudiante:inicio' %}">Volver a mis conceptos</a></p>
 {% endblock %}
