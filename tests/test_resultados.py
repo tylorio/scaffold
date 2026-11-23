@@ -286,7 +286,7 @@ try:
     sys.exit("las vistas de análisis existen en la nube")
 except NoReverseMatch:
     pass
-reverse("refuerzo:concepto", args=["P01", "recursion"])
+reverse("estudiante:concepto", args=["recursion"])
 html = render_to_string("base.html", {"perfil": "nube"})
 assert "Participantes" not in html
 cargados = sorted(m for m in ("git", "pydriller", "sklearn", "joblib") if m in sys.modules)

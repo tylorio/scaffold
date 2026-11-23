@@ -5,6 +5,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import pytest
 
+from conftest import material
 from ejecutor import servidor
 from refuerzo.servicios.contenido import PLANTILLAS
 from refuerzo.servicios.ejecutor import NO_DISPONIBLE, EjecutorRemoto, ejecutar_solucion
@@ -110,6 +111,6 @@ def test_la_vista_usa_el_ejecutor_configurado(client, settings, falso_ejecutor):
         analisis=analisis, concepto="recursion", n_fragmentos=3, n_ia=3, idc=1.0,
         estado="debil", reforzado=True,
     )
-    client.post("/refuerzo/P01/recursion/", {"ejercicio": EJERCICIO.id, "codigo": "x = 1"})
+    client.post(material(client, "recursion"), {"ejercicio": EJERCICIO.id, "codigo": "x = 1"})
     assert IntentoEjercicio.objects.get().pasados == 1
     assert FalsoEjecutor.recibido["token"] == "secreto"

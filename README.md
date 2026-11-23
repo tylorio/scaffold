@@ -28,8 +28,9 @@ pip install -r requirements.txt
 #    .env no se versiona.
 copy .env.ejemplo .env
 
-# 4. Crear la base de datos
+# 4. Crear la base de datos y tu usuario de investigador
 python manage.py migrate
+python manage.py createsuperuser
 
 # 5. Crear el corpus demo y entrenar el modelo
 python scripts\crear_corpus_demo.py
@@ -78,8 +79,12 @@ Con λ = 0,5, estructuras de datos no llegaría a débil y el sorteo iría al ca
    confirmar. Al confirmar se sortea quién se refuerza y quién queda de control, y el
    orden de las formas. Desde ahí ya no se puede reanalizar. Lo mismo hace
    `python manage.py congelar_asignacion`.
-5. En el detalle, pulsa **Abrir refuerzo** y pega la solución del concepto que te tocó. Debe
-   mostrar **4 de 4 pruebas pasadas**.
+5. Entra como el estudiante:
+   - en **Gestión**, pulsa **Generar código** para `P01` y anota el código (se muestra una sola vez);
+   - en una **ventana privada** del navegador, abre <http://127.0.0.1:8000/acceso/> y entra con `P01` y ese código;
+   - en **Mis conceptos**, abre el material del concepto reforzado y pega su solución.
+
+   Debe mostrar **4 de 4 pruebas pasadas**.
 
    Recursión, en «Suma de dígitos»:
 
@@ -102,9 +107,10 @@ Con λ = 0,5, estructuras de datos no llegaría a débil y el sorteo iría al ca
                resultado.append(x)
        return resultado
    ```
-6. Prueba el control: abre `/refuerzo/P01/recursion/` o
-   `/refuerzo/P01/estructuras_datos/`, según cuál quedó de control. Debe responder
-   «Refuerzo no disponible».
+6. Prueba el control: con la sesión del estudiante abre `/mi/refuerzo/recursion/` o
+   `/mi/refuerzo/estructuras_datos/`, según cuál quedó de control. Debe responder
+   «Refuerzo no disponible». La dirección no lleva el código del participante: cada
+   estudiante solo ve lo suyo.
 7. Descarga los datos con los enlaces **CSV** del menú.
 
 Para repetir la demostración desde cero (por ejemplo, con λ = 0 para ver 3 débiles),
@@ -368,7 +374,12 @@ Por eso `db.sqlite3` y `datos/` están en `.gitignore`.
 - Un archivo de tarea llamado `test_algo.py` se omite por su nombre.
 
 **Sistema**
-- No hay usuarios ni permisos: cualquiera con acceso ve a todos los participantes.
+- Hay dos roles: el investigador entra con usuario y contraseña, y el estudiante con
+  su código de participante más su código de acceso, con bloqueo tras 10 fallos en
+  15 minutos. El inicio de sesión del investigador no tiene bloqueo propio, así que
+  usa una contraseña larga.
+- Detrás de un proxy (Azure), la IP del bloqueo debe salir de la cabecera que ponga
+  la plataforma. [VERIFICAR en F9]
 - El análisis es síncrono: un repositorio grande bloquea la petición, y un clon
   colgado no tiene tiempo límite.
 - Se analiza solo HEAD y se omiten carpetas como `venv`, `build` y `migrations`.

@@ -8,22 +8,33 @@
 </head>
 <body>
   <header class="barra">
-    {% if perfil == "local" %}
-      <a class="marca" href="{% url 'analisis:lista' %}">Prototipo IDC</a>
+    {% if user.is_authenticated %}
+      <span class="marca">Prototipo IDC · investigador</span>
       <nav>
-        <a href="{% url 'analisis:lista' %}">Participantes</a>
-        <a href="{% url 'analisis:configuracion' %}">Configuración</a>
-        <a href="{% url 'analisis:exportar' %}">CSV participantes</a>
-        <a href="{% url 'analisis:exportar_analisis' %}">CSV análisis</a>
+        {% if perfil == "local" %}
+          <a href="{% url 'analisis:lista' %}">Participantes</a>
+          <a href="{% url 'analisis:configuracion' %}">Configuración</a>
+          <a href="{% url 'analisis:exportar' %}">CSV participantes</a>
+          <a href="{% url 'analisis:exportar_analisis' %}">CSV análisis</a>
+        {% endif %}
+        <a href="{% url 'gestion:panel' %}">Gestión</a>
         <a href="{% url 'refuerzo:exportar_intentos' %}">CSV intentos</a>
         <a href="{% url 'refuerzo:exportar_aperturas' %}">CSV aperturas</a>
+        <form method="post" action="{% url 'salir' %}" class="en-linea">{% csrf_token %}<button type="submit" class="enlace">Salir</button></form>
       </nav>
     {% else %}
       <span class="marca">Refuerzo de programación</span>
+      {% if estudiante_activo %}
+        <nav>
+          <a href="{% url 'estudiante:inicio' %}">Mis conceptos</a>
+          <form method="post" action="{% url 'estudiante:salir' %}" class="en-linea">{% csrf_token %}<button type="submit" class="enlace">Salir</button></form>
+        </nav>
+      {% endif %}
     {% endif %}
   </header>
 
-  {% if modelo is None %}
+  {% if not user.is_authenticated or perfil != "local" %}
+  {% elif modelo is None %}
     <p class="aviso aviso-error">
       No hay modelo entrenado. Ejecuta <code>scripts/crear_corpus_demo.py</code>
       y <code>scripts/entrenar_modelo.py</code> antes de analizar.

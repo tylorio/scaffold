@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
@@ -26,6 +27,7 @@ def _usuario(request) -> str:
     return request.user.get_username() or "web"
 
 
+@login_required
 def lista_participantes(request):
     form = ParticipanteForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
@@ -42,6 +44,7 @@ def lista_participantes(request):
     })
 
 
+@login_required
 @require_POST
 def analizar(request, codigo):
     participante = get_object_or_404(Participante, codigo=codigo)
@@ -68,6 +71,7 @@ def analizar(request, codigo):
     return redirect("analisis:detalle", codigo=codigo)
 
 
+@login_required
 def detalle_participante(request, codigo):
     participante = get_object_or_404(Participante, codigo=codigo)
     analisis = participante.ultimo_analisis
@@ -87,6 +91,7 @@ def detalle_participante(request, codigo):
     return render(request, "analisis/detalle.html", contexto)
 
 
+@login_required
 def configuracion(request):
     config = Configuracion.obtener()
     form = ConfiguracionForm(
@@ -104,6 +109,7 @@ def configuracion(request):
     })
 
 
+@login_required
 def congelar(request):
     """Muestra qué va a pasar y, al confirmar, congela la asignación de todos (D3)."""
     if request.method == "POST":
@@ -121,9 +127,11 @@ def congelar(request):
     return render(request, "analisis/congelar.html", {"estado": estado_congelacion()})
 
 
+@login_required
 def exportar(request):
     return respuesta_csv(exportar_csv(), "participantes_idc.csv")
 
 
+@login_required
 def exportar_analisis(request):
     return respuesta_csv(exportar_csv_analisis(), "analisis_idc.csv")

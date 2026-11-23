@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block titulo %}Mis conceptos · Refuerzo de programación{% endblock %}
+{% block contenido %}
+<h1>Mis conceptos</h1>
+{% if not asignacion %}
+  <p>Tu refuerzo todavía no está listo. Empieza cuando termine el diagnóstico.</p>
+{% else %}
+  <div class="tabla-scroll">
+    <table>
+      <thead><tr><th>Concepto</th><th>Material</th></tr></thead>
+      <tbody>
+        {% for c in conceptos %}
+          <tr>
+            <td>{{ c.nombre }}</td>
+            <td>
+              {% if c.condicion == "reforzado" %}
+                <a href="{% url 'estudiante:concepto' c.concepto %}">Abrir material</a>
+              {% else %}
+                Disponible después de la prueba final
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="ayuda">
+    Al terminar el estudio recibirás tu informe personal. El material de los demás
+    conceptos se abre después de la prueba final.
+  </p>
+{% endif %}
+{% endblock %}

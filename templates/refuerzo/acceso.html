@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block titulo %}Acceso · Refuerzo de programación{% endblock %}
+{% block contenido %}
+<h1>Acceso al refuerzo</h1>
+<form method="post" class="formulario">
+  {% csrf_token %}
+  {% if error %}<p class="mensaje mensaje-error">{{ error }}</p>{% endif %}
+  <p>
+    <label for="participante">Tu código de participante</label>
+    <input id="participante" name="participante" autocomplete="username" placeholder="P01" required>
+  </p>
+  <p>
+    <label for="codigo">Tu código de acceso</label>
+    <input id="codigo" name="codigo" type="password" autocomplete="current-password" required>
+  </p>
+  <button type="submit">Entrar</button>
+</form>
+<p class="ayuda">
+  Los dos códigos te los entregó el investigador en papel. Si perdiste el de acceso,
+  pídele uno nuevo: el anterior dejará de funcionar.
+</p>
+{% endblock %}

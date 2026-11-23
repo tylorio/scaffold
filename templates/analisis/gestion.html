@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block titulo %}Gestión · Prototipo IDC{% endblock %}
+{% block contenido %}
+<h1>Gestión</h1>
+
+{% if importar %}
+  <section class="tarjeta">
+    <h2>Importar resultados</h2>
+    <p class="ayuda">
+      Sube el archivo <code>resultados-v1</code> que exportó el núcleo local. Se rechaza si
+      trae código, rutas, URLs, correos o hashes. Volver a subirlo no duplica nada.
+    </p>
+    <form method="post" action="{% url 'gestion:importar' %}" enctype="multipart/form-data">
+      {% csrf_token %}
+      <input type="file" name="archivo" accept=".json,application/json" required>
+      <p><button type="submit">Importar</button></p>
+    </form>
+    {% if importaciones %}
+      <ul class="ayuda">
+        {% for i in importaciones %}<li>{{ i.fecha|date:"d/m/Y H:i" }} · {{ i.n_participantes }} participantes · {{ i.usuario }}</li>{% endfor %}
+      </ul>
+    {% endif %}
+  </section>
+{% endif %}
+
+<h2>Códigos de acceso</h2>
+<p class="ayuda">
+  Cada código se muestra <strong>una sola vez</strong>, para imprimirlo y entregarlo en
+  persona. Generar uno nuevo invalida el anterior.
+</p>
+{% if participantes %}
+  <div class="tabla-scroll">
+    <table>
+      <thead><tr><th>Código</th><th>Asignación</th><th>Acceso</th><th></th></tr></thead>
+      <tbody>
+        {% for p in participantes %}
+          {% with asignacion=p.asignacion %}
+            <tr>
+              <td>{{ p.codigo }}</td>
+              <td>{% if asignacion %}Caso {{ asignacion.caso }} · {{ asignacion.orden }}{% else %}—{% endif %}</td>
+              <td>{% if p.codigo_acceso %}Entregado{% else %}Sin código{% endif %}</td>
+              <td class="acciones">
+                <form method="post" action="{% url 'gestion:codigo_acceso' p.codigo %}">
+                  {% csrf_token %}
+                  <button type="submit">{% if p.codigo_acceso %}Generar otro{% else %}Generar código{% endif %}</button>
+                </form>
+              </td>
+            </tr>
+          {% endwith %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <p>No hay participantes. {% if importar %}Importa el archivo de resultados.{% endif %}</p>
+{% endif %}
+{% endblock %}

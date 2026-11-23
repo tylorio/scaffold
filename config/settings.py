@@ -58,7 +58,13 @@ if LOCAL and not SAL_CORREOS:
         "Falta IDC_SAL_CORREOS: defínela en el entorno o en .env (ver .env.ejemplo)."
     )
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+ALLOWED_HOSTS = os.environ.get("IDC_HOSTS", "localhost,127.0.0.1").split(",")
+
+LOGIN_URL = "entrar"
+LOGIN_REDIRECT_URL = "/" if LOCAL else "/gestion/"
+LOGOUT_REDIRECT_URL = "entrar"
+# En la nube el portal va por HTTPS: las cookies de sesión y CSRF no viajan sin cifrar.
+SESSION_COOKIE_SECURE = CSRF_COOKIE_SECURE = not LOCAL
 
 
 # Application definition

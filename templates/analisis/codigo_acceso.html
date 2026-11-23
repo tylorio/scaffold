@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block titulo %}Código de acceso de {{ participante.codigo }}{% endblock %}
+{% block contenido %}
+<h1>Código de acceso de {{ participante.codigo }}</h1>
+<section class="tarjeta">
+  <p class="etiqueta">Participante</p>
+  <p class="valor">{{ participante.codigo }}</p>
+  <p class="etiqueta">Código de acceso</p>
+  <p class="valor"><code>{{ codigo_acceso }}</code></p>
+</section>
+<p>
+  <strong>Imprímelo ahora.</strong> No se guarda y no se puede volver a ver: si se pierde,
+  hay que generar otro. Entrégalo en persona y no lo envíes por correo ni por mensaje.
+</p>
+<p><a href="{% url 'gestion:panel' %}">← Volver a gestión</a></p>
+{% endblock %}

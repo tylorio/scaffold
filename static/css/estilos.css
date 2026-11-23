@@ -106,6 +106,15 @@ button {
   cursor: pointer;
 }
 
+.en-linea { display: inline; margin: 0; }
+.enlace {
+  padding: 0;
+  background: none;
+  color: var(--acento);
+  font-weight: 400;
+  text-decoration: underline;
+}
+
 .boton {
   display: inline-block;
   padding: 8px 14px;

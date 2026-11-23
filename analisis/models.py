@@ -63,6 +63,8 @@ class Participante(models.Model):
     repositorio = models.CharField("ruta local o URL del repositorio", max_length=500)
     # HMAC con sal de los correos de commit que declaró el participante (D19). Nunca en claro.
     hashes_correos = models.JSONField(default=list)
+    # Hash del código de acceso del estudiante al portal (08 §3.2). El código no se guarda.
+    codigo_acceso = models.CharField(max_length=128, blank=True)
     creado = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -134,11 +136,13 @@ class Auditoria(models.Model):
     REANALIZAR = "reanalizar"
     EXPORTAR = "exportar_resultados"
     IMPORTAR = "importar_resultados"
+    CODIGO_ACCESO = "codigo_acceso"
     ACCIONES = [
         (CONGELAR, "Congelar la asignación"),
         (REANALIZAR, "Reemplazar un diagnóstico"),
         (EXPORTAR, "Exportar resultados"),
         (IMPORTAR, "Importar resultados"),
+        (CODIGO_ACCESO, "Generar un código de acceso"),
     ]
 
     fecha = models.DateTimeField(auto_now_add=True)

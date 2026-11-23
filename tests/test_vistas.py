@@ -18,6 +18,7 @@ from analisis.models import (
     Participante,
     ResultadoConcepto,
 )
+from conftest import material
 from analisis.servicios.autoria import hash_correo, hashes_de_correos
 from analisis.servicios.conceptos import (
     ESTRUCTURAS,
@@ -379,7 +380,7 @@ def test_analizar_no_sortea(client, participante, todo_debil):
     analizar(client)
     assert not Asignacion.objects.exists()
     assert not participante.ultimo_analisis.conceptos.filter(reforzado=True).exists()
-    url = reverse("refuerzo:concepto", args=["P01", RECURSION])
+    url = material(client, RECURSION)
     assert client.get(url).status_code == 403  # sin congelar no hay material
 
 
@@ -616,13 +617,13 @@ def test_detalle_muestra_caso_orden_y_control(client, participante, todo_debil):
 def test_el_concepto_de_control_queda_bloqueado(client, participante, todo_debil):
     analizar(client)
     congelar(client)
-    url = reverse("refuerzo:concepto", args=["P01", asignacion_de().control[0]])
+    url = material(client, asignacion_de().control[0])
     assert client.get(url).status_code == 403
 
 
 def test_abrir_el_material_registra_una_apertura(client, participante):
     analisis_con(participante, {RECURSION})
-    url = reverse("refuerzo:concepto", args=["P01", RECURSION])
+    url = material(client, RECURSION)
     client.get(url)
     apertura = AperturaRefuerzo.objects.get()
     assert (apertura.participante, apertura.concepto) == (participante, RECURSION)
@@ -631,14 +632,14 @@ def test_abrir_el_material_registra_una_apertura(client, participante):
 def test_volver_tras_enviar_no_cuenta_como_apertura(client, participante, settings):
     settings.TIEMPO_LIMITE_EJERCICIO = 20
     analisis_con(participante, {RECURSION})
-    url = reverse("refuerzo:concepto", args=["P01", RECURSION])
+    url = material(client, RECURSION)
     client.post(url, {"ejercicio": "rec-facil", "codigo": "x = 1"}, follow=True)
     assert not AperturaRefuerzo.objects.exists()
 
 
 def test_el_control_bloqueado_no_registra_apertura(client, participante):
     analisis_con(participante, {RECURSION})
-    client.get(reverse("refuerzo:concepto", args=["P01", EXCEPCIONES]))
+    client.get(material(client, EXCEPCIONES))
     assert not AperturaRefuerzo.objects.exists()
 
 
@@ -682,7 +683,7 @@ def test_antes_de_congelar_el_csv_no_tiene_condicion(client, participante, todo_
 def test_exporta_intentos_numerados_con_su_condicion(client, participante, settings):
     settings.TIEMPO_LIMITE_EJERCICIO = 20
     analisis_con(participante, {RECURSION})
-    url = reverse("refuerzo:concepto", args=["P01", RECURSION])
+    url = material(client, RECURSION)
     for _ in range(2):
         client.post(url, {"ejercicio": "rec-facil", "codigo": "secreto_del_codigo = 1"})
 
@@ -698,7 +699,7 @@ def test_exporta_intentos_numerados_con_su_condicion(client, participante, setti
 
 def test_exporta_aperturas(client, participante):
     analisis_con(participante, {RECURSION})
-    client.get(reverse("refuerzo:concepto", args=["P01", RECURSION]))
+    client.get(material(client, RECURSION))
     [fila] = filas_de(client, reverse("refuerzo:exportar_aperturas"))
     assert (fila["codigo"], fila["concepto"]) == ("P01", RECURSION)
 
@@ -784,7 +785,7 @@ def test_exportacion_no_incluye_el_origen_del_repositorio(client, participante):
 
 def test_concepto_reforzado_muestra_el_material(client, participante):
     analisis_con(participante, {RECURSION})
-    respuesta = client.get(reverse("refuerzo:concepto", args=["P01", RECURSION]))
+    respuesta = client.get(material(client, RECURSION))
     html = respuesta.content.decode()
     assert respuesta.status_code == 200
     assert "Suma de dígitos" in html
@@ -793,7 +794,7 @@ def test_concepto_reforzado_muestra_el_material(client, participante):
 
 def test_concepto_no_reforzado_queda_bloqueado(client, participante):
     analisis_con(participante, {RECURSION})
-    respuesta = client.get(reverse("refuerzo:concepto", args=["P01", EXCEPCIONES]))
+    respuesta = client.get(material(client, EXCEPCIONES))
     assert respuesta.status_code == 403
     assert "División segura" not in respuesta.content.decode()
 
@@ -801,7 +802,7 @@ def test_concepto_no_reforzado_queda_bloqueado(client, participante):
 def test_no_se_puede_enviar_a_un_concepto_no_reforzado(client, participante):
     analisis_con(participante, {RECURSION})
     respuesta = client.post(
-        reverse("refuerzo:concepto", args=["P01", EXCEPCIONES]),
+        material(client, EXCEPCIONES),
         {"ejercicio": "exc-facil", "codigo": "x = 1"},
     )
     assert respuesta.status_code == 403
@@ -809,19 +810,19 @@ def test_no_se_puede_enviar_a_un_concepto_no_reforzado(client, participante):
 
 
 def test_participante_sin_analisis_no_tiene_refuerzo(client, participante):
-    url = reverse("refuerzo:concepto", args=["P01", RECURSION])
+    url = material(client, RECURSION)
     assert client.get(url).status_code == 403
 
 
 def test_concepto_inexistente_da_404(client, participante):
-    url = reverse("refuerzo:concepto", args=["P01", "magia"])
+    url = material(client, "magia")
     assert client.get(url).status_code == 404
 
 
 def test_enviar_solucion_ejecuta_y_muestra_el_resultado(client, participante, settings):
     settings.TIEMPO_LIMITE_EJERCICIO = 20
     analisis_con(participante, {RECURSION})
-    url = reverse("refuerzo:concepto", args=["P01", RECURSION])
+    url = material(client, RECURSION)
     solucion = (
         "def suma_digitos(n):\n"
         "    if n < 10:\n        return n\n"
@@ -841,7 +842,7 @@ def test_enviar_solucion_ejecuta_y_muestra_el_resultado(client, participante, se
 def test_aviso_si_la_solucion_no_usa_el_concepto(client, participante, settings):
     settings.TIEMPO_LIMITE_EJERCICIO = 20
     analisis_con(participante, {RECURSION})
-    url = reverse("refuerzo:concepto", args=["P01", RECURSION])
+    url = material(client, RECURSION)
     solucion = "def suma_digitos(n):\n    return sum(int(c) for c in str(n))\n"
     respuesta = client.post(
         url, {"ejercicio": "rec-facil", "codigo": solucion}, follow=True
@@ -853,5 +854,5 @@ def test_aviso_si_la_solucion_no_usa_el_concepto(client, participante, settings)
 
 def test_ejercicio_inexistente_da_404(client, participante):
     analisis_con(participante, {RECURSION})
-    url = reverse("refuerzo:concepto", args=["P01", RECURSION])
+    url = material(client, RECURSION)
     assert client.post(url, {"ejercicio": "nada", "codigo": ""}).status_code == 404

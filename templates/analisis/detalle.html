@@ -61,7 +61,7 @@
               {% if not asignacion %}
                 Pendiente
               {% elif c.reforzado %}
-                <a href="{% url 'refuerzo:concepto' participante.codigo c.concepto %}">Abrir refuerzo</a>
+                Reforzado
               {% elif c.concepto in asignacion.control %}
                 Control
               {% else %}
