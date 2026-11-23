@@ -2,7 +2,7 @@
   "concepto": "estructuras_datos",
   "semana": 2,
   "orden": 2,
-  "version": 1,
+  "version": 2,
   "titulo": "Listas con índices: recorridos, desplazamientos y dos punteros",
   "explicacion": "En una lista, cada elemento tiene una posición: lista[0] es el primero y lista[-1] el último. Muchos problemas se resuelven comparando posiciones vecinas, como lista[i] y lista[i + 1]; en ese caso el recorrido va hasta len(lista) - 1 para no salirse del rango.\n\nLa técnica de dos punteros usa dos índices que avanzan hacia el centro: i empieza en 0 y j en len(lista) - 1. Sirve para invertir una lista en su lugar o para buscar pares en una lista ordenada sin probar todas las combinaciones.\n\nPara intercambiar dos elementos en Python basta con lista[i], lista[j] = lista[j], lista[i]. Para desplazar elementos conviene usar el resto de la división (%), que da una posición válida aunque el desplazamiento sea mayor que la longitud de la lista.",
   "ejemplo": {
@@ -63,7 +63,8 @@
           ],
           "esperado": false
         }
-      ]
+      ],
+      "aviso_concepto": false
     },
     {
       "id": "ed-s2-2-e2",
@@ -141,7 +142,8 @@
             "b"
           ]
         }
-      ]
+      ],
+      "aviso_concepto": false
     },
     {
       "id": "ed-s2-2-e3",
@@ -212,7 +214,8 @@
             3
           ]
         }
-      ]
+      ],
+      "aviso_concepto": false
     }
   ]
 }

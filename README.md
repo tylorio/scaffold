@@ -273,6 +273,12 @@ Formato (el mismo que usa el asesor):
 - El código del ejemplo termina con la llamada que muestra y su resultado en un
   comentario. Las pruebas comprueban que ese resultado sea el real.
 - Un caso que espera una excepción usa `"lanza"` en lugar de `"esperado"`.
+- `"aviso_concepto": false` en un ejercicio apaga el aviso «No detectamos el
+  concepto» (D32). Úsalo cuando la solución correcta no activa el concepto con las
+  reglas v1: por ejemplo, índices sobre un parámetro de tipo desconocido, o un
+  ejercicio cuya lección es *no* capturar una excepción. El intento sigue
+  registrando `usa_concepto`. `tests/test_contenido.py` falla si una solución de
+  referencia no activa su concepto y el ejercicio no lleva el campo.
 - No uses diccionarios con claves numéricas en los casos: JSON las convierte en
   texto y haría fallar soluciones correctas.
 - El sistema también lee su formato interno (`id`, `explicacion` como lista,

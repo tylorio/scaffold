@@ -95,3 +95,52 @@ def test_el_ejemplo_resuelto_devuelve_lo_que_muestra(contenido):
         exec(compile(cuerpo, "<ejemplo>", "exec"), espacio)  # contenido del propio repositorio
         obtenido = eval(compile(ast.Expression(arbol.body[-1].value), "<ejemplo>", "eval"), espacio)
         assert obtenido == _resultado_mostrado(codigo)
+
+
+# Aviso "No detectamos el concepto" (D32)
+
+def _definiciones(concepto: str) -> dict[str, ast.AST]:
+    codigo = _soluciones_de(concepto)
+    return {
+        nodo.name: (nodo, codigo) for nodo in ast.parse(codigo).body
+        if isinstance(nodo, (ast.FunctionDef, ast.ClassDef))
+    }
+
+
+def solucion_completa(concepto: str, funcion: str) -> str:
+    """La función y las auxiliares y clases que usa: lo que envía un estudiante."""
+    definiciones = _definiciones(concepto)
+    pendientes, vistas = [funcion], []
+    while pendientes:
+        nombre = pendientes.pop()
+        if nombre in vistas or nombre not in definiciones:
+            continue
+        vistas.append(nombre)
+        nodo, _ = definiciones[nombre]
+        pendientes.extend(n.id for n in ast.walk(nodo) if isinstance(n, ast.Name))
+    return "\n\n".join(
+        ast.get_source_segment(definiciones[n][1], definiciones[n][0]) for n in reversed(vistas)
+    )
+
+
+@pytest.mark.parametrize(
+    "concepto, bloque, ejercicio", EJERCICIOS, ids=[e.id for _, _, e in EJERCICIOS],
+)
+def test_la_solucion_correcta_activa_su_concepto_o_el_aviso_esta_apagado(concepto, bloque, ejercicio):
+    """Si la regla v1 no reconoce el concepto en la solución correcta, el portal no debe
+    pedirle al estudiante que la rehaga: el ejercicio lleva aviso_concepto: false."""
+    from refuerzo.servicios.ejecutor import usa_concepto
+
+    if ejercicio.aviso_concepto:
+        assert usa_concepto(solucion_completa(concepto, ejercicio.funcion), concepto), (
+            f"{ejercicio.id}: la solución de referencia no activa {concepto}. "
+            "Agrega \"aviso_concepto\": false al ejercicio (D32)."
+        )
+
+
+def test_los_avisos_apagados_son_los_siete_de_d32():
+    apagados = sorted(e.id for _, _, e in EJERCICIOS if not e.aviso_concepto)
+    assert apagados == [
+        "ed-s1-1-e1", "ed-s2-1-e1", "ed-s2-2-e1", "ed-s2-2-e2", "ed-s2-2-e3",
+        "ed-s4-1-e3", "exc-s4-2-e1",
+    ]

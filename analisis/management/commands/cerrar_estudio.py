@@ -33,3 +33,5 @@ class Command(BaseCommand):
             f"{borrado['participantes_con_repositorio']} repositorios. Borra también la "
             "tabla de correspondencia y las carpetas de entregas de la prueba."
         )
+        for carpeta in borrado["carpetas"]:
+            self.stdout.write(f"Borra la carpeta entregada: {carpeta}")

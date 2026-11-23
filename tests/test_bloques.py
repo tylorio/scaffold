@@ -533,3 +533,32 @@ def test_la_migracion_borra_el_codigo_y_conserva_longitud_y_hash():
     MigrationExecutor(connection).migrate(
         MigrationExecutor(connection).loader.graph.leaf_nodes()
     )
+
+
+@pytest.mark.django_db
+def test_con_aviso_concepto_apagado_no_se_pide_rehacer(client, ejecucion_falsa):
+    """D32: la solución correcta puede no activar el concepto con las reglas v1."""
+    diagnostico()
+    url = material(client, RECURSION)
+    contenido = BloqueRefuerzo.objects.get(pk="recursion-ejemplo").contenido
+    contenido["ejercicios"][0]["aviso_concepto"] = False
+    BloqueRefuerzo.objects.filter(pk="recursion-ejemplo").update(contenido=contenido)
+    iterativa = "def suma_digitos(n):\n    return sum(int(c) for c in str(n))\n"
+    html = client.post(url, {"ejercicio": "rec-facil", "codigo": iterativa}).content.decode()
+    assert "No detectamos" not in html
+    assert IntentoEjercicio.objects.get().usa_concepto is False  # se sigue registrando
+
+
+@pytest.mark.django_db
+def test_el_aviso_dice_que_si_funciona_esta_bien(client, ejecucion_falsa):
+    diagnostico()
+    url = material(client, RECURSION)
+    iterativa = "def suma_digitos(n):\n    return sum(int(c) for c in str(n))\n"
+    html = client.post(url, {"ejercicio": "rec-facil", "codigo": iterativa}).content.decode()
+    assert "Si funciona, está bien" in html
+
+
+def test_aviso_concepto_debe_ser_booleano():
+    bloque = copy.deepcopy(ejemplo())
+    bloque["ejercicios"][0]["aviso_concepto"] = "no"
+    assert any("aviso_concepto" in e for e in banco.validar(bloque))

@@ -504,3 +504,13 @@ def test_el_comando_de_retiro_nombra_la_carpeta_pero_no_la_audita():
     call_command("retirar_participante", "P01", "--confirmo", "P01", stdout=salida)
     assert "C:/repos/P01-secreto" in salida.getvalue()
     assert "secreto" not in json.dumps(list(Auditoria.objects.values("detalle")))
+
+
+def test_el_cierre_nombra_las_carpetas_entregadas_sin_auditarlas(muestra, tmp_path):
+    exportar_estudio(tmp_path, "investigador")
+    salida = io.StringIO()
+    call_command("cerrar_estudio", "--confirmo", "borrar-codigo", stdout=salida)
+    assert "Borra la carpeta entregada: C:/repos/P01-secreto" in salida.getvalue()
+    cierre = Auditoria.objects.get(accion=Auditoria.CIERRE)
+    assert cierre.detalle["borrado"]["carpetas_entregadas"] == 4
+    assert "secreto" not in json.dumps(cierre.detalle)

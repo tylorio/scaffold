@@ -45,10 +45,11 @@
             <p class="mensaje mensaje-error">{{ intento.error }}</p>
           {% endif %}
           <p><strong>{{ intento.pasados }} de {{ intento.total }} pruebas pasadas.</strong></p>
-          {% if intento.ejecutado and not intento.usa_concepto %}
+          {% if intento.ejecutado and not intento.usa_concepto and ejercicio.aviso_concepto %}
             <p class="mensaje mensaje-warning">
-              No detectamos {{ nombre|lower }} en tu solución. Este ejercicio
-              es para practicar ese concepto: inténtalo de nuevo usándolo.
+              No detectamos {{ nombre|lower }} en tu solución. Si funciona, está bien,
+              pero este ejercicio busca practicar {{ nombre|lower }}: prueba resolverlo
+              usándolo.
             </p>
           {% endif %}
           {% if intento.casos %}

@@ -2,7 +2,7 @@
   "concepto": "estructuras_datos",
   "semana": 1,
   "orden": 1,
-  "version": 1,
+  "version": 2,
   "titulo": "Diccionarios: guardar y consultar por clave",
   "explicacion": "Un diccionario guarda pares clave-valor y permite encontrar un valor a partir de su clave sin recorrer toda la colección. Se crea con llaves, como en stock = {\"lapiz\": 10, \"cuaderno\": 4}, y se consulta con stock[\"lapiz\"].\n\nSi la clave no existe, stock[\"borrador\"] lanza KeyError. Para consultar con un valor por defecto se usa stock.get(\"borrador\", 0), que devuelve 0 si la clave no está. Para acumular, el patrón más común es d[clave] = d.get(clave, 0) + cantidad.\n\nRecorrer un diccionario con for clave in d da las claves; con for clave, valor in d.items() se obtienen los dos. Si una función no debe modificar el diccionario que recibe, trabaja sobre una copia: copia = dict(original).",
   "ejemplo": {
@@ -64,7 +64,8 @@
           ],
           "esperado": 2
         }
-      ]
+      ],
+      "aviso_concepto": false
     },
     {
       "id": "ed-s1-1-e2",

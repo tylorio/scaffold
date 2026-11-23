@@ -2,7 +2,7 @@
   "concepto": "estructuras_datos",
   "semana": 2,
   "orden": 1,
-  "version": 1,
+  "version": 2,
   "titulo": "Conjuntos: pertenencia rápida y elementos sin repetir",
   "explicacion": "Un conjunto (set) guarda elementos sin repetir y responde muy rápido si un elemento está o no: x in conjunto tarda en promedio lo mismo con 10 elementos que con 100 000. En una lista, x in lista tiene que recorrerla.\n\nSe crea con set(lista) o con llaves, {1, 2, 3}. El conjunto vacío es set(), porque {} crea un diccionario. Los conjuntos no tienen orden: si necesitas un resultado ordenado, usa sorted(conjunto).\n\nUn patrón muy útil es el conjunto de \"vistos\": recorres una lista, consultas si el elemento ya está en el conjunto y luego lo agregas con vistos.add(x). Las operaciones a | b (unión), a & b (intersección) y a - b (diferencia) combinan conjuntos.",
   "ejemplo": {
@@ -62,7 +62,8 @@
           ],
           "esperado": true
         }
-      ]
+      ],
+      "aviso_concepto": false
     },
     {
       "id": "ed-s2-1-e2",

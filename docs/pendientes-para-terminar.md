@@ -38,8 +38,9 @@ Ya está en el sistema (`docs/decisiones/orientacion-asesor-2026-11-22.md`):
 |---|---|
 | 24 bloques de refuerzo | **Completos.** Las 72 soluciones pasan todos sus casos con el límite real de 5 s |
 | Alarma de soluciones (D22) | Hecha y calibrada en 0,30. Con la de enunciados marca 20 pares; `controlar_solapamiento --ficha` escribe la ficha para los jueces (D23) |
-| Enunciados de la sesión de etiquetado | En `docs/sesion-etiquetado/`. **Falta** `soluciones_sesion_etiquetado.py`: el LEEME lo anuncia, pero no venía en la entrega |
-| Consentimientos y convocatoria v1 | En `docs/consentimientos/`. Antes de enviarlos al CEI hay que corregir 3 cosas (ver la respuesta del 2026-11-23) |
+| Enunciados de la sesión de etiquetado | v1.1 en `docs/sesion-etiquetado/` (D31). Las soluciones de referencia llegaron en la entrega 23b y pasan los 23 ejemplos; van al almacén, no a Git |
+| Consentimientos, convocatoria y correo al CEI | Corregidos (D30) y en `docs/consentimientos/`. El correo v2 está en la entrega 23b: completa los `[COMPLETAR]` y envíalo |
+| D29, D32 y D34 | `exc-s4-1-e3` reemplazado (la ficha baja a 18 pares), `aviso_concepto` en 7 ejercicios y 06 §4 corregido |
 | 07 §1.3 y §1.4 | Actualizados con D24 a D27 |
 
 ---

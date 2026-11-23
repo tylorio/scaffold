@@ -2,7 +2,7 @@
 
 **Versión:** v1 · 23 de noviembre de 2026
 **Estudio:** Desarrollo de un sistema de detección de dependencia en código generado por IA para optimizar el aprendizaje de programación en estudiantes de Ingeniería de Software de la USIL
-**Investigador:** Pablo [PENDIENTE: apellidos], estudiante de Ingeniería de Software, Universidad San Ignacio de Loyola
+**Investigador:** Juan Pablo Zavala Valle, estudiante de Ingeniería de Software, Universidad San Ignacio de Loyola
 **Aprobación del Comité de Ética:** [PENDIENTE: código y fecha de aprobación del CEI-USIL]
 
 > Notas para el investigador (borrar antes de entregar el formulario): este documento es distinto del consentimiento del estudio y va en la misma solicitud al CEI (D15). La cláusula de reutilización del §6 la tiene que aceptar el CEI tal como está o indicar cómo cambiarla. Quien firme este documento queda fuera de la muestra del estudio.
@@ -67,7 +67,7 @@ Los riesgos son bajos: el tiempo de la sesión y el cansancio de programar dos h
 
 ## 9. Contacto
 
-- Investigador: Pablo [PENDIENTE: apellidos] · [PENDIENTE: correo institucional]
+- Investigador: Juan Pablo Zavala Valle · juan.zavalav@usil.pe
 - Comité de Ética en Investigación de la USIL: [PENDIENTE: correo o teléfono del CEI-USIL]
 
 ## 10. Declaración

@@ -2,7 +2,7 @@
   "concepto": "estructuras_datos",
   "semana": 4,
   "orden": 1,
-  "version": 1,
+  "version": 2,
   "titulo": "Ordenar con criterio: sorted, key y mezcla de listas ordenadas",
   "explicacion": "sorted(lista) devuelve una lista nueva ordenada y no modifica la original; lista.sort() ordena en el lugar y devuelve None. Los dos aceptan key, una función que dice qué valor usar para comparar: sorted(palabras, key=len) ordena por longitud.\n\nPara ordenar por varios criterios, key puede devolver una tupla: key=lambda p: (len(p), p) ordena por longitud y, si empatan, alfabéticamente. Con reverse=True el orden se invierte.\n\nCuando dos listas ya están ordenadas, no hace falta volver a ordenarlas para unirlas: se recorren con dos índices y en cada paso se toma el menor de los dos elementos actuales. Así se aprovecha el orden que ya tienen.",
   "ejemplo": {
@@ -218,7 +218,8 @@
             6
           ]
         }
-      ]
+      ],
+      "aviso_concepto": false
     }
   ]
 }

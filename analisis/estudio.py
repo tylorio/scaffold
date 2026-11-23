@@ -255,10 +255,17 @@ def cerrar_estudio(usuario: str) -> dict:
         raise CierreNoPermitido(
             "Primero exporta la base con exportar_estudio: es lo que se conserva."
         )
+    from .participacion import carpeta_a_borrar
+
+    # Las carpetas entregadas las borra el investigador; sus rutas no van a la auditoría.
+    carpetas = sorted(filter(None, (
+        carpeta_a_borrar(r) for r in Participante.objects.values_list("repositorio", flat=True)
+    )))
     with transaction.atomic():
         borrado = {
             "fragmentos": Fragmento.objects.count(),
             "participantes_con_repositorio": Participante.objects.exclude(repositorio="").count(),
+            "carpetas_entregadas": len(carpetas),
         }
         Fragmento.objects.all().delete()
         Participante.objects.update(repositorio="", hashes_correos=[], codigo_acceso="")
@@ -274,4 +281,4 @@ def cerrar_estudio(usuario: str) -> dict:
                 shutil.rmtree(hijo, ignore_errors=True)
             else:
                 hijo.unlink()
-    return borrado
+    return {**borrado, "carpetas": carpetas}

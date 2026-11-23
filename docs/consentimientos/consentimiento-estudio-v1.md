@@ -1,8 +1,8 @@
 # Consentimiento informado para participar en el estudio
 
-**Versión:** v1 · 23 de noviembre de 2026
+**Versión:** v1 · 23 de noviembre de 2026 (con las correcciones de D30, antes de enviarlo al CEI)
 **Estudio:** Desarrollo de un sistema de detección de dependencia en código generado por IA para optimizar el aprendizaje de programación en estudiantes de Ingeniería de Software de la USIL
-**Investigador:** Pablo [PENDIENTE: apellidos], estudiante de Ingeniería de Software, Universidad San Ignacio de Loyola
+**Investigador:** Juan Pablo Zavala Valle, estudiante de Ingeniería de Software, Universidad San Ignacio de Loyola
 **Asesor:** [PENDIENTE: nombre del asesor]
 **Aprobación del Comité de Ética:** [PENDIENTE: código y fecha de aprobación del CEI-USIL]
 
@@ -31,7 +31,7 @@ Usar asistentes de IA no está mal ni está prohibido en este estudio. No buscam
 
 ## 3. Qué datos se recogen y cómo se tratan
 
-**Tu repositorio.** El investigador lo descarga en su computadora, con el acceso que tú le des: como colaborador de solo lectura en GitHub o GitLab, o entregando la carpeta del proyecto con su carpeta `.git`. Un archivo `.zip` sin historial no sirve. El análisis se hace **solo en esa computadora**, en un disco cifrado. Tu código no se envía a ningún servicio de IA ni a ningún otro servidor.
+**Tu repositorio.** El investigador lo descarga en su computadora, con el acceso que tú le des: como colaborador de solo lectura en GitHub o GitLab, o entregando la carpeta del proyecto con su carpeta `.git`. Un archivo `.zip` sin historial no sirve. El análisis se hace **solo en esa computadora**, en un disco cifrado. Tu código no se envía a ningún servicio de IA ni a ningún otro servidor. Si nos das acceso por GitHub o GitLab, el sistema descarga el repositorio, lo analiza y borra esa copia en el momento. Si entregas la carpeta, la guardamos en el disco cifrado hasta terminar el análisis o hasta que te retires.
 
 **Tus correos de commit.** Los usamos para analizar solo las funciones que escribiste tú. Si el repositorio es de un trabajo grupal, las funciones de tus compañeros no se analizan. El sistema no guarda tus correos: guarda una huella cifrada (un código HMAC) que sirve para reconocerlos y que no permite recuperarlos. Los correos de tus compañeros solo se comparan en memoria y no se guardan de ninguna forma.
 
@@ -39,7 +39,7 @@ Usar asistentes de IA no está mal ni está prohibido en este estudio. No buscam
 
 **Tu identidad.** En todo el sistema apareces con un código anónimo (por ejemplo, P07). La única tabla que une tu nombre con tu código la guarda el investigador fuera del sistema, cifrada. Nadie más tiene acceso a ella.
 
-**El portal web.** El portal donde haces el refuerzo está alojado en Microsoft Azure, en la región [PENDIENTE: región]. Allí solo hay datos codificados: tu código anónimo, tus resultados agregados por concepto y el registro de qué bloques abriste y cuándo. **No hay nombres ni el código de tu repositorio.** Las soluciones que escribes en los ejercicios se ejecutan automáticamente para corregirlas, durante unos segundos, y **no se guardan**; solo se guarda si el intento pasó o no.
+**El portal web.** El portal donde haces el refuerzo está alojado en Microsoft Azure, en la región [PENDIENTE: región]. Allí solo hay datos codificados: tu código anónimo, tus resultados agregados por concepto y el registro de qué bloques abriste y cuándo. **No hay nombres ni el código de tu repositorio.** Las soluciones que escribes en los ejercicios se ejecutan automáticamente para corregirlas, durante unos segundos. **No se guarda tu código**: solo su longitud, una huella que no permite recuperarlo, el resultado de cada caso de prueba y, si el programa falló, el mensaje de error.
 
 **Formularios.** El cuestionario y algunas fichas se responden en [PENDIENTE: proveedor del formulario] y se identifican solo con tu código anónimo.
 
@@ -83,7 +83,7 @@ Tus datos personales se tratan según la Ley N.° 29733, Ley de Protección de D
 
 ## 9. Contacto
 
-- Investigador: Pablo [PENDIENTE: apellidos] · [PENDIENTE: correo institucional]
+- Investigador: Juan Pablo Zavala Valle · juan.zavalav@usil.pe
 - Asesor: [PENDIENTE: nombre y correo]
 - Comité de Ética en Investigación de la USIL: [PENDIENTE: correo o teléfono del CEI-USIL]
 

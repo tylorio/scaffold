@@ -2,7 +2,7 @@
   "concepto": "excepciones",
   "semana": 4,
   "orden": 2,
-  "version": 1,
+  "version": 2,
   "titulo": "Diseñar el manejo de errores: qué capturar y qué dejar pasar",
   "explicacion": "Manejar errores bien no significa capturarlos todos. Una función debe capturar solo los errores que sabe resolver, y dejar pasar los demás para que los vea quien tiene más contexto.\n\nHay tres decisiones frecuentes. Reintentar, cuando el error es pasajero (una conexión que no respondió a tiempo). Propagar, cuando el error indica un problema que la función no puede resolver. Revertir, cuando una operación de varios pasos falla a la mitad y hay que dejar el estado como estaba antes de empezar.\n\nUn error silenciado con un except: vacío casi siempre esconde un fallo que aparecerá más tarde, lejos de su causa, y que será más difícil de encontrar.",
   "ejemplo": {
@@ -73,7 +73,8 @@
             3.0
           ]
         }
-      ]
+      ],
+      "aviso_concepto": false
     },
     {
       "id": "exc-s4-2-e2",

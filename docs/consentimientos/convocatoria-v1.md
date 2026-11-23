@@ -36,26 +36,26 @@
 
 **Antes de inscribirte, comprueba tu repositorio**
 
-Abre una terminal en la carpeta del proyecto y ejecuta:
+Abre una terminal (PowerShell, cmd o la de tu editor) en la carpeta del proyecto y ejecuta:
 
-```bash
-git log --oneline | head
+```text
+git log --oneline -5
 ```
 
 Si ves una lista de commits, el historial está. Si sale `fatal: not a git repository`, esa carpeta no tiene historial: busca la versión clonada de GitHub o GitLab.
 
 Para ver los correos con los que hiciste commit:
 
-```bash
-git log --format="%an <%ae>" | sort -u
+```text
+git shortlog -sne --all
 ```
 
-Anota los que sean tuyos. Si en GitHub tu correo aparece como `...@users.noreply.github.com`, anótalo también.
+Cada línea muestra un nombre, un correo y cuántos commits hizo. Anota los correos que sean tuyos. Si en GitHub tu correo aparece como `...@users.noreply.github.com`, anótalo también.
 
 **Tus datos.** Tu código se analiza solo en la computadora del investigador, en un disco cifrado, y no se envía a ningún servicio de IA. En todo el sistema apareces con un código anónimo. Puedes retirarte cuando quieras y tus datos se borran. Todo está en el consentimiento, que puedes leer antes de decidir.
 
 **Inscripción:** [PENDIENTE: enlace o correo de inscripción] · Cupos: 25 · Cierre: [PENDIENTE: fecha]
-**Contacto:** Pablo [PENDIENTE: apellidos], [PENDIENTE: correo institucional]
+**Contacto:** Juan Pablo Zavala Valle, juan.zavalav@usil.pe
 **Aprobado por el Comité de Ética en Investigación de la USIL:** [PENDIENTE: código]
 
 ---
@@ -68,4 +68,4 @@ Buscamos de 10 a 16 personas que programen en Python y usen algún asistente de 
 - **Requisitos:** mayor de 18 años, Python al nivel de un segundo curso de programación, usar algún asistente de IA para programar.
 - **Importante:** quien participa en esta sesión **no puede** inscribirse después en el estudio principal (parte A).
 - No se evalúa tu nivel ni afecta tus notas. Trabajas con un código de sesión, no con tu nombre.
-- **Inscripción:** [PENDIENTE] · **Contacto:** [PENDIENTE: correo institucional]
+- **Inscripción:** [PENDIENTE] · **Contacto:** juan.zavalav@usil.pe

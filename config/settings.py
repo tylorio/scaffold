@@ -75,7 +75,7 @@ if PERFIL not in ("local", "nube"):
     raise ImproperlyConfigured("IDC_PERFIL debe ser 'local' o 'nube'.")
 LOCAL = PERFIL == "local"
 
-VERSION_SISTEMA = "0.12.0"
+VERSION_SISTEMA = "0.13.0"
 
 # Sal del HMAC de los correos de commit (D19), solo en local. Si se pierde, no se
 # puede repetir el filtro por autor: se respalda junto con la clave del almacén.

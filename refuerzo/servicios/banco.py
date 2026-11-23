@@ -187,6 +187,8 @@ def validar(contenido: Any) -> list[str]:
             errores.append(f"{ruta}: el id debe tener entre 1 y 20 caracteres.")
         if not str(e["funcion"]).isidentifier():
             errores.append(f"{ruta}: el nombre de la función no es válido.")
+        if not isinstance(e.get("aviso_concepto", True), bool):
+            errores.append(f"{ruta}: aviso_concepto debe ser true o false.")
         if not e["casos"]:
             errores.append(f"{ruta}: sin casos de prueba.")
         for n, caso in enumerate(e["casos"], 1):
@@ -216,6 +218,7 @@ def desde_json(contenido: dict) -> Bloque:
                     CasoPrueba(tuple(c["args"]), c.get("esperado"), c.get("lanza"))
                     for c in e["casos"]
                 ),
+                aviso_concepto=e.get("aviso_concepto", True),
             )
             for e in contenido["ejercicios"]
         ),

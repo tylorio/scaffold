@@ -41,6 +41,9 @@ class Ejercicio:
     plantilla: str
     funcion: str
     casos: tuple[CasoPrueba, ...]
+    # False si la solución correcta no activa el concepto con las reglas v1 (D32):
+    # entonces el portal no le pide al estudiante que lo rehaga.
+    aviso_concepto: bool = True
 
 
 @dataclass(frozen=True)

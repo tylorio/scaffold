@@ -2,7 +2,7 @@
   "concepto": "excepciones",
   "semana": 4,
   "orden": 1,
-  "version": 1,
+  "version": 2,
   "titulo": "Excepciones propias para errores del problema",
   "explicacion": "Además de las excepciones de Python, se pueden crear excepciones propias para los errores del problema que se resuelve. Basta con definir una clase que herede de Exception (o de una excepción más concreta, como ValueError): class CupoLleno(Exception): pass.\n\nUna excepción propia tiene un nombre que explica el problema, y permite capturar exactamente ese caso con except CupoLleno: sin atrapar por error otros ValueError que tengan otra causa.\n\nLo habitual es que la función que detecta el problema lance la excepción propia, y que la función que conoce el contexto la capture y decida qué hacer.",
   "ejemplo": {
@@ -126,102 +126,63 @@
     {
       "id": "exc-s4-1-e3",
       "nivel": "dificil",
-      "enunciado": "Escribe procesar_inscripciones(solicitudes, cupo), que procesa en orden una lista de nombres con las mismas excepciones propias del ejercicio anterior y devuelve [inscritos, duplicados, sin_cupo]: la lista de inscritos en orden de llegada, los nombres rechazados por estar repetidos y los rechazados por falta de cupo.",
-      "funcion": "procesar_inscripciones",
-      "plantilla": "def procesar_inscripciones(solicitudes, cupo):\n    # Escribe tu solución aquí\n    pass\n",
+      "enunciado": "Define una excepción base ErrorReserva y dos que hereden de ella: SinStock, que guarda en el atributo faltan cuántas unidades faltan, y ProductoDesconocido. Escribe reservar_unidades(stock, producto, cantidad), que lanza ValueError si cantidad no es mayor que 0, ProductoDesconocido si el producto no está en el diccionario stock y SinStock si no alcanza; si alcanza, devuelve las unidades que quedan. Luego escribe explicar_reserva(stock, producto, cantidad), que devuelve \"reservado\", \"faltan N\" o \"producto desconocido\" capturando solo ErrorReserva. El ValueError debe llegar a quien llamó.",
+      "funcion": "explicar_reserva",
+      "plantilla": "def explicar_reserva(stock, producto, cantidad):\n    # Escribe tu solución aquí\n    pass\n",
       "casos": [
         {
           "args": [
-            [
-              "Ana",
-              "Luis",
-              "Ana",
-              "Rosa"
-            ],
-            2
-          ],
-          "esperado": [
-            [
-              "Ana",
-              "Luis"
-            ],
-            [
-              "Ana"
-            ],
-            [
-              "Rosa"
-            ]
-          ]
-        },
-        {
-          "args": [
-            [],
+            {
+              "lapiz": 5,
+              "goma": 0
+            },
+            "lapiz",
             3
           ],
-          "esperado": [
-            [],
-            [],
-            []
-          ]
+          "esperado": "reservado"
         },
         {
           "args": [
-            [
-              "A",
-              "B",
-              "C"
-            ],
-            5
+            {
+              "lapiz": 5,
+              "goma": 0
+            },
+            "lapiz",
+            8
           ],
-          "esperado": [
-            [
-              "A",
-              "B",
-              "C"
-            ],
-            [],
-            []
-          ]
+          "esperado": "faltan 3"
         },
         {
           "args": [
-            [
-              "A",
-              "A",
-              "A"
-            ],
+            {
+              "lapiz": 5,
+              "goma": 0
+            },
+            "regla",
             1
           ],
-          "esperado": [
-            [
-              "A"
-            ],
-            [
-              "A",
-              "A"
-            ],
-            []
-          ]
+          "esperado": "producto desconocido"
         },
         {
           "args": [
-            [
-              "A",
-              "B",
-              "B"
-            ],
-            1
+            {
+              "lapiz": 5,
+              "goma": 0
+            },
+            "goma",
+            2
           ],
-          "esperado": [
-            [
-              "A"
-            ],
-            [],
-            [
-              "B",
-              "B"
-            ]
-          ]
+          "esperado": "faltan 2"
+        },
+        {
+          "args": [
+            {
+              "lapiz": 5
+            },
+            "lapiz",
+            0
+          ],
+          "lanza": "ValueError"
         }
       ]
     }
